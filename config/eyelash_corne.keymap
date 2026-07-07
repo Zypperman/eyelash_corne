@@ -59,13 +59,18 @@
             bindings = <&soft_off>;
             key-positions = <1 15 29>;
         };
+
+        moment_layer_3 {
+            bindings = <&mo 3>;
+            key-positions = <43 46>;
+        };
     };
 
     macros {
         lockPC: lockPC {
             compatible = "zmk,behavior-macro";
             #binding-cells = <0>;
-            bindings = <&kp LGUI>;
+            bindings = <&kp LG(L)>;
             label = "LOCKPC";
         };
     };
@@ -76,10 +81,10 @@
         default_layer {
             display-name = "MAIN";
             bindings = <
-&kp GRAVE  &kp Q  &kp W  &kp E     &kp R  &kp T                               &kp UP                &kp Y        &kp U  &kp I      &kp O    &kp P     &kp BSPC
-&gresc     &kp A  &kp S  &kp D     &kp F  &kp G                     &kp LEFT  &kp ENTER  &kp RIGHT  &kp H        &kp J  &kp K      &kp L    &kp SEMI  &kp SQT
-&kp LCTRL  &kp Z  &kp X  &kp C     &kp V  &kp B        &kp SPACE              &kp DOWN              &kp N        &kp M  &kp COMMA  &kp DOT  &kp FSLH  &kp ESC
-                         &kp LGUI  &mo 1  &lt 3 SPACE                                               &lt 3 ENTER  &mo 2  &kp RALT
+&kp GRAVE  &kp Q  &kp W  &kp E      &kp R  &kp T                           &kp UP                &kp Y      &kp U  &kp I          &kp O    &kp P     &kp BSPC
+&gresc     &kp A  &kp S  &kp D      &kp F  &kp G                 &kp LEFT  &kp ENTER  &kp RIGHT  &kp H      &kp J  &kp K          &kp L    &kp SEMI  &kp SQT
+&kp LCTRL  &kp Z  &kp X  &kp C      &kp V  &kp B      &lockPC              &kp DOWN              &kp N      &kp M  &kp COMMA      &kp DOT  &kp FSLH  &kp ESC
+                         &kp LCTRL  &mo 1  &kp SPACE                                             &kp ENTER  &mo 2  &kp BACKSPACE
             >;
 
             sensor-bindings = <&inc_dec_kp C_VOLUME_UP C_VOLUME_DOWN>;
