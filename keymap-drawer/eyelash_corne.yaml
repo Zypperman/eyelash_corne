@@ -79,7 +79,7 @@ layers:
   - {t: '0', s: )}
   - PG UP
   - $$mdi:apple-keyboard-shift$$
-  - RGB OFF
+  - {t: '`', s: '~'}
   - RGB ON
   - {t: '$$mdi:transfer$$', type: trans}
   - {t: '$$mdi:transfer$$', type: trans}
@@ -88,13 +88,13 @@ layers:
   - {t: '$$mdi:menu-down$$', s: '$$mdi:mouse$$'}
   - '&mkp MB2'
   - '&mkp MB3'
-  - '&mkp MB5'
   - '&mkp MB4'
+  - '&mkp MB5'
   - END
   - PG DN
-  - $$mdi:apple-keyboard-control$$
+  - {t: '$$mdi:minus-circle-outline$$', type: none}
   - Utility
-  - {t: '$$mdi:transfer$$', type: trans}
+  - {t: '$$mdi:minus-circle-outline$$', type: none}
   - {t: '$$mdi:backspace$$', type: backspace}
   - {t: Number, type: held}
   - $$mdi:apple-keyboard-option$$
@@ -115,9 +115,9 @@ layers:
   - $$mdi:pan-left$$
   - $$mdi:backspace-reverse-outline$$
   - $$mdi:pan-right$$
-  - PG UP
+  - $$mdi:pan-up$$
+  - Ins
   - $$mdi:brightness-5$$
-  - $$mdi:brightness-7$$
   - {t: '$$mdi:menu-left$$', s: '$$mdi:mouse$$'}
   - MENU
   - {t: '$$mdi:menu-right$$', s: '$$mdi:mouse$$'}
@@ -128,22 +128,22 @@ layers:
   - {t: \, s: '|'}
   - {t: '`', s: '~'}
   - $$mdi:apple-keyboard-shift$$
-  - $$mdi:pan-up$$
+  - HOME
+  - END
   - $$mdi:pan-down$$
-  - PG DN
-  - {t: '$$mdi:minus-circle-outline$$', type: none}
-  - '&mkp MB5'
+  - '#'
+  - $$mdi:brightness-7$$
   - MUTE
   - {t: '$$mdi:menu-down$$', s: '$$mdi:mouse$$'}
   - '&mkp MB1'
   - '&mkp MB2'
-  - '{'
-  - '}'
+  - '&mkp MB4'
+  - '&mkp MB5'
   - '|'
   - '~'
-  - $$mdi:apple-keyboard-control$$
+  - $$mdi:play-pause$$
   - {t: Utility, type: held}
-  - $$mdi:keyboard-space$$
+  - LOCK
   - {t: '$$mdi:keyboard-return$$', type: enter}
   - {t: Number, type: held alternate}
   - '&mkp MB3'
