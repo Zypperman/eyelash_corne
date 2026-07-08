@@ -67,7 +67,7 @@
             key-positions = <1 15 29>;
         };
 
-        moment_layer_3 {
+        config {
             bindings = <&mo 3>;
             key-positions = <43 46>;
         };
@@ -100,22 +100,22 @@
         Rhold {
             display-name = "Number";
             bindings = <
-&kp F1          &kp F2           &kp F3          &kp F4     &kp F5  &kp F6                                         &mmv MOVE_UP                     &kp F7         &kp F8    &kp F9    &kp F10   &kp F11  &kp F12
-&gresc          &kp N1           &kp N2          &kp N3     &kp N4  &kp N5                         &mmv MOVE_LEFT  &mkp LCLK       &mmv MOVE_RIGHT  &kp N6         &kp N7    &kp N8    &kp N9    &kp N0   &kp PG_UP
-&kp LEFT_SHIFT  &rgb_ug RGB_OFF  &rgb_ug RGB_ON  &trans     &trans  &rgb_ug RGB_EFF  &kp C_MUTE                    &mmv MOVE_DOWN                   &mkp MB2       &mkp MB3  &mkp MB5  &mkp MB4  &kp END  &kp PG_DN
-                                                 &kp LCTRL  &mo 2   &trans                                                                          &kp BACKSPACE  &mo 1     &kp LALT
+&kp F1          &kp F2     &kp F3          &kp F4  &kp F5  &kp F6                                         &mmv MOVE_UP                     &kp F7         &kp F8    &kp F9    &kp F10   &kp F11  &kp F12
+&gresc          &kp N1     &kp N2          &kp N3  &kp N4  &kp N5                         &mmv MOVE_LEFT  &mkp LCLK       &mmv MOVE_RIGHT  &kp N6         &kp N7    &kp N8    &kp N9    &kp N0   &kp PG_UP
+&kp LEFT_SHIFT  &kp GRAVE  &rgb_ug RGB_ON  &trans  &trans  &rgb_ug RGB_EFF  &kp C_MUTE                    &mmv MOVE_DOWN                   &mkp MB2       &mkp MB3  &mkp MB4  &mkp MB5  &kp END  &kp PG_DN
+                                           &none   &mo 2   &none                                                                           &kp BACKSPACE  &mo 1     &kp LALT
             >;
 
-            sensor-bindings = <&scroll_encoder>;
+            sensor-bindings = <&inc_dec_kp C_VOL_UP C_VOL_DN>;
         };
 
         Lhold {
             display-name = "Utility";
             bindings = <
-&sk LEFT_SHIFT  &sk LCTRL     &sk LEFT_ALT     &sk LGUI   &kp C_VOL_UP  &kp C_VOL_DN                                &mmv MOVE_UP                     &kp TAB    &kp AMPS   &kp ASTRK  &kp LPAR  &kp RPAR  &kp BSPC
-&msc SCRL_LEFT  &kp DEL       &msc SCRL_RIGHT  &kp PG_UP  &kp C_BRI_UP  &kp C_BRI_DN                &mmv MOVE_LEFT  &kp K_MENU      &mmv MOVE_RIGHT  &kp MINUS  &kp EQUAL  &kp LBKT   &kp RBKT  &kp BSLH  &kp GRAVE
-&kp LEFT_SHIFT  &msc SCRL_UP  &msc SCRL_DOWN   &kp PG_DN  &none         &mkp MB5      &kp K_MUTE                    &mmv MOVE_DOWN                   &mkp MB1   &mkp MB2   &kp LBRC   &kp RBRC  &kp PIPE  &kp TILDE
-                                               &kp LCTRL  &mo 2         &kp SPACE                                                                    &kp RET    &mo 1      &mkp MB3
+&sk LEFT_SHIFT  &sk LCTRL  &sk LEFT_ALT     &sk LGUI        &kp C_VOL_UP  &kp C_VOL_DN                                &mmv MOVE_UP                     &kp TAB    &kp AMPS   &kp ASTRK  &kp LPAR  &kp RPAR  &kp BSPC
+&msc SCRL_LEFT  &kp DEL    &msc SCRL_RIGHT  &msc SCRL_UP    &kp INSERT    &kp C_BRI_UP                &mmv MOVE_LEFT  &kp K_MENU      &mmv MOVE_RIGHT  &kp MINUS  &kp EQUAL  &kp LBKT   &kp RBKT  &kp BSLH  &kp GRAVE
+&kp LSHIFT      &kp HOME   &kp END          &msc SCRL_DOWN  &kp HASH      &kp C_BRI_DN  &kp K_MUTE                    &mmv MOVE_DOWN                   &mkp MB1   &mkp MB2   &mkp MB4   &mkp MB5  &kp PIPE  &kp TILDE
+                                            &kp C_PP        &mo 2         &kp K_LOCK                                                                   &kp RET    &mo 1      &mkp MB3
             >;
 
             sensor-bindings = <&rgb_encoder>;
