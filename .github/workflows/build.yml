@@ -3,40 +3,6 @@ name: Build
 on: [push, pull_request, workflow_dispatch]
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    name: Build Test
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Cache west modules
-        uses: actions/cache@v4
-        env:
-          cache-name: cache-zephyr-modules
-        with:
-          path: |
-            modules/
-            tools/
-            zephyr/
-            bootloader/
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('config/west.yml') }}
-          restore-keys: |
-            ${{ runner.os }}-build-${{ env.cache-name }}-
-            ${{ runner.os }}-build-
-            ${{ runner.os }}-
-
-      - name: Initialize west workspace
-        uses: zmkfirmware/zmk-build-actions@v2
-        with:
-          init-script: 'zmk/app/scripts/init.sh'
-
-      - name: Build ZMK
-        uses: zmkfirmware/zmk-build-actions@v2
-        with:
-          build-script: 'zmk/app/scripts/build.sh'
-        env:
-          # Put your exact board and shield names here matching your setup
-          # From your initial logs: eyelash_nano and eyelash_corne_right nice_oled
-          SHIELD: "eyelash_corne_right nice_oled"
-          BOARD: "eyelash_nano"
+  firmware_build:
+    name: Build the ZMK firmware
+    uses: zmkfirmware/zmk/.github/workflows/build-user-config.yml@v0.3
