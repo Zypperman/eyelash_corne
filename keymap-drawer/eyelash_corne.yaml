@@ -1,7 +1,7 @@
 layout: {zmk_keyboard: eyelash_corne}
 layers:
   MAIN:
-  - {t: '`', s: '~'}
+  - $$mdi:keyboard-tab$$
   - Q
   - W
   - E
@@ -44,12 +44,12 @@ layers:
   - {t: /, s: '?'}
   - {t: \, s: '|'}
   - $$mdi:apple-keyboard-control$$
-  - SYMBOL
+  - Utility
   - $$mdi:keyboard-space$$
-  - {t: '$$mdi:keyboard-return$$', type: enter}
-  - deez
   - {t: '$$mdi:backspace$$', type: backspace}
-  deez:
+  - Number
+  - $$mdi:apple-keyboard-option$$
+  Number:
   - F1
   - F2
   - F3
@@ -86,27 +86,27 @@ layers:
   - RGB EFF
   - $$mdi:volume-off$$
   - {t: '$$mdi:menu-down$$', s: '$$mdi:mouse$$'}
-  - RGB EFR
-  - RGB SPI
-  - RGB BRI
-  - RGB BRD
+  - '&mkp MB2'
+  - '&mkp MB3'
+  - '&mkp MB5'
+  - '&mkp MB4'
   - END
   - PG DN
   - $$mdi:apple-keyboard-control$$
+  - Utility
   - {t: '$$mdi:transfer$$', type: trans}
-  - {t: '$$mdi:transfer$$', type: trans}
-  - INS
-  - {t: '$$mdi:backspace-reverse-outline$$', type: held}
+  - {t: '$$mdi:backspace$$', type: backspace}
+  - {t: Number, type: held}
   - $$mdi:apple-keyboard-option$$
-  SYMBOL:
+  Utility:
+  - {t: '$$mdi:apple-keyboard-shift$$', h: '$$mdi:gesture-tap-hold$$'}
+  - {t: '$$mdi:apple-keyboard-control$$', h: '$$mdi:gesture-tap-hold$$'}
+  - {t: '$$mdi:apple-keyboard-option$$', h: '$$mdi:gesture-tap-hold$$'}
+  - {t: LGUI, h: '$$mdi:gesture-tap-hold$$'}
   - $$mdi:volume-high$$
   - $$mdi:volume-low$$
-  - $$mdi:brightness-5$$
-  - $$mdi:brightness-7$$
-  - $
-  - '%'
   - {t: '$$mdi:menu-up$$', s: '$$mdi:mouse$$'}
-  - ^
+  - $$mdi:keyboard-tab$$
   - '&'
   - '*'
   - (
@@ -115,11 +115,11 @@ layers:
   - $$mdi:pan-left$$
   - $$mdi:backspace-reverse-outline$$
   - $$mdi:pan-right$$
-  - $$mdi:mouse-scroll-wheel$$
-  - $$mdi:mouse-right-click-outline$$
-  - '&mkp MB4'
+  - PG UP
+  - $$mdi:brightness-5$$
+  - $$mdi:brightness-7$$
   - {t: '$$mdi:menu-left$$', s: '$$mdi:mouse$$'}
-  - $$mdi:mouse-left-click-outline$$
+  - MENU
   - {t: '$$mdi:menu-right$$', s: '$$mdi:mouse$$'}
   - {t: '-', s: _}
   - {t: '=', s: +}
@@ -127,27 +127,27 @@ layers:
   - {t: ']', s: '}'}
   - {t: \, s: '|'}
   - {t: '`', s: '~'}
-  - {t: '$$mdi:transfer$$', type: trans}
-  - OUT USB
-  - OUT BLE
-  - {t: '$$mdi:minus-circle-outline$$', type: none}
+  - $$mdi:apple-keyboard-shift$$
+  - $$mdi:pan-up$$
+  - $$mdi:pan-down$$
+  - PG DN
   - {t: '$$mdi:minus-circle-outline$$', type: none}
   - '&mkp MB5'
-  - {t: '$$mdi:transfer$$', type: trans}
+  - MUTE
   - {t: '$$mdi:menu-down$$', s: '$$mdi:mouse$$'}
-  - _
-  - +
+  - '&mkp MB1'
+  - '&mkp MB2'
   - '{'
   - '}'
   - '|'
   - '~'
-  - {t: '$$mdi:transfer$$', type: trans}
-  - {type: held}
+  - $$mdi:apple-keyboard-control$$
+  - {t: Utility, type: held}
   - $$mdi:keyboard-space$$
   - {t: '$$mdi:keyboard-return$$', type: enter}
-  - {t: '$$mdi:transfer$$', type: trans}
-  - {t: '$$mdi:transfer$$', type: trans}
-  Utility:
+  - {t: Number, type: held alternate}
+  - '&mkp MB3'
+  config:
   - '&studio_unlock'
   - F1
   - F2
@@ -190,14 +190,14 @@ layers:
   - {t: '$$mdi:backup-restore$$', type: bootloader}
   - SCROLLLOCK
   - PAUSE BREAK
-  - {t: '$$mdi:transfer$$', type: trans}
-  - {type: held}
-  - {t: '$$mdi:transfer$$', type: trans}
-  - {t: '$$mdi:transfer$$', type: trans}
-  - {type: held}
-  - {t: '$$mdi:transfer$$', type: trans}
+  - $$mdi:apple-keyboard-control$$
+  - {t: '$$mdi:minus-circle-outline$$', type: held}
+  - $$mdi:keyboard-space$$
+  - {t: '$$mdi:backspace$$', type: backspace}
+  - {t: '$$mdi:minus-circle-outline$$', type: held}
+  - $$mdi:apple-keyboard-option$$
 combos:
 - p: [1, 15, 29]
   k: '&soft_off'
 - p: [43, 46]
-  k: Utility
+  k: config
