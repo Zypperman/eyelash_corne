@@ -1,12 +1,23 @@
 ---
 include:
+
+  # 1. Dongle
+  - board: nice_nano
+    shield: jerry
+
+  # 2. Right Side (Peripheral)
   - board: eyelash_nano
     shield: eyelash_corne_right nice_oled
+    cmake-args: -DCONFIG_ZMK_SPLIT=y -DCONFIG_ZMK_SPLIT_ROLE_CENTRAL=n
+
+  # 3. Left Side (Peripheral)
   - board: eyelash_nano
     shield: eyelash_corne_left nice_oled
     snippet: studio-rpc-usb-uart
-    cmake-args: -DCONFIG_ZMK_STUDIO=y -DCONFIG_ZMK_STUDIO_LOCKING=n
+    cmake-args: -DCONFIG_ZMK_STUDIO=y -DCONFIG_ZMK_STUDIO_LOCKING=n -DCONFIG_ZMK_SPLIT=y -DCONFIG_ZMK_SPLIT_ROLE_CENTRAL=n
     artifact-name: eyelash_corne_studio_left
+
+
+  # 4. Settings Reset (Optional but highly recommended for initial pairing)
   - board: eyelash_nano
     shield: settings_reset
- 
