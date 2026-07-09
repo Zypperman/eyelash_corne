@@ -28,6 +28,7 @@
 };
 
 &soft_off { hold-time-ms = <2000>; };
+&mo { label = "MO"; };
 
 / {
     behaviors {
