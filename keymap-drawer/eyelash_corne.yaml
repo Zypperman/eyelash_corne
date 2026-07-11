@@ -35,7 +35,7 @@ layers:
   - C
   - V
   - B
-  - '&lockPC'
+  - MENU
   - $$mdi:pan-down$$
   - N
   - M
@@ -46,7 +46,7 @@ layers:
   - $$mdi:apple-keyboard-control$$
   - Utility
   - $$mdi:keyboard-space$$
-  - {t: '$$mdi:keyboard-return$$', type: enter}
+  - {t: '$$mdi:backspace$$', type: backspace}
   - Number
   - $$mdi:apple-keyboard-option$$
   Number:
@@ -103,11 +103,11 @@ layers:
   - {t: '$$mdi:apple-keyboard-control$$', h: '$$mdi:gesture-tap-hold$$'}
   - {t: '$$mdi:apple-keyboard-option$$', h: '$$mdi:gesture-tap-hold$$'}
   - {t: LGUI, h: '$$mdi:gesture-tap-hold$$'}
-  - {t: '#', h: $}
   - $$mdi:keyboard-tab$$
+  - {t: '#', h: $}
   - {t: '$$mdi:menu-up$$', s: '$$mdi:mouse$$'}
   - KP NUMLOCK
-  - KP DOT
+  - {t: KP 0, h: KP DOT}
   - KP 7
   - KP 8
   - KP 9
@@ -115,9 +115,9 @@ layers:
   - $$mdi:pan-left$$
   - $$mdi:backspace-reverse-outline$$
   - $$mdi:pan-right$$
-  - $$mdi:pan-up$$
-  - $$mdi:volume-high$$
-  - $$mdi:brightness-5$$
+  - HOME
+  - $$mdi:arrow-up-bold$$
+  - END
   - {t: '$$mdi:menu-left$$', s: '$$mdi:mouse$$'}
   - MENU
   - {t: '$$mdi:menu-right$$', s: '$$mdi:mouse$$'}
@@ -128,11 +128,11 @@ layers:
   - KP 6
   - {t: KP MINUS, h: KP DIVIDE}
   - INS
-  - HOME
-  - END
+  - $$mdi:pan-up$$
   - $$mdi:pan-down$$
-  - $$mdi:volume-low$$
-  - $$mdi:brightness-7$$
+  - $$mdi:arrow-left-bold$$
+  - $$mdi:arrow-down-bold$$
+  - $$mdi:arrow-right-bold$$
   - LOCK
   - {t: '$$mdi:menu-down$$', s: '$$mdi:mouse$$'}
   - '&mkp MB1'
@@ -141,12 +141,12 @@ layers:
   - KP 2
   - KP 3
   - {t: KP ENTER, h: KP EQUAL}
-  - $$mdi:play-pause$$
+  - {t: '$$mdi:keyboard-return$$', type: enter}
   - {type: held}
+  - $$mdi:keyboard-space$$
   - {t: '$$mdi:backspace$$', type: backspace}
-  - '&mkp MB3'
   - {t: '$$mdi:transfer$$', type: trans}
-  - KP 0
+  - '&mkp MB3'
   config:
   - '&studio_unlock'
   - RGB OFF
@@ -158,9 +158,9 @@ layers:
   - $$mdi:skip-previous$$
   - $$mdi:skip-next$$
   - PG UP
-  - HOME
-  - $$mdi:arrow-up-bold$$
-  - END
+  - $$mdi:volume-high$$
+  - $$mdi:brightness-5$$
+  - $$mdi:volume-off$$
   - $$mdi:progress-download$$
   - BT CLR ALL
   - {t: '$$mdi:toggle-switch$$', h: '$$mdi:bluetooth$$', s: '$$mdi:usb$$'}
@@ -173,9 +173,9 @@ layers:
   - STOP
   - $$mdi:mouse-left-click-outline$$
   - PG DN
-  - $$mdi:arrow-down-bold$$
-  - $$mdi:arrow-down-bold$$
-  - $$mdi:arrow-right-bold$$
+  - $$mdi:volume-low$$
+  - $$mdi:brightness-7$$
+  - CLCK
   - $$mdi:apple-keyboard-shift$$
   - {t: '$$mdi:backup-restore$$', type: bootloader}
   - EP TOG
@@ -187,7 +187,7 @@ layers:
   - RW
   - FF
   - SHUFFLE
-  - $$mdi:apple-keyboard-caps$$
+  - $$mdi:play-pause$$
   - SCROLLLOCK
   - PAUSE BREAK
   - $$mdi:apple-keyboard-control$$
