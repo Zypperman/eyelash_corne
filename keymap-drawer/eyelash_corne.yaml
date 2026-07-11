@@ -141,9 +141,9 @@ layers:
   - KP 2
   - KP 3
   - {t: KP ENTER, h: KP EQUAL}
-  - {t: '$$mdi:keyboard-return$$', type: enter}
+  - PG UP
   - {type: held}
-  - $$mdi:keyboard-space$$
+  - PG DN
   - {t: '$$mdi:backspace$$', type: backspace}
   - {t: '$$mdi:transfer$$', type: trans}
   - '&mkp MB3'
