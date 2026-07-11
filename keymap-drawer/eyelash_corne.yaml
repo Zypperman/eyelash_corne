@@ -157,10 +157,10 @@ layers:
   - {t: '$$mdi:apple-keyboard-shift$$', h: '$$mdi:gesture-tap-hold$$'}
   - $$mdi:skip-previous$$
   - $$mdi:skip-next$$
+  - PG UP
   - HOME
   - $$mdi:arrow-up-bold$$
   - END
-  - PG UP
   - $$mdi:progress-download$$
   - BT CLR ALL
   - {t: '$$mdi:toggle-switch$$', h: '$$mdi:bluetooth$$', s: '$$mdi:usb$$'}
@@ -172,10 +172,10 @@ layers:
   - {t: '$$mdi:apple-keyboard-option$$', h: '$$mdi:gesture-tap-hold$$'}
   - STOP
   - $$mdi:mouse-left-click-outline$$
-  - $$mdi:arrow-left-bold$$
+  - PG DN
+  - $$mdi:arrow-down-bold$$
   - $$mdi:arrow-down-bold$$
   - $$mdi:arrow-right-bold$$
-  - PG DN
   - $$mdi:apple-keyboard-shift$$
   - {t: '$$mdi:backup-restore$$', type: bootloader}
   - EP TOG
