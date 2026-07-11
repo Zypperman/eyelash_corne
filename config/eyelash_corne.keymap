@@ -122,8 +122,8 @@
         LRhold {
             display-name = "config";
             bindings = <
-&studio_unlock  &rgb_ug RGB_OFF  &rgb_ug RGB_ON     &rgb_ug RGB_HUI  &rgb_ug RGB_SAI  &rgb_ug RGB_BRI                           &sk LSHIFT                &kp C_PREV     &kp C_NEXT  &kp HOME       &kp UP        &kp END         &kp PG_UP
-&bootloader     &bt BT_CLR_ALL   &out OUT_TOG       &rgb_ug RGB_HUD  &rgb_ug RGB_SAD  &rgb_ug RGB_BRD                &sk LCTRL  &kp ENTER   &sk LEFT_ALT  &kp C_STOP     &mkp LCLK   &kp LEFT       &kp DOWN      &kp RIGHT       &kp PG_DN
+&studio_unlock  &rgb_ug RGB_OFF  &rgb_ug RGB_ON     &rgb_ug RGB_HUI  &rgb_ug RGB_SAI  &rgb_ug RGB_BRI                           &sk LSHIFT                &kp C_PREV     &kp C_NEXT  &kp PG_UP      &kp HOME      &kp UP          &kp END
+&bootloader     &bt BT_CLR_ALL   &out OUT_TOG       &rgb_ug RGB_HUD  &rgb_ug RGB_SAD  &rgb_ug RGB_BRD                &sk LCTRL  &kp ENTER   &sk LEFT_ALT  &kp C_STOP     &mkp LCLK   &kp PG_DN      &kp DOWN      &kp DOWN        &kp RIGHT
 &kp LSHFT       &sys_reset       &ext_power EP_TOG  &key_repeat      &rgb_ug RGB_EFF  &rgb_ug RGB_EFR  &kp C_MUTE               &sk LCMD                  &kp C_RW       &kp C_FF    &kp C_SHUFFLE  &kp CAPSLOCK  &kp SCROLLLOCK  &kp PAUSE_BREAK
                                                     &kp LCTRL        &none            &kp SPACE                                                           &kp BACKSPACE  &none       &kp LALT
             >;
