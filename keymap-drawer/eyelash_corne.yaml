@@ -70,7 +70,7 @@ layers:
   - {t: '4', s: $}
   - {t: '5', s: '%'}
   - $$mdi:arrow-left-bold$$
-  - MENU
+  - CMENU
   - $$mdi:arrow-right-bold$$
   - {t: '6', s: ^}
   - {t: '7', s: '&'}
@@ -86,11 +86,11 @@ layers:
   - {t: '$$mdi:backspace$$', type: backspace}
   - $$mdi:volume-off$$
   - $$mdi:arrow-down-bold$$
-  - '&mkp MB1'
-  - '&mkp MB2'
-  - '&mkp MB4'
-  - '&mkp MB5'
-  - '&mkp MB3'
+  - {t: '=', s: +}
+  - {t: '-', s: _}
+  - '#'
+  - $
+  - {t: /, s: '?'}
   - $$mdi:alpha-w-box$$
   - $$mdi:apple-keyboard-control$$
   - {t: '$$mdi:transfer$$', type: trans}
@@ -119,7 +119,7 @@ layers:
   - $$mdi:arrow-up-bold$$
   - END
   - {t: '$$mdi:menu-left$$', s: '$$mdi:mouse$$'}
-  - MENU
+  - CMENU
   - {t: '$$mdi:menu-right$$', s: '$$mdi:mouse$$'}
   - '&mkp MB4'
   - '&mkp MB5'
