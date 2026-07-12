@@ -104,7 +104,7 @@ layers:
   - {t: '$$mdi:apple-keyboard-option$$', h: '$$mdi:gesture-tap-hold$$'}
   - {t: LGUI, h: '$$mdi:gesture-tap-hold$$'}
   - $$mdi:keyboard-tab$$
-  - {t: '#', h: $}
+  - {t: '$$mdi:backspace$$', type: backspace}
   - {t: '$$mdi:menu-up$$', s: '$$mdi:mouse$$'}
   - '&mkp MB4'
   - '&mkp MB5'
@@ -112,9 +112,9 @@ layers:
   - KP 8
   - KP 9
   - {t: KP PLUS, h: KP ASTERISK}
-  - '&msck SCRL_LEFT'
+  - $$mdi:pan-left$$
   - $$mdi:backspace-reverse-outline$$
-  - '&msck SCRL_RIGHT'
+  - $$mdi:pan-right$$
   - HOME
   - $$mdi:arrow-up-bold$$
   - END
@@ -128,8 +128,8 @@ layers:
   - KP 6
   - {t: KP MINUS, h: KP DIVIDE}
   - INS
-  - '&msck SCRL_UP'
-  - '&msck SCRL_DOWN'
+  - $$mdi:pan-up$$
+  - $$mdi:pan-down$$
   - $$mdi:arrow-left-bold$$
   - $$mdi:arrow-down-bold$$
   - $$mdi:arrow-right-bold$$
