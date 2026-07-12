@@ -106,8 +106,8 @@ layers:
   - $$mdi:keyboard-tab$$
   - {t: '#', h: $}
   - {t: '$$mdi:menu-up$$', s: '$$mdi:mouse$$'}
-  - KP NUMLOCK
-  - {t: KP 0, h: KP DOT}
+  - '&mkp MB4'
+  - '&mkp MB5'
   - KP 7
   - KP 8
   - KP 9
@@ -121,8 +121,8 @@ layers:
   - {t: '$$mdi:menu-left$$', s: '$$mdi:mouse$$'}
   - CMENU
   - {t: '$$mdi:menu-right$$', s: '$$mdi:mouse$$'}
-  - '&mkp MB4'
-  - '&mkp MB5'
+  - '&mkp MB1'
+  - '&mkp MB2'
   - KP 4
   - KP 5
   - KP 6
@@ -135,8 +135,8 @@ layers:
   - $$mdi:arrow-right-bold$$
   - LOCK
   - {t: '$$mdi:menu-down$$', s: '$$mdi:mouse$$'}
-  - '&mkp MB1'
-  - '&mkp MB2'
+  - KP NUMLOCK
+  - {t: KP 0, h: KP DOT}
   - KP 1
   - KP 2
   - KP 3
