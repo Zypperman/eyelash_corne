@@ -27,6 +27,9 @@ struct movement_state_1d {
     int16_t speed; // sign encodes direction; magnitude is unused (config's
                     // initial-speed/base-speed drive the actual rate)
     int64_t start_time;
+    bool pos_pressed; // level state per direction, not an add/subtract counter --
+    bool neg_pressed; // a duplicate or dropped press/release event is a no-op
+                       // instead of leaving speed stuck non-zero forever
 };
 
 struct movement_state_2d {
@@ -177,12 +180,32 @@ static void update_work_scheduling(const struct device *dev) {
     }
 }
 
-int behavior_scroll_kinetic_adjust_speed(const struct device *dev, int16_t dx, int16_t dy) {
+static void set_axis_pressed(struct movement_state_1d *state, bool positive, bool pressed) {
+    if (positive) {
+        state->pos_pressed = pressed;
+    } else {
+        state->neg_pressed = pressed;
+    }
+
+    if (state->pos_pressed == state->neg_pressed) {
+        state->speed = 0; // neither or both held: cancel out
+    } else {
+        state->speed = state->pos_pressed ? 1 : -1;
+    }
+}
+
+int behavior_scroll_kinetic_set_pressed(const struct device *dev, int16_t dx, int16_t dy,
+                                        bool pressed) {
     struct behavior_scroll_kinetic_data *data = dev->data;
 
-    LOG_DBG("Adjusting: %d %d", dx, dy);
-    data->state.x.speed += dx;
-    data->state.y.speed += dy;
+    LOG_DBG("dx: %d dy: %d pressed: %d", dx, dy, pressed);
+
+    if (dx != 0) {
+        set_axis_pressed(&data->state.x, dx > 0, pressed);
+    }
+    if (dy != 0) {
+        set_axis_pressed(&data->state.y, dy > 0, pressed);
+    }
 
     update_work_scheduling(dev);
 
@@ -208,7 +231,7 @@ static int on_keymap_binding_pressed(struct zmk_behavior_binding *binding,
     int16_t x = MOVE_X_DECODE(binding->param1);
     int16_t y = MOVE_Y_DECODE(binding->param1);
 
-    behavior_scroll_kinetic_adjust_speed(behavior_dev, x, y);
+    behavior_scroll_kinetic_set_pressed(behavior_dev, x, y, true);
     return 0;
 }
 
@@ -221,7 +244,7 @@ static int on_keymap_binding_released(struct zmk_behavior_binding *binding,
     int16_t x = MOVE_X_DECODE(binding->param1);
     int16_t y = MOVE_Y_DECODE(binding->param1);
 
-    behavior_scroll_kinetic_adjust_speed(behavior_dev, -x, -y);
+    behavior_scroll_kinetic_set_pressed(behavior_dev, x, y, false);
     return 0;
 }
 
