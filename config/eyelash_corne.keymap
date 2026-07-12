@@ -22,16 +22,6 @@
     // first report only fires once SCRL_VAL's per-tick remainder accumulates past 1 (~1000/SCRL_VAL ms)
 };
 
-// QMK "kinetic speed" style scroll for the Lhold (layer 2) scroll keys: jumps
-// straight to initial-speed on press (sized so the first 16ms tick already
-// emits a whole unit -- a tap always registers, no ramp-up lag), then ramps
-// down to base-speed (matches &msc's cruise speed) if held.
-msck_input_listener: msck_input_listener {
-    compatible = "zmk,input-listener";
-    device = <&msck>;
-    input-processors = <&zip_scroll_scaler 2 1>;
-};
-
 &mmv {
     time-to-max-speed-ms = <700>;
     acceleration-exponent = <1>;
@@ -41,6 +31,16 @@ msck_input_listener: msck_input_listener {
 &soft_off { hold-time-ms = <2000>; };
 
 / {
+    // QMK "kinetic speed" style scroll for the Lhold (layer 2) scroll keys: jumps
+    // straight to initial-speed on press (sized so the first 16ms tick already
+    // emits a whole unit -- a tap always registers, no ramp-up lag), then ramps
+    // down to base-speed (matches &msc's cruise speed) if held.
+    msck_input_listener: msck_input_listener {
+        compatible = "zmk,input-listener";
+        device = <&msck>;
+        input-processors = <&zip_scroll_scaler 2 1>;
+    };
+
     behaviors {
         td0: td0 {
             compatible = "zmk,behavior-tap-dance";
