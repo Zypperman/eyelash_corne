@@ -21,4 +21,4 @@
 
 - [ ] add macro layer, figure out a button to access this
         - can try toggle layer buttons to a macro pad that always returns to main
-        -
+- [ ] add controller mode 
