@@ -1,1 +1,1 @@
-target_sources_ifdef(CONFIG_ZMK_BEHAVIOR_SCROLL_KINETIC app PRIVATE src/behavior_scroll_kinetic.c)
+target_sources(app PRIVATE src/behavior_scroll_kinetic.c)
