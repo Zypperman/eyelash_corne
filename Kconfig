@@ -1,0 +1,4 @@
+config ZMK_BEHAVIOR_SCROLL_KINETIC
+    bool
+    default y
+    depends on DT_HAS_ZMK_BEHAVIOR_SCROLL_KINETIC_ENABLED && ZMK_POINTING

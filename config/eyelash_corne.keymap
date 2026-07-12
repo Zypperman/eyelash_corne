@@ -22,6 +22,16 @@
     // first report only fires once SCRL_VAL's per-tick remainder accumulates past 1 (~1000/SCRL_VAL ms)
 };
 
+// QMK "kinetic speed" style scroll for the Lhold (layer 2) scroll keys: jumps
+// straight to initial-speed on press (sized so the first 16ms tick already
+// emits a whole unit -- a tap always registers, no ramp-up lag), then ramps
+// down to base-speed (matches &msc's cruise speed) if held.
+msck_input_listener: msck_input_listener {
+    compatible = "zmk,input-listener";
+    device = <&msck>;
+    input-processors = <&zip_scroll_scaler 2 1>;
+};
+
 &mmv {
     time-to-max-speed-ms = <700>;
     acceleration-exponent = <1>;
@@ -46,6 +56,18 @@
             bindings = <&msc SCRL_RIGHT>, <&msc SCRL_LEFT>;
 
             tap-ms = <100>;
+        };
+
+        msck: msck {
+            compatible = "zmk,behavior-scroll-kinetic";
+            #binding-cells = <1>;
+            x-input-code = <INPUT_REL_HWHEEL>;
+            y-input-code = <INPUT_REL_WHEEL>;
+            trigger-period-ms = <16>;
+            delay-ms = <0>;
+            initial-speed = <70>;    // 70 * 16ms / 1000 = 1.12 -> first tick always emits a unit
+            base-speed = <20>;       // matches &msc's cruise speed, unchanged feel when held
+            time-to-base-ms = <150>; // decay from the initial burst to cruise speed over 150ms
         };
     };
 
@@ -112,8 +134,8 @@
             display-name = "Utility";
             bindings = <
 &sk LEFT_SHIFT  &sk LCTRL     &sk LEFT_ALT     &sk LGUI   &kp TAB   &mt DOLLAR HASH                                &mmv MOVE_UP                     &mkp MB4        &mkp MB5          &kp KP_NUMBER_7  &kp KP_N8  &kp KP_N9  &mt KP_ASTERISK KP_PLUS
-&msc SCRL_LEFT  &kp DEL       &msc SCRL_RIGHT  &kp HOME   &kp UP    &kp END                        &mmv MOVE_LEFT  &kp K_CMENU     &mmv MOVE_RIGHT  &mkp MB1        &mkp MB2          &kp KP_N4        &kp KP_N5  &kp KP_N6  &mt KP_DIVIDE KP_MINUS
-&kp INS         &msc SCRL_UP  &msc SCRL_DOWN   &kp LEFT   &kp DOWN  &kp RIGHT        &kp K_LOCK                    &mmv MOVE_DOWN                   &kp KP_NUMLOCK  &mt KP_DOT KP_N0  &kp KP_NUMBER_1  &kp KP_N2  &kp KP_N3  &mt KP_ENTER KP_EQUAL
+&msck SCRL_LEFT  &kp DEL       &msck SCRL_RIGHT  &kp HOME   &kp UP    &kp END                        &mmv MOVE_LEFT  &kp K_CMENU     &mmv MOVE_RIGHT  &mkp MB1        &mkp MB2          &kp KP_N4        &kp KP_N5  &kp KP_N6  &mt KP_DIVIDE KP_MINUS
+&kp INS          &msck SCRL_UP  &msck SCRL_DOWN   &kp LEFT   &kp DOWN  &kp RIGHT        &kp K_LOCK                    &mmv MOVE_DOWN                   &kp KP_NUMLOCK  &mt KP_DOT KP_N0  &kp KP_NUMBER_1  &kp KP_N2  &kp KP_N3  &mt KP_ENTER KP_EQUAL
                                                &kp PG_UP  &trans    &kp PG_DN                                                                       &kp BACKSPACE   &trans            &mkp MB3
             >;
 
