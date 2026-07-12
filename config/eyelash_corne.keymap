@@ -1,5 +1,5 @@
 #define ZMK_POINTING_DEFAULT_MOVE_VAL 600  // default: 600
-#define ZMK_POINTING_DEFAULT_SCRL_VAL 10  // this setting is so whack
+#define ZMK_POINTING_DEFAULT_SCRL_VAL 20  // higher = shorter delay before the first scroll tick fires (see &msc below)
 
 #include <input/processors.dtsi>
 #include <zephyr/dt-bindings/input/input-event-codes.h>
@@ -17,8 +17,9 @@
 
 &msc {
     acceleration-exponent = <0>;      // 0 = constant speed, no ramp-up lag
-    time-to-max-speed-ms = <500>;       // unused while acceleration-exponent is 0
+    time-to-max-speed-ms = <0>;       // unused while acceleration-exponent is 0
     delay-ms = <0>;                   // 0
+    // first report only fires once SCRL_VAL's per-tick remainder accumulates past 1 (~1000/SCRL_VAL ms)
 };
 
 &mmv {
