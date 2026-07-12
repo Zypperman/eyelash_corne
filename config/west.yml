@@ -6,6 +6,8 @@ manifest:
       url-base: https://github.com/mctechnology17
     - name: urob
       url-base: https://github.com/urob
+    - name: englmaxi
+      url-base: https://github.com/englmaxi
       # Additional modules containing boards/shields/custom code can be listed here as well.
       # See:
       # - https://zmk.dev/docs/features/modules
@@ -23,6 +25,9 @@ manifest:
       revision: main
     - name: zmk-helpers
       remote: urob
+      revision: main
+    - name: zmk-dongle-display
+      remote: englmaxi
       revision: main
   self:
     path: config

@@ -1,0 +1,28 @@
+/*
+ * Copyright (c) 2024 The ZMK Contributors
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
+#include "eyelash_corne.dtsi"
+
+/ {
+    chosen {
+        zmk,kscan = &mock_kscan;
+        zephyr,display = &oled;
+    };
+
+    mock_kscan: mock_kscan_0 {
+        compatible = "zmk,kscan-mock";
+        columns = <0>;
+        rows = <0>;
+        events = <0>;
+    };
+};
+
+/* jerry_dongle has its own 128x64 OLED, replacing the 128x32 used on the halves */
+&oled {
+    /delete-property/ com-sequential;
+    height = <64>;
+    multiplex-ratio = <63>;
+};

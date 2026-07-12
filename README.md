@@ -6,6 +6,10 @@
 
 This repository provides ZMK firmware for the Eyelash Peripherals Corne keyboard with **both OLED displays and ZMK Studio support** working simultaneously.
 
+## TODO
+
+ -[ ]
+
 ## Features
 
 ✅ **OLED Displays** - Custom status screens with nice!oled widgets on both halves
@@ -20,11 +24,13 @@ This repository provides ZMK firmware for the Eyelash Peripherals Corne keyboard
 This fork differs from the standard Eyelash Corne configuration:
 
 ### Architecture Changes
+
 - **Modular approach**: Uses `eyelash_nano` board + `eyelash_corne` shield + `nice_oled` shield
 - **Local shield definitions**: Includes `boards/shields/eyelash_corne/` for keyboard matrix and OLED hardware
 - **Studio integration**: Left half configured with `studio-rpc-usb-uart` snippet and Studio flags
 
 ### Module Dependencies
+
 ```yaml
 # config/west.yml
 - zmk-board-eyelash    # Provides eyelash_nano board
@@ -32,7 +38,9 @@ This fork differs from the standard Eyelash Corne configuration:
 ```
 
 ### Build Configuration
+
 The left half builds with ZMK Studio enabled while maintaining OLED functionality:
+
 ```yaml
 - board: eyelash_nano
   shield: eyelash_corne_left nice_oled
@@ -124,6 +132,7 @@ CONFIG_NICE_OLED_SLEEP_ART=y       # Show art when display sleeps
 ```
 
 ### WPM Display Modes
+
 - **0** - Numeric WPM counter
 - **1** - Speedometer visualization
 - **2** - Graph visualization
@@ -131,6 +140,7 @@ CONFIG_NICE_OLED_SLEEP_ART=y       # Show art when display sleeps
 - **4** - Bongo Cat (animated cat that plays faster with typing)
 
 ### Art Display Modes
+
 - **0** - Gem animation
 - **1** - Cat animation
 - **2** - Head animation
@@ -142,9 +152,11 @@ For the complete list of customization options, see the [zmk-nice-oled documenta
 ## Special Features
 
 ### Soft Power-Off
+
 Press **Q + S + Z** simultaneously and hold for 2 seconds to enter deep sleep. The keyboard cannot be awakened by key presses - press the reset button once to wake it.
 
 ### Encoder Functions
+
 - **Default layer**: Volume up/down
 - **Lower layer (Layer 1)**: Scroll up/down
 - **Raise layer (Layer 2)**: Scroll up/down
@@ -153,17 +165,20 @@ Press **Q + S + Z** simultaneously and hold for 2 seconds to enter deep sleep. T
 ## Troubleshooting
 
 ### OLEDs not working
+
 - Ensure you flashed firmware built with the `nice_oled` shield
 - Check that `CONFIG_ZMK_DISPLAY=y` is set (it should be by default)
 - Verify the nice_oled module is present in `config/west.yml`
 
 ### Studio not connecting
+
 - Make sure you're connecting the **left half** via USB
 - Try the second serial device (ttyACM1) if the first doesn't work
 - Press the `&studio_unlock` key to enable editing
 - Check that you flashed `eyelash_corne_studio_left.uf2` on the left half
 
 ### Encoder not responding
+
 - Verify encoder is physically installed correctly
 - Check that `CONFIG_EC11=y` is enabled
 - Ensure encoder bindings are set in your keymap's `sensor-bindings`
@@ -191,11 +206,11 @@ west build -b eyelash_nano -d build/right -- \
 
 ## Resources
 
-- **ZMK Firmware**: https://zmk.dev/
-- **ZMK Studio**: https://zmk.studio/
-- **nice!oled Module**: https://github.com/mctechnology17/zmk-nice-oled
-- **Eyelash Board**: https://github.com/a741725193/zmk-board-eyelash
-- **Original Corne**: https://github.com/foostan/crkbd
+- **ZMK Firmware**: <https://zmk.dev/>
+- **ZMK Studio**: <https://zmk.studio/>
+- **nice!oled Module**: <https://github.com/mctechnology17/zmk-nice-oled>
+- **Eyelash Board**: <https://github.com/a741725193/zmk-board-eyelash>
+- **Original Corne**: <https://github.com/foostan/crkbd>
 
 ## Keymap Diagram
 
