@@ -32,3 +32,4 @@ based on firmware artifacts created by 8a60289ccf75f41b138ae7096aeb534f37675cdb 
 - [ ] add macro layer, figure out a button to access this
         - can try toggle layer buttons to a macro pad that always returns to main
 - [ ] add controller mode
+- [ ] add alt key on thumb cluster for Rhold utils layer
