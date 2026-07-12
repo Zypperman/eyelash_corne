@@ -43,16 +43,22 @@
     };
 
     behaviors {
-        /omit-if-no-ref/ msck: msck {
+        /omit-if-no-ref/
+
+        msck: msck {
             compatible = "zmk,behavior-scroll-kinetic";
             #binding-cells = <1>;
             x-input-code = <INPUT_REL_HWHEEL>;
             y-input-code = <INPUT_REL_WHEEL>;
             trigger-period-ms = <16>;
             delay-ms = <0>;
+
             // sized so the first 16ms tick already emits a whole unit: 1000/16 = 62.5
+
             initial-speed = <63>;
+
             // matches &msc's cruise speed (ZMK_POINTING_DEFAULT_SCRL_VAL = 20)
+
             base-speed = <20>;
             time-to-base-ms = <300>;
         };
@@ -62,15 +68,6 @@
             display-name = "Shift/Caps Lock Tap Dance";
             #binding-cells = <0>;
             bindings = <&kp LEFT_SHIFT>, <&kp CAPS>;
-        };
-
-        lr_scroll_enc: lr_scroll_enc {
-            compatible = "zmk,behavior-sensor-rotate";
-            label = "horizontal scroll";
-            #sensor-binding-cells = <0>;
-            bindings = <&msc SCRL_RIGHT>, <&msc SCRL_LEFT>;
-
-            tap-ms = <100>;
         };
     };
 
@@ -112,10 +109,10 @@
         default_layer {
             display-name = "MAIN";
             bindings = <
-&kp TAB         &kp Q  &kp W  &kp E      &kp R  &kp T                                    &msc SCRL_UP                     &kp Y          &kp U  &kp I      &kp O    &kp P     &kp MINUS
-&gresc          &kp A  &kp S  &kp D      &kp F  &kp G                    &msc SCRL_LEFT  &kp ENTER       &msc SCRL_RIGHT  &kp H          &kp J  &kp K      &kp L    &kp SEMI  &kp SQT
-&kp LEFT_SHIFT  &kp Z  &kp X  &kp C      &kp V  &kp B      &kp C_MENU                    &msc SCRL_DOWN                   &kp N          &kp M  &kp COMMA  &kp DOT  &kp FSLH  &kp BACKSLASH
-                              &kp LCTRL  &mo 2  &kp SPACE                                                                 &kp BACKSPACE  &mo 1  &kp LALT
+&kp TAB         &kp Q  &kp W  &kp E      &kp R  &kp T                                     &msc SCRL_UP                     &kp Y          &kp U  &kp I      &kp O    &kp P     &kp MINUS
+&gresc          &kp A  &kp S  &kp D      &kp F  &kp G                     &msc SCRL_LEFT  &kp ENTER       &msc SCRL_RIGHT  &kp H          &kp J  &kp K      &kp L    &kp SEMI  &kp SQT
+&kp LEFT_SHIFT  &kp Z  &kp X  &kp C      &kp V  &kp B      &kp K_CMENU                    &msc SCRL_DOWN                   &kp N          &kp M  &kp COMMA  &kp DOT  &kp FSLH  &kp BACKSLASH
+                              &kp LCTRL  &mo 2  &kp SPACE                                                                  &kp BACKSPACE  &mo 1  &kp LALT
             >;
 
             sensor-bindings = <&lr_scroll_enc>;
@@ -136,10 +133,10 @@
         Lhold {
             display-name = "Utility";
             bindings = <
-&sk LEFT_SHIFT  &sk LCTRL      &sk LEFT_ALT      &sk LGUI   &kp TAB   &kp BACKSPACE                                &mmv MOVE_UP                     &mkp MB4        &mkp MB5          &kp KP_NUMBER_7  &kp KP_N8  &kp KP_N9  &mt KP_ASTERISK KP_PLUS
-&msck SCRL_LEFT  &kp DEL       &msck SCRL_RIGHT  &kp HOME   &kp UP    &kp END                      &mmv MOVE_LEFT  &kp K_CMENU     &mmv MOVE_RIGHT  &mkp MB1        &mkp MB2          &kp KP_N4        &kp KP_N5  &kp KP_N6  &mt KP_DIVIDE KP_MINUS
-&kp INS         &msck SCRL_UP  &msck SCRL_DOWN   &kp LEFT   &kp DOWN  &kp RIGHT      &kp K_LOCK                    &mmv MOVE_DOWN                   &kp KP_NUMLOCK  &mt KP_DOT KP_N0  &kp KP_NUMBER_1  &kp KP_N2  &kp KP_N3  &mt KP_ENTER KP_EQUAL
-                                               &kp PG_UP  &trans    &kp PG_DN                                                                     &kp BACKSPACE   &trans            &mkp MB3
+&sk LEFT_SHIFT  &sk LCTRL     &sk LEFT_ALT     &sk LGUI   &kp TAB   &kp BACKSPACE                             &mmv MOVE_UP                     &mkp MB4        &mkp MB5          &kp KP_NUMBER_7  &kp KP_N8  &kp KP_N9  &mt KP_ASTERISK KP_PLUS
+&msc SCRL_LEFT  &kp DEL       &msc SCRL_RIGHT  &kp HOME   &kp UP    &kp END                   &mmv MOVE_LEFT  &kp K_CMENU     &mmv MOVE_RIGHT  &mkp MB1        &mkp MB2          &kp KP_N4        &kp KP_N5  &kp KP_N6  &mt KP_DIVIDE KP_MINUS
+&kp INS         &msc SCRL_UP  &msc SCRL_DOWN   &kp LEFT   &kp DOWN  &kp RIGHT      &lockPC                    &mmv MOVE_DOWN                   &kp KP_NUMLOCK  &mt KP_DOT KP_N0  &kp KP_NUMBER_1  &kp KP_N2  &kp KP_N3  &mt KP_ENTER KP_EQUAL
+                                               &kp PG_UP  &trans    &kp PG_DN                                                                  &kp BACKSPACE   &trans            &mkp MB3
             >;
 
             sensor-bindings = <&rgb_encoder>;
