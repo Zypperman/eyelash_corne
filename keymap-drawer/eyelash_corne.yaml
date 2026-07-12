@@ -140,7 +140,7 @@ layers:
   - KP 1
   - KP 2
   - KP 3
-  - {t: KP ENTER, h: KP EQUAL}
+  - {t: KP EQUAL, h: KP ENTER}
   - PG UP
   - {type: held}
   - PG DN
