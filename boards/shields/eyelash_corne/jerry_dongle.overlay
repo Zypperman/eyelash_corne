@@ -20,9 +20,17 @@
     };
 };
 
-/* jerry_dongle has its own 128x64 OLED, replacing the 128x32 used on the halves */
+/*
+ * jerry_dongle has its own 1.3" 128x64 display, replacing the 0.91" 128x32
+ * used on the halves. 1.3" 128x64 modules are SH1106-driven (132-col RAM,
+ * centered 128-col window) even when sold as "SSD1306 compatible" - using
+ * the ssd1306 driver on this panel shows shifted/garbled content because
+ * SH1106 doesn't support ssd1306's horizontal addressing mode.
+ */
 &oled {
+    compatible = "sinowealth,sh1106";
     /delete-property/ com-sequential;
     height = <64>;
+    segment-offset = <2>;
     multiplex-ratio = <63>;
 };
