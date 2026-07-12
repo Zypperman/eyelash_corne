@@ -7,7 +7,7 @@ layers:
   - E
   - R
   - T
-  - $$mdi:pan-up$$
+  - F13
   - Y
   - U
   - I
@@ -20,9 +20,9 @@ layers:
   - D
   - F
   - G
-  - $$mdi:pan-left$$
+  - F14
   - {t: '$$mdi:keyboard-return$$', type: enter}
-  - $$mdi:pan-right$$
+  - F15
   - H
   - J
   - K
@@ -36,7 +36,7 @@ layers:
   - V
   - B
   - CMENU
-  - $$mdi:pan-down$$
+  - F16
   - N
   - M
   - {t: ',', s: <}
