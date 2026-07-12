@@ -39,7 +39,7 @@
     msck_input_listener: msck_input_listener {
         compatible = "zmk,input-listener";
         device = <&msck>;
-        input-processors = <&zip_scroll_scaler 2 1>;
+        input-processors = <&zip_scroll_scaler 1 1>;
     };
 
     behaviors {
