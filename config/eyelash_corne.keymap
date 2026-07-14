@@ -64,19 +64,11 @@
             time-to-base-ms = <300>;
         };
 
-<<<<<<< HEAD
-        td0: td0 {
-            compatible = "zmk,behavior-tap-dance";
-            display-name = "Shift/Caps Lock Tap Dance";
-            #binding-cells = <0>;
-            bindings = <&kp LEFT_SHIFT>, <&kp CAPS>;
-=======
         hor_scroll_encoder: hor_scroll_encoder {
             compatible = "zmk,behavior-sensor-rotate";
             label = "HOR_SCROLL_ENCODER";
             #sensor-binding-cells = <0>;
             bindings = <&msc SCRL_LEFT>, <&msc SCRL_RIGHT>;
->>>>>>> parent of 657b4f4 (scroll aint workin)
         };
     };
         lr_scroll_enc: lr_scroll_enc {
