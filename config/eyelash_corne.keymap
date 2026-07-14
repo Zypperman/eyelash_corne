@@ -37,12 +37,6 @@
     // emits a whole unit -- a tap always registers, no ramp-up lag), then ramps
     // down to base-speed (matches &msc's cruise speed) if held.
 
-    msck_input_listener: msck_input_listener {
-        compatible = "zmk,input-listener";
-        device = <&msck>;
-        input-processors = <&zip_scroll_scaler 1 1>;
-    };
-
     behaviors {
         /omit-if-no-ref/
 
