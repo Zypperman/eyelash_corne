@@ -77,10 +77,13 @@
             tap-ms = <150>;
         };
 
-        inc_dec_rgb: inc_dec_rgb {
-            compatible = "zmk,behavior-sensor-rotate-var";
-            #sensor-binding-cells = <2>;
-            bindings = <&rgb_ug>, <&rgb_ug>;
+        // rgb_ug takes a (command, value) pair per invocation, so unlike &kp/&msc
+        // it can't be driven through the -var pattern above (which only overrides
+        // a single cell per direction) -- hardcode the full 2-cell binding instead.
+        rgb_encoder: rgb_encoder {
+            compatible = "zmk,behavior-sensor-rotate";
+            #sensor-binding-cells = <0>;
+            bindings = <&rgb_ug RGB_BRI>, <&rgb_ug RGB_BRD>;
         };
     };
 
@@ -138,7 +141,7 @@
                                                &kp PG_UP  &trans    &kp PG_DN                                                                  &kp LCTRL  &trans      &kp LALT
             >;
 
-            sensor-bindings = <&inc_dec_rgb RGB_BRI RGB_BRD>;
+            sensor-bindings = <&rgb_encoder>;
         };
 
         LRhold {
