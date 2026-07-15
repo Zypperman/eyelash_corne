@@ -49,6 +49,16 @@
             tap-ms = <5>;
         };
 
+        hor_scroll_encoder: hor_scroll_encoder {
+            compatible = "zmk,behavior-sensor-rotate";
+            label = "HOR_SCROLL_ENCODER";
+            #sensor-binding-cells = <0>;
+            bindings = <&msc SCRL_LEFT>, <&msc SCRL_RIGHT>;
+
+            tap-ms = <30>;
+        };
+    };
+
     rgb_encoder: rgb_encoder {
         compatible = "zmk,behavior-sensor-rotate";
         #sensor-binding-cells = <0>;
@@ -58,7 +68,7 @@
     scroll_encoder: scroll_encoder {
         compatible = "zmk,behavior-sensor-rotate";
         #sensor-binding-cells = <0>;
-        bindings = <&msc SCRL_LEFT>, <&msc SCRL_RIGHT>;
+        bindings = <&msc SCRL_DOWN>, <&msc SCRL_UP>;
 
         rgb_encoder: rgb_encoder {
             compatible = "zmk,behavior-sensor-rotate";
@@ -97,7 +107,7 @@
                               &kp LCTRL  &mo 2  &kp SPACE                                                                  &kp BACKSPACE  &mo 1  &kp LALT
             >;
 
-            sensor-bindings = <&scroll_encoder>;
+            sensor-bindings = <&hor_scroll_encoder>;
         };
 
         Rhold {
