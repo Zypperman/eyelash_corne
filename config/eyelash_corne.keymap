@@ -47,7 +47,7 @@
             // must exceed &msc's trigger-period-ms (100) or the release cancels
             // the pending scroll tick before it ever fires -- see &msc above
 
-            tap-ms = <150>;
+            tap-ms = <5>;
         };
 
         // rgb_ug takes a (command, value) pair per invocation, so unlike &kp/&msc
