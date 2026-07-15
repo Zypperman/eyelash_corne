@@ -32,37 +32,8 @@
 &soft_off { hold-time-ms = <2000>; };
 
 / {
-    // QMK "kinetic speed" style scroll for the Lhold (layer 2) scroll keys: jumps
-    // straight to initial-speed on press (sized so the first 16ms tick already
-    // emits a whole unit -- a tap always registers, no ramp-up lag), then ramps
-    // down to base-speed (matches &msc's cruise speed) if held.
-
-    msck_input_listener: msck_input_listener {
-        compatible = "zmk,input-listener";
-        device = <&msck>;
-        input-processors = <&zip_scroll_scaler 1 1>;
-    };
-
     behaviors {
         /omit-if-no-ref/
-
-        msck: msck {
-            compatible = "zmk,behavior-scroll-kinetic";
-            #binding-cells = <1>;
-            x-input-code = <INPUT_REL_HWHEEL>;
-            y-input-code = <INPUT_REL_WHEEL>;
-            trigger-period-ms = <16>;
-            delay-ms = <0>;
-
-            // sized so the first 16ms tick already emits a whole unit: 1000/16 = 62.5
-
-            initial-speed = <63>;
-
-            // matches &msc's cruise speed (ZMK_POINTING_DEFAULT_SCRL_VAL = 20)
-
-            base-speed = <20>;
-            time-to-base-ms = <300>;
-        };
 
         // generic reusable sensor-rotate behaviors, modeled on inc_dec_kp below:
         // the underlying behavior + keycode/param are supplied per sensor-bindings
@@ -120,7 +91,8 @@
                               &mt LCTRL ENTER  &lt 2 BACKSPACE  &kp SPACE                                                                  &kp BACKSPACE  &mo 1  &mt LALT SPACE
             >;
 
-            sensor-bindings = <&inc_dec_msc MOVE_X(-5) MOVE_X(5)>;
+            // clockwise = scroll right, counter-clockwise = scroll left
+            sensor-bindings = <&inc_dec_msc MOVE_X(5) MOVE_X(-5)>;
         };
 
         Rhold {
