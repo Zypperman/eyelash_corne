@@ -92,8 +92,10 @@
             >;
 
             // clockwise = scroll right, counter-clockwise = scroll left
-
-            sensor-bindings = <&inc_dec_msc MOVE_X(5) MOVE_X(-5)>;
+            // (magnitude must clear 1000/&msc's trigger-period-ms=100 -> >=10, or
+            // the single tick fires a fractional remainder that tap-ms's release
+            // discards before it ever reaches a whole unit -- see &msc above)
+            sensor-bindings = <&inc_dec_msc SCRL_RIGHT SCRL_LEFT>;
         };
 
         Rhold {
