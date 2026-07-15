@@ -19,7 +19,7 @@
     acceleration-exponent = <0>;      // 0 = constant speed, no ramp-up lag
     time-to-max-speed-ms = <0>;       // unused while acceleration-exponent is 0
     delay-ms = <0>;                   // 0
-    trigger-period-ms = <100>;         // default: 16 -- 4x tick rate to slow scroll reports
+    trigger-period-ms = <10>;         // default: 16 -- 4x tick rate to slow scroll reports
     // first report only fires once SCRL_VAL's per-tick remainder accumulates past 1 (~1000/SCRL_VAL ms)
 };
 
@@ -47,7 +47,7 @@
             // must exceed &msc's trigger-period-ms (100) or the release cancels
             // the pending scroll tick before it ever fires -- see &msc above
 
-            tap-ms = <150>;
+            tap-ms = <1>;
         };
 
         // rgb_ug takes a (command, value) pair per invocation, so unlike &kp/&msc
