@@ -6,9 +6,6 @@
 
 This repository provides ZMK firmware for the Eyelash Peripherals Corne keyboard with **both OLED displays and ZMK Studio support** working simultaneously.
 
-## TODO
-
- -[ ]
 
 ## Features
 
