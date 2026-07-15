@@ -59,7 +59,29 @@ the whole detent (zero HID report sent).
 
 ## Untested / next if still flaky
 
-- `CONFIG_EC11_THREAD_PRIORITY` (default 10) — could raise priority if the
-  own-thread fix alone isn't enough.
-- Physical debounce on the A/B lines (steps=24 EC11, no explicit debounce
-  config beyond the driver's own `k_msleep(5)` in `ec11_trigger_set`).
+Ranked by suspicion:
+
+1. **`triggers-per-rotation` mismatch (likely).** `eyelash_corne.dtsi` sets
+   `steps = <24>` on `left_encoder` but never sets `triggers-per-rotation` on
+   the `sensors { ... }` node, so it silently falls back to ZMK's Kconfig
+   default of **20** (`ZMK_KEYMAP_SENSORS_DEFAULT_TRIGGERS_PER_ROTATION`) —
+   a generic guess, unrelated to `steps`. A mismatch here produces a fixed,
+   repeating over/under-fire pattern per physical click (not timing-flaky).
+   Plausibly explains the `todo.md` complaint that scroll overshoots
+   (cell A→Q instead of A→E) — that reads like over-triggering, a different
+   bug from the drop issue this session fixed. Try: add
+   `triggers-per-rotation = <24>;` to the `sensors` node in
+   `eyelash_corne.dtsi` to match `steps`, then tune by feel.
+2. `CONFIG_EC11_THREAD_PRIORITY` (default 10) — lower the number (raise
+   priority) if the own-thread fix alone isn't quite enough.
+3. Bump `rgb_encoder`/volume `inc_dec_kp` off the 5ms default `tap-ms` —
+   they fire synchronously on press so they were never at real risk, but
+   they're now the shortest-lived item sharing the workqueue. Cheap, low
+   suspicion.
+4. `CONFIG_ZMK_BEHAVIORS_QUEUE_SIZE` (default 64) — `zmk_behavior_queue_add`
+   drops silently on overflow. Only relevant if problems correlate with a
+   very fast sustained spin specifically. Default is generous; low priority.
+5. Physical debounce on the A/B lines — the driver's delta table
+   (`ec11.c`) has no debounce beyond the driver's own `k_msleep(5)` in
+   `ec11_trigger_set` (called once at trigger-set time, not per edge).
+   Hardware-level (RC filter) fix only; diagnostic last resort.
