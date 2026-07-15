@@ -64,32 +64,24 @@
             time-to-base-ms = <300>;
         };
 
-        hor_scroll_encoder: hor_scroll_encoder {
-            compatible = "zmk,behavior-sensor-rotate";
-            label = "HOR_SCROLL_ENCODER";
-            #sensor-binding-cells = <0>;
-            bindings = <&msc MOVE_X(-5)>, <&msc MOVE_X(5)>;
+        // generic reusable sensor-rotate behaviors, modeled on inc_dec_kp below:
+        // the underlying behavior + keycode/param are supplied per sensor-bindings
+        // call site instead of being baked into a dedicated node per layer.
+        inc_dec_msc: inc_dec_msc {
+            compatible = "zmk,behavior-sensor-rotate-var";
+            #sensor-binding-cells = <2>;
+            bindings = <&msc>, <&msc>;
 
             // must exceed &msc's trigger-period-ms (100) or the release cancels
             // the pending scroll tick before it ever fires -- see &msc above
             tap-ms = <150>;
         };
-    };
 
-    rgb_encoder: rgb_encoder {
-        compatible = "zmk,behavior-sensor-rotate";
-        #sensor-binding-cells = <0>;
-        bindings = <&rgb_ug RGB_BRI>, <&rgb_ug RGB_BRD>;
-    };
-
-    scroll_encoder: scroll_encoder {
-        compatible = "zmk,behavior-sensor-rotate";
-        #sensor-binding-cells = <0>;
-        bindings = <&msc SCRL_DOWN>, <&msc SCRL_UP>;
-
-        // must exceed &msc's trigger-period-ms (100) or it's a race between the
-        // release cancelling the tick and the tick firing -- see &msc above
-        tap-ms = <150>;
+        inc_dec_rgb: inc_dec_rgb {
+            compatible = "zmk,behavior-sensor-rotate-var";
+            #sensor-binding-cells = <2>;
+            bindings = <&rgb_ug>, <&rgb_ug>;
+        };
     };
 
     combos {
@@ -122,7 +114,7 @@
                               &mt LCTRL ENTER  &lt 2 BACKSPACE  &kp SPACE                                                                  &kp BACKSPACE  &lt 1 ENTER  &mt LALT SPACE
             >;
 
-            sensor-bindings = <&>inc_dec_kp &msc SCRL_LEFT &msc SCRL_RIGHT>;
+            sensor-bindings = <&inc_dec_msc MOVE_X(-5) MOVE_X(5)>;
         };
 
         Rhold {
@@ -146,7 +138,7 @@
                                                &kp PG_UP  &trans    &kp PG_DN                                                                  &kp LCTRL  &trans      &kp LALT
             >;
 
-            sensor-bindings = <&inc_dec_kp &rgb_ug RGB_BRI >;
+            sensor-bindings = <&inc_dec_rgb RGB_BRI RGB_BRD>;
         };
 
         LRhold {
@@ -158,7 +150,7 @@
                                                     &kp LCTRL        &none            &kp SPACE                                                           &kp BACKSPACE  &none       &kp LALT
             >;
 
-            sensor-bindings = <&scroll_encoder>;
+            sensor-bindings = <&inc_dec_msc SCRL_DOWN SCRL_UP>;
         };
     };
 
