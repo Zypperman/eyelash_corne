@@ -51,19 +51,36 @@
         };
 
         // horizontal scroll for the MAIN layer's encoder: clockwise = right,
-        // counter-clockwise = left. RECOMMENDATION (community pattern): keep
-        // tap-ms around 20-30ms so the OS registers the tick without lagging
-        // behind a fast spin. With &msc's trigger-period-ms this short (10),
-        // tap-ms=20 only guarantees a single tick fires before release, so the
-        // magnitude below must clear 1000/trigger-period-ms (=100) on its own
-        // -- 200 mirrors the value caksoylar/zmk-config uses for the same
-        // reason (SCRL_VAL=200 against an 8ms trigger-period).
+        // counter-clockwise = left. Each detent is a synthetic tap of &msc
+        // (press, wait tap-ms, release); &msc only reports movement on its own
+        // trigger-period-ms timer (10ms), and the release races that timer via
+        // k_work_cancel_delayable on the SAME shared system workqueue that also
+        // runs BLE, the OLED SPI flush, and RGB underglow writes. tap-ms=20 only
+        // fit ~2 ticks in that window -- enough on an idle queue, but any
+        // contention from those other work items could delay the first tick past
+        // the release and silently drop the whole detent (intermittent misses).
+        // tap-ms=45 gives ~4-5 ticks of slack so a single tick surviving jitter
+        // is no longer a coin flip. Magnitude (200) already clears the
+        // 1000/trigger-period-ms=100 threshold needed for a single tick to
+        // register a whole HID unit -- 200 mirrors the value caksoylar/zmk-config
+        // uses for the same reason (SCRL_VAL=200 against an 8ms trigger-period).
 
         scroller: scroll_encoder {
             compatible = "zmk,behavior-sensor-rotate";
             #sensor-binding-cells = <0>;
             bindings = <&msc MOVE_X(200)>, <&msc MOVE_X(-200)>;
-            tap-ms = <20>;
+            tap-ms = <45>;
+        };
+
+        // vertical counterpart of scroller above, for the CONFIG layer's encoder:
+        // clockwise = up, counter-clockwise = down (positive Y mirrors SCRL_UP's
+        // sign in dt-bindings/zmk/pointing.h, same as scroller mirrors SCRL_RIGHT)
+
+        scroller_vert: scroll_encoder_vert {
+            compatible = "zmk,behavior-sensor-rotate";
+            #sensor-binding-cells = <0>;
+            bindings = <&msc MOVE_Y(200)>, <&msc MOVE_Y(-200)>;
+            tap-ms = <45>;
         };
 
         // rgb_ug takes a (command, value) pair per invocation, so unlike &kp/&msc
@@ -143,7 +160,7 @@
                                                     &kp LCTRL        &none            &kp SPACE                                                           &kp BACKSPACE  &none       &kp LALT
             >;
 
-            sensor-bindings = <&scroller>;
+            sensor-bindings = <&scroller_vert>;
         };
 
         layer_4 {
