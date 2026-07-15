@@ -143,7 +143,7 @@
                                                     &kp LCTRL        &none            &kp SPACE                                                           &kp BACKSPACE  &none       &kp LALT
             >;
 
-            sensor-bindings = <&inc_dec_msc SCRL_DOWN SCRL_UP>;
+            sensor-bindings = <&scroller>;
         };
 
         layer_4 {
