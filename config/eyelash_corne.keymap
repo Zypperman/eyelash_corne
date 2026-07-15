@@ -44,10 +44,26 @@
             #sensor-binding-cells = <2>;
             bindings = <&msc>, <&msc>;
 
-            // must exceed &msc's trigger-period-ms (100) or the release cancels
+            // must exceed &msc's trigger-period-ms (10) or the release cancels
             // the pending scroll tick before it ever fires -- see &msc above
 
-            tap-ms = <5>;
+            tap-ms = <150>;
+        };
+
+        // horizontal scroll for the MAIN layer's encoder: clockwise = right,
+        // counter-clockwise = left. RECOMMENDATION (community pattern): keep
+        // tap-ms around 20-30ms so the OS registers the tick without lagging
+        // behind a fast spin. With &msc's trigger-period-ms this short (10),
+        // tap-ms=20 only guarantees a single tick fires before release, so the
+        // magnitude below must clear 1000/trigger-period-ms (=100) on its own
+        // -- 200 mirrors the value caksoylar/zmk-config uses for the same
+        // reason (SCRL_VAL=200 against an 8ms trigger-period).
+
+        scroller: scroll_encoder {
+            compatible = "zmk,behavior-sensor-rotate";
+            #sensor-binding-cells = <0>;
+            bindings = <&msc MOVE_X(200)>, <&msc MOVE_X(-200)>;
+            tap-ms = <20>;
         };
 
         // rgb_ug takes a (command, value) pair per invocation, so unlike &kp/&msc
@@ -91,11 +107,7 @@
                               &mt LCTRL ENTER  &lt 2 BACKSPACE  &kp SPACE                                                                  &kp BACKSPACE  &lt 1 SPACE  &mt LALT ENTER
             >;
 
-            // clockwise = scroll right, counter-clockwise = scroll left
-            // (magnitude must clear 1000/&msc's trigger-period-ms=100 -> >=10, or
-            // the single tick fires a fractional remainder that tap-ms's release
-            // discards before it ever reaches a whole unit -- see &msc above)
-            sensor-bindings = <&inc_dec_msc SCRL_RIGHT SCRL_LEFT>;
+            sensor-bindings = <&scroller>;
         };
 
         Rhold {
