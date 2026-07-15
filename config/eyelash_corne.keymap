@@ -122,7 +122,7 @@
                               &mt LCTRL ENTER  &lt 2 BACKSPACE  &kp SPACE                                                                  &kp BACKSPACE  &lt 1 ENTER  &mt LALT SPACE
             >;
 
-            sensor-bindings = <&hor_scroll_encoder>;
+            sensor-bindings = <&>inc_dec_kp &msc SCRL_LEFT &msc SCRL_RIGHT>;
         };
 
         Rhold {
@@ -146,7 +146,7 @@
                                                &kp PG_UP  &trans    &kp PG_DN                                                                  &kp LCTRL  &trans      &kp LALT
             >;
 
-            sensor-bindings = <&rgb_encoder>;
+            sensor-bindings = <&inc_dec_kp &rgb_ug RGB_BRI >;
         };
 
         LRhold {
