@@ -88,7 +88,7 @@
         // register a whole HID unit -- 200 mirrors the value caksoylar/zmk-config
         // uses for the same reason (SCRL_VAL=200 against an 8ms trigger-period).
 
-        scroller: scroll_encoder {
+        LRscroller: scroll_encoder {
             compatible = "zmk,behavior-sensor-rotate";
             #sensor-binding-cells = <0>;
             bindings = <&msc MOVE_X(100)>, <&msc MOVE_X(-100)>;
@@ -147,7 +147,7 @@
                               &mt LCTRL ENTER  &lt 2 BACKSPACE  &kp SPACE                                                                  &kp BACKSPACE  &lt 1 SPACE  &mt LALT ENTER
             >;
 
-            sensor-bindings = <&scroller>;
+            sensor-bindings = <&LRscroller>;
         };
 
         Rhold {
