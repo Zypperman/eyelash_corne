@@ -13,7 +13,14 @@
 
 &mmv_input_listener { input-processors = <&zip_xy_scaler 2 1>; };
 
-&msc_input_listener { input-processors = <&zip_scroll_scaler 1 1>; };
+// split (not the combined zip_scroll_scaler) so horizontal speed is tunable
+// independent of vertical. This is the speed dial for scroller/scroller_vert:
+// each detent fires ~4 stacked &msc reports (tap-ms=45 vs trigger-period-ms=10,
+// see scroller below), so net distance per tick is roughly
+// (MOVE_X magnitude * reports-that-survived) / div -- tune div here to change
+// feel, not tap-ms/trigger-period-ms/MOVE_X, or dropped ticks come back.
+// Higher div = shorter distance per tick.
+&msc_input_listener { input-processors = <&zip_hscroll_scaler 1 4>, <&zip_vscroll_scaler 1 1>; };
 
 &msc {
     acceleration-exponent = <0>;      // 0 = constant speed, no ramp-up lag
@@ -32,6 +39,22 @@
 &soft_off { hold-time-ms = <2000>; };
 
 / {
+    zip_hscroll_scaler: zip_hscroll_scaler {
+        compatible = "zmk,input-processor-scaler";
+        #input-processor-cells = <2>;
+        type = <INPUT_EV_REL>;
+        codes = <INPUT_REL_HWHEEL>;
+        track-remainders;
+    };
+
+    zip_vscroll_scaler: zip_vscroll_scaler {
+        compatible = "zmk,input-processor-scaler";
+        #input-processor-cells = <2>;
+        type = <INPUT_EV_REL>;
+        codes = <INPUT_REL_WHEEL>;
+        track-remainders;
+    };
+
     behaviors {
         /omit-if-no-ref/
 
