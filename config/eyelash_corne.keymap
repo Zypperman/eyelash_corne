@@ -200,7 +200,7 @@
             bindings = <
 &trans  &kp SLASH  &kp MINUS  &kp PLUS  &kp ASTERISK  &kp EQUAL                    &trans          &trans  &trans     &trans    &trans    &trans     &trans
 &trans  &kp N1     &kp N2     &kp N3    &kp N4        &kp N5               &trans  &trans  &trans  &trans  &kp PG_UP  &kp HOME  &kp UP    &kp END    &trans
-&trans  &kp N6     &kp N7     &kp N8    &kp N9        &kp N0     &tog 0            &trans          &trans  &kp PG_DN  &kp LEFT  &kp DOWN  &kp RIGHT  &trans
+&trans  &kp N6     &kp N7     &kp N8    &kp N9        &kp N0     &tog 4            &trans          &trans  &kp PG_DN  &kp LEFT  &kp DOWN  &kp RIGHT  &trans
                               &trans    &trans        &trans                                       &trans  &trans     &kp LALT
             >;
 
