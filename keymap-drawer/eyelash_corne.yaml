@@ -93,8 +93,8 @@ layers:
   - {t: /, s: '?'}
   - $$mdi:alpha-w-box$$
   - $$mdi:apple-keyboard-control$$
+  - LGUI
   - {t: '$$mdi:transfer$$', type: trans}
-  - LEFT WIN
   - {t: '$$mdi:backspace$$', type: backspace}
   - {type: held}
   - $$mdi:apple-keyboard-option$$
