@@ -20,7 +20,10 @@
 // (MOVE_X magnitude * reports-that-survived) / div -- tune div here to change
 // feel, not tap-ms/trigger-period-ms/MOVE_X, or dropped ticks come back.
 // Higher div = shorter distance per tick.
-&msc_input_listener { input-processors = <&zip_hscroll_scaler 1 4>, <&zip_vscroll_scaler 1 1>; };
+
+&msc_input_listener {
+    input-processors = <&zip_hscroll_scaler 1 4>, <&zip_vscroll_scaler 1 1>;
+};
 
 &msc {
     acceleration-exponent = <0>;      // 0 = constant speed, no ramp-up lag
@@ -92,6 +95,7 @@
             compatible = "zmk,behavior-sensor-rotate";
             #sensor-binding-cells = <0>;
             bindings = <&msc MOVE_X(100)>, <&msc MOVE_X(-100)>;
+
             tap-ms = <45>;
         };
 
@@ -103,6 +107,7 @@
             compatible = "zmk,behavior-sensor-rotate";
             #sensor-binding-cells = <0>;
             bindings = <&msc MOVE_Y(200)>, <&msc MOVE_Y(-200)>;
+
             tap-ms = <45>;
         };
 
@@ -124,6 +129,11 @@
             bindings = <&soft_off>;
             key-positions = <1 15 29>;
         };
+
+        gotolayer4 {
+            bindings = <&tog 4>;
+            key-positions = <42 43>;
+        };
     };
 
     macros {
@@ -141,10 +151,10 @@
         default_layer {
             display-name = "MAIN";
             bindings = <
-&kp TAB         &kp Q  &kp W  &kp E            &kp R            &kp T                                     &msc SCRL_UP                     &kp Y          &kp U        &kp I           &kp O    &kp P     &kp MINUS
-&gresc          &kp A  &kp S  &kp D            &kp F            &kp G                     &msc SCRL_LEFT  &kp ENTER       &msc SCRL_RIGHT  &kp H          &kp J        &kp K           &kp L    &kp SEMI  &kp SQT
-&kp LEFT_SHIFT  &kp Z  &kp X  &kp C            &kp V            &kp B      &kp K_CMENU                    &msc SCRL_DOWN                   &kp N          &kp M        &kp COMMA       &kp DOT  &kp FSLH  &lt 4 BACKSLASH
-                              &mt LCTRL ENTER  &lt 2 BACKSPACE  &kp SPACE                                                                  &kp BACKSPACE  &lt 1 SPACE  &mt LALT ENTER
+&kp TAB         &kp Q  &kp W  &kp E            &kp R            &kp T                                &msc SCRL_UP                     &kp Y          &kp U        &kp I           &kp O    &kp P     &kp MINUS
+&kp ESCAPE      &kp A  &kp S  &kp D            &kp F            &kp G                &msc SCRL_LEFT  &kp K_APP       &msc SCRL_RIGHT  &kp H          &kp J        &kp K           &kp L    &kp SEMI  &kp SQT
+&kp LEFT_SHIFT  &kp Z  &kp X  &kp C            &kp V            &kp B      &tog 4                    &msc SCRL_DOWN                   &kp N          &kp M        &kp COMMA       &kp DOT  &kp FSLH  &lt 4 BACKSLASH
+                              &mt LCTRL ENTER  &lt 2 BACKSPACE  &kp SPACE                                                             &kp BACKSPACE  &lt 1 SPACE  &mt LALT ENTER
             >;
 
             sensor-bindings = <&LRscroller>;
@@ -186,13 +196,15 @@
             sensor-bindings = <&scroller_vert>;
         };
 
-        layer_4 {
+        weird_stuff {
             bindings = <
-&trans  &trans  &trans  &trans  &trans  &trans                    &trans          &trans  &trans     &trans    &trans    &trans     &trans
-&trans  &trans  &trans  &trans  &trans  &trans            &trans  &trans  &trans  &trans  &kp PG_UP  &kp HOME  &kp UP    &kp END    &trans
-&trans  &trans  &trans  &trans  &trans  &trans  &trans            &trans          &trans  &kp PG_DN  &kp LEFT  &kp DOWN  &kp RIGHT  &trans
-                        &trans  &trans  &trans                                    &trans  &trans     &kp LALT
+&trans  &kp SLASH  &kp MINUS  &kp PLUS  &kp ASTERISK  &kp EQUAL                    &trans          &trans  &trans     &trans    &trans    &trans     &trans
+&trans  &kp N1     &kp N2     &kp N3    &kp N4        &kp N5               &trans  &trans  &trans  &trans  &kp PG_UP  &kp HOME  &kp UP    &kp END    &trans
+&trans  &kp N6     &kp N7     &kp N8    &kp N9        &kp N0     &tog 0            &trans          &trans  &kp PG_DN  &kp LEFT  &kp DOWN  &kp RIGHT  &trans
+                              &trans    &trans        &trans                                       &trans  &trans     &kp LALT
             >;
+
+            sensor-bindings = <&scroller_vert>;
         };
     };
 
