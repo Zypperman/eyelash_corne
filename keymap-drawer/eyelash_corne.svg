@@ -328,8 +328,8 @@ rect.held, rect.combo.held {
   visibility: hidden;
 }
 </style>
-<g transform="translate(40, 0)" class="layer-MAIN">
-<text x="0" y="28" class="label" id="MAIN">MAIN:</text>
+<g transform="translate(40, 0)" class="layer-main">
+<text x="0" y="28" class="label" id="main">main:</text>
 <g transform="translate(0, 56)">
 <g transform="translate(28, 49)" class="key keypos-0">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key side"/>
@@ -507,8 +507,8 @@ rect.held, rect.combo.held {
 <g transform="translate(378, 153)" class="key keypos-34">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key side"/>
 <rect rx="4" ry="4" x="-20" y="-24" width="40" height="40" class="key"/>
-<a href="#weird_stuff">
-<text x="0" y="-4" class="key tap layer-activator"><tspan style="font-size: 60%">weird_stu…</tspan></text>
+<a href="#konbini">
+<text x="0" y="-4" class="key tap layer-activator"><tspan style="font-size: 86%">konbini</tspan></text>
 </a><text x="0" y="24" class="key hold">toggle</text>
 </g>
 <g transform="translate(546, 153)" class="key keypos-35">
@@ -548,8 +548,8 @@ rect.held, rect.combo.held {
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key side"/>
 <rect rx="4" ry="4" x="-20" y="-24" width="40" height="40" class="key"/>
 <text x="0" y="-4" class="key tap">\</text>
-<a href="#weird_stuff">
-<text x="0" y="24" class="key hold layer-activator"><tspan style="font-size: 60%">weird_stu…</tspan></text>
+<a href="#konbini">
+<text x="0" y="24" class="key hold layer-activator"><tspan style="font-size: 86%">konbini</tspan></text>
 </a><text x="0" y="-24" class="key shifted">|</text>
 </g>
 <g transform="translate(224, 203)" class="key keypos-42">
@@ -562,8 +562,8 @@ rect.held, rect.combo.held {
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key side"/>
 <rect rx="4" ry="4" x="-20" y="-24" width="40" height="40" class="key"/>
 <use href="#mdi:backspace" xlink:href="#mdi:backspace" x="-9" y="-13" height="18" width="18.0" class="key tap glyph mdi:backspace"/>
-<a href="#Utility">
-<text x="0" y="24" class="key hold layer-activator"><tspan style="font-size: 86%">Utility</tspan></text>
+<a href="#utility">
+<text x="0" y="24" class="key hold layer-activator"><tspan style="font-size: 86%">utility</tspan></text>
 </a></g>
 <g transform="translate(348, 226) rotate(24.0)" class="key keypos-44">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key side"/>
@@ -579,8 +579,8 @@ rect.held, rect.combo.held {
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key side"/>
 <rect rx="4" ry="4" x="-20" y="-24" width="40" height="40" class="key"/>
 <use href="#mdi:keyboard-space" xlink:href="#mdi:keyboard-space" x="-9" y="-13" height="18" width="18.0" class="key tap glyph mdi:keyboard-space"/>
-<a href="#Number">
-<text x="0" y="24" class="key hold layer-activator">Number</text>
+<a href="#number">
+<text x="0" y="24" class="key hold layer-activator">number</text>
 </a></g>
 <g transform="translate(756, 203)" class="key keypos-47">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key side"/>
@@ -595,14 +595,14 @@ rect.held, rect.combo.held {
 </g>
 <g class="combo combopos-1">
 <rect rx="6" ry="6" x="241" y="193" width="28" height="26" class="combo"/>
-<a href="#weird_stuff">
-<text x="255" y="206" class="combo tap layer-activator"><tspan style="font-size: 60%">weird_stu…</tspan></text>
+<a href="#konbini">
+<text x="255" y="206" class="combo tap layer-activator"><tspan style="font-size: 86%">konbini</tspan></text>
 </a><text x="255" y="217" class="combo hold">toggle</text>
 </g>
 </g>
 </g>
-<g transform="translate(40, 318)" class="layer-Number">
-<text x="0" y="28" class="label" id="Number">Number:</text>
+<g transform="translate(40, 318)" class="layer-number">
+<text x="0" y="28" class="label" id="number">number:</text>
 <g transform="translate(0, 56)">
 <g transform="translate(28, 49)" class="key keypos-0">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key side"/>
@@ -872,14 +872,14 @@ rect.held, rect.combo.held {
 </g>
 <g class="combo combopos-1">
 <rect rx="6" ry="6" x="241" y="193" width="28" height="26" class="combo"/>
-<a href="#weird_stuff">
-<text x="255" y="206" class="combo tap layer-activator"><tspan style="font-size: 60%">weird_stu…</tspan></text>
+<a href="#konbini">
+<text x="255" y="206" class="combo tap layer-activator"><tspan style="font-size: 86%">konbini</tspan></text>
 </a><text x="255" y="217" class="combo hold">toggle</text>
 </g>
 </g>
 </g>
-<g transform="translate(40, 637)" class="layer-Utility">
-<text x="0" y="28" class="label" id="Utility">Utility:</text>
+<g transform="translate(40, 637)" class="layer-utility">
+<text x="0" y="28" class="label" id="utility">utility:</text>
 <g transform="translate(0, 56)">
 <g transform="translate(28, 49)" class="key keypos-0">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key side"/>
@@ -1178,8 +1178,8 @@ rect.held, rect.combo.held {
 </g>
 <g class="combo combopos-1">
 <rect rx="6" ry="6" x="241" y="193" width="28" height="26" class="combo"/>
-<a href="#weird_stuff">
-<text x="255" y="206" class="combo tap layer-activator"><tspan style="font-size: 60%">weird_stu…</tspan></text>
+<a href="#konbini">
+<text x="255" y="206" class="combo tap layer-activator"><tspan style="font-size: 86%">konbini</tspan></text>
 </a><text x="255" y="217" class="combo hold">toggle</text>
 </g>
 </g>
@@ -1470,14 +1470,14 @@ rect.held, rect.combo.held {
 </g>
 <g class="combo combopos-1">
 <rect rx="6" ry="6" x="241" y="193" width="28" height="26" class="combo"/>
-<a href="#weird_stuff">
-<text x="255" y="206" class="combo tap layer-activator"><tspan style="font-size: 60%">weird_stu…</tspan></text>
+<a href="#konbini">
+<text x="255" y="206" class="combo tap layer-activator"><tspan style="font-size: 86%">konbini</tspan></text>
 </a><text x="255" y="217" class="combo hold">toggle</text>
 </g>
 </g>
 </g>
-<g transform="translate(40, 1274)" class="layer-weird_stuff">
-<text x="0" y="28" class="label" id="weird_stuff">weird_stuff:</text>
+<g transform="translate(40, 1274)" class="layer-konbini">
+<text x="0" y="28" class="label" id="konbini">konbini:</text>
 <g transform="translate(0, 56)">
 <g transform="translate(28, 49)" class="key trans keypos-0">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key trans side"/>
@@ -1667,8 +1667,8 @@ rect.held, rect.combo.held {
 <g transform="translate(378, 153)" class="key keypos-34">
 <rect rx="6" ry="6" x="-26" y="-26" width="52" height="52" class="key side"/>
 <rect rx="4" ry="4" x="-20" y="-24" width="40" height="40" class="key"/>
-<a href="#weird_stuff">
-<text x="0" y="-4" class="key tap layer-activator"><tspan style="font-size: 60%">weird_stu…</tspan></text>
+<a href="#konbini">
+<text x="0" y="-4" class="key tap layer-activator"><tspan style="font-size: 86%">konbini</tspan></text>
 </a><text x="0" y="24" class="key hold">toggle</text>
 </g>
 <g transform="translate(546, 153)" class="key trans keypos-35">
@@ -1744,8 +1744,8 @@ rect.held, rect.combo.held {
 </g>
 <g class="combo combopos-1">
 <rect rx="6" ry="6" x="241" y="193" width="28" height="26" class="combo"/>
-<a href="#weird_stuff">
-<text x="255" y="206" class="combo tap layer-activator"><tspan style="font-size: 60%">weird_stu…</tspan></text>
+<a href="#konbini">
+<text x="255" y="206" class="combo tap layer-activator"><tspan style="font-size: 86%">konbini</tspan></text>
 </a><text x="255" y="217" class="combo hold">toggle</text>
 </g>
 </g>
