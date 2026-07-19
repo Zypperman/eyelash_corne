@@ -80,9 +80,9 @@ layers:
   - {t: '''', s: '"'}
   - $$mdi:apple-keyboard-shift$$
   - {t: '`', s: '~'}
+  - PG DN
   - {t: '[', s: '{'}
   - {t: ']', s: '}'}
-  - PG DN
   - PG UP
   - $$mdi:volume-off$$
   - $$mdi:arrow-down-bold$$
