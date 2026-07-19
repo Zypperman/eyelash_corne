@@ -92,8 +92,8 @@ layers:
   - $
   - {t: /, s: '?'}
   - $$mdi:alpha-w-box$$
-  - $$mdi:apple-keyboard-control$$
-  - LGUI
+  - {t: '$$mdi:keyboard-return$$', h: '$$mdi:apple-keyboard-control$$'}
+  - {t: '$$mdi:backspace$$', h: LGUI}
   - {t: '$$mdi:transfer$$', type: trans}
   - {t: '$$mdi:backspace$$', type: backspace}
   - {type: held}
