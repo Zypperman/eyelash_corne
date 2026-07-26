@@ -4,16 +4,8 @@ based on firmware artifacts created by 8a60289ccf75f41b138ae7096aeb534f37675cdb 
 
 ## Bugs
 
-- [ ] rotary encoder, figure out why LRscroll is not working
-- [ ] dpad scroll on main layer still kinda too fast for my taste
-        - wrt excel, dpad scroll on tap goes from cell A to Q
-            - target scroll distance should be cell E
-            - suspected to be due to debouncing
-        - same for keyboard scroll controls on layer 2, keyboard press delay should be changed
+- [ ] scroll using keypressing still experiences some lag, theres a delay between initial press and expected scroll time
             - `trigger-period-ms = <200>;         // default: 16 -- 4x tick rate to slow scroll reports
-        - balance debouncing issue to make sure ticks fire off at diff rates from normal keypresses for scroll movement
-        - for better reference refer to redox configuration on vial
-        <!-- - dump stats here  -->
 
 ## oled display
 
@@ -22,20 +14,16 @@ based on firmware artifacts created by 8a60289ccf75f41b138ae7096aeb534f37675cdb 
     - [ ] try to get a hololive pic in 128x32 vertical  
             - <https://javl.github.io/image2cpp/>
             - can try to put BT and BAT status in her ring
+- [ ] add bad apple idle video
 
 ## RGB lighting
 
 - [ ] add lighting for each layer
+- [ ] add bad apple idle video
 
-## keymaps
 
-- [ ] add macro layer, figure out a button to access this
-        - can try toggle layer buttons to a macro pad that always returns to main
-- [ ] add controller mode
+## Connectivity
 
-- Numbers Layer
-  - swap windows and ctrl in thumb cluster to enter and backspace
-
-- Utils Layer
-  - change right side thumb cluster from backspace and m3 to ctrl and alt
-  - overload keypad 1 and 2 to hold and get kp0 and kp_dot
+- [ ] Add RFC connectivity
+      - apparently nicenanos have RFC compatability in built, its just that the SDK is bespoke
+      - maybe we could make one and merge to the ZMK main repo and provide support
