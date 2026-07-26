@@ -88,8 +88,8 @@ layers:
   - $$mdi:arrow-down-bold$$
   - {t: '=', s: +}
   - {t: '-', s: _}
-  - '#'
-  - $
+  - {t: ',', h: '#', s: <}
+  - {t: ., h: $, s: '>'}
   - {t: /, s: '?'}
   - $$mdi:alpha-w-box$$
   - {t: '$$mdi:keyboard-return$$', h: '$$mdi:apple-keyboard-control$$'}
@@ -138,7 +138,7 @@ layers:
   - '&mkp MB3'
   - $$mdi:apple-keyboard-shift$$
   - {t: KP 1, h: KP 0}
-  - KP 2
+  - {t: KP 2, h: KP DOT}
   - KP 3
   - {t: KP EQUAL, h: KP ENTER}
   - PG UP
@@ -228,8 +228,8 @@ layers:
   - {t: '$$mdi:transfer$$', type: trans}
   - {t: '6', s: ^}
   - {t: '7', s: '&'}
-  - {t: '8', s: '*'}
-  - {t: '9', s: (}
+  - {t: '8', h: ',', s: '*'}
+  - {t: '9', h: ., s: (}
   - {t: '0', s: )}
   - {t: konbini, h: toggle}
   - {t: '$$mdi:transfer$$', type: trans}
