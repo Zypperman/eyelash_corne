@@ -154,7 +154,7 @@
 &kp TAB         &kp Q  &kp W  &kp E            &kp R            &kp T                                &msc SCRL_UP                     &kp Y          &kp U        &kp I           &kp O    &kp P     &kp MINUS
 &kp ESCAPE      &kp A  &kp S  &kp D            &kp F            &kp G                &msc SCRL_LEFT  &kp K_APP       &msc SCRL_RIGHT  &kp H          &kp J        &kp K           &kp L    &kp SEMI  &kp SQT
 &kp LEFT_SHIFT  &kp Z  &kp X  &kp C            &kp V            &kp B      &tog 4                    &msc SCRL_DOWN                   &kp N          &kp M        &kp COMMA       &kp DOT  &kp FSLH  &lt 4 BACKSLASH
-                              &lt 2 BACKSPACE  &mt LCTRL ENTER  &kp SPACE                                                             &kp BACKSPACE  &lt 1 SPACE  &mt LALT ENTER
+                              &lt 2 BACKSPACE  &mt LCTRL ENTER  &kp SPACE                                                             &kp BACKSPACE  &lt 1 ENTER  &mt LALT SPACE
             >;
 
             sensor-bindings = <&LRscroller>;
