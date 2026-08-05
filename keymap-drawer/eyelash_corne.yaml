@@ -43,8 +43,8 @@ layers:
   - {t: ., s: '>'}
   - {t: /, s: '?'}
   - {t: \, h: konbini, s: '|'}
-  - {t: '$$mdi:keyboard-return$$', h: '$$mdi:apple-keyboard-control$$'}
   - {t: '$$mdi:backspace$$', h: utility}
+  - {t: '$$mdi:keyboard-return$$', h: '$$mdi:apple-keyboard-control$$'}
   - $$mdi:keyboard-space$$
   - {t: '$$mdi:backspace$$', type: backspace}
   - {t: '$$mdi:keyboard-space$$', h: number}
@@ -92,8 +92,8 @@ layers:
   - {t: ., h: $, s: '>'}
   - {t: /, s: '?'}
   - $$mdi:alpha-w-box$$
+  - {t: '$$mdi:backspace$$', h: LWIN}
   - {t: '$$mdi:keyboard-return$$', h: '$$mdi:apple-keyboard-control$$'}
-  - {t: '$$mdi:backspace$$', h: LGUI}
   - {t: '$$mdi:transfer$$', type: trans}
   - {t: '$$mdi:backspace$$', type: backspace}
   - {type: held}
@@ -141,8 +141,8 @@ layers:
   - {t: KP 2, h: KP DOT}
   - KP 3
   - {t: KP EQUAL, h: KP ENTER}
-  - PG UP
-  - {type: held}
+  - {t: PG UP, type: held}
+  - {t: '$$mdi:transfer$$', type: trans}
   - PG DN
   - $$mdi:apple-keyboard-control$$
   - {t: '$$mdi:transfer$$', type: trans}
@@ -190,8 +190,8 @@ layers:
   - $$mdi:play-pause$$
   - SCROLLLOCK
   - PAUSE BREAK
-  - $$mdi:apple-keyboard-control$$
   - {t: '$$mdi:minus-circle-outline$$', type: held}
+  - $$mdi:apple-keyboard-control$$
   - $$mdi:keyboard-space$$
   - {t: '$$mdi:backspace$$', type: backspace}
   - {t: '$$mdi:minus-circle-outline$$', type: held}
