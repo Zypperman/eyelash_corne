@@ -141,8 +141,8 @@ layers:
   - {t: KP 2, h: KP DOT}
   - KP 3
   - {t: KP EQUAL, h: KP ENTER}
-  - {t: PG UP, type: held}
-  - {t: '$$mdi:transfer$$', type: trans}
+  - {type: held}
+  - PG UP
   - PG DN
   - $$mdi:apple-keyboard-control$$
   - {t: '$$mdi:transfer$$', type: trans}
