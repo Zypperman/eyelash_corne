@@ -154,7 +154,7 @@
 &kp TAB         &kp Q  &kp W  &kp E            &kp R            &kp T                                &msc SCRL_UP                     &kp Y          &kp U        &kp I           &kp O    &kp P     &kp MINUS
 &kp ESCAPE      &kp A  &kp S  &kp D            &kp F            &kp G                &msc SCRL_LEFT  &kp K_APP       &msc SCRL_RIGHT  &kp H          &kp J        &kp K           &kp L    &kp SEMI  &kp SQT
 &kp LEFT_SHIFT  &kp Z  &kp X  &kp C            &kp V            &kp B      &tog 4                    &msc SCRL_DOWN                   &kp N          &kp M        &kp COMMA       &kp DOT  &kp FSLH  &lt 4 BACKSLASH
-                              &mt LCTRL ENTER  &lt 2 BACKSPACE  &kp SPACE                                                             &kp BACKSPACE  &lt 1 SPACE  &mt LALT ENTER
+                              &lt 2 BACKSPACE  &mt LCTRL ENTER  &kp SPACE                                                             &kp BACKSPACE  &lt 1 SPACE  &mt LALT ENTER
             >;
 
             sensor-bindings = <&LRscroller>;
@@ -163,10 +163,10 @@
         Rhold {
             display-name = "number";
             bindings = <
-&kp F1          &kp F2     &kp F3     &kp F4            &kp F5              &kp F6                             &kp UP                  &kp F7         &kp F8     &kp F9           &kp F10         &kp F11    &kp F12
-&gresc          &kp N1     &kp N2     &kp N3            &kp N4              &kp N5                   &kp LEFT  &kp K_CMENU  &kp RIGHT  &kp N6         &kp N7     &kp N8           &kp N9          &kp N0     &kp SINGLE_QUOTE
-&kp LEFT_SHIFT  &kp GRAVE  &kp PG_DN  &kp LEFT_BRACKET  &kp RIGHT_BRACKET   &kp PG_UP  &kp C_MUTE              &kp DOWN                &kp EQUAL      &kp MINUS  &mt POUND COMMA  &mt DOLLAR DOT  &kp SLASH  &caps_word
-                                      &mt LCTRL ENTER   &mt LGUI BACKSPACE  &trans                                                     &kp BACKSPACE  &trans     &kp LALT
+&kp F1          &kp F2     &kp F3     &kp F4              &kp F5             &kp F6                             &kp UP                  &kp F7         &kp F8     &kp F9           &kp F10         &kp F11    &kp F12
+&gresc          &kp N1     &kp N2     &kp N3              &kp N4             &kp N5                   &kp LEFT  &kp K_CMENU  &kp RIGHT  &kp N6         &kp N7     &kp N8           &kp N9          &kp N0     &kp SINGLE_QUOTE
+&kp LEFT_SHIFT  &kp GRAVE  &kp PG_DN  &kp LEFT_BRACKET    &kp RIGHT_BRACKET  &kp PG_UP  &kp C_MUTE              &kp DOWN                &kp EQUAL      &kp MINUS  &mt POUND COMMA  &mt DOLLAR DOT  &kp SLASH  &caps_word
+                                      &mt LWIN BACKSPACE  &mt LCTRL ENTER    &trans                                                     &kp BACKSPACE  &trans     &kp LALT
             >;
 
             sensor-bindings = <&inc_dec_kp C_VOL_UP C_VOL_DN>;
@@ -190,7 +190,7 @@
 &studio_unlock  &rgb_ug RGB_OFF  &rgb_ug RGB_ON     &rgb_ug RGB_HUI  &rgb_ug RGB_SAI  &rgb_ug RGB_BRI                           &sk LSHIFT                &kp C_PREV     &kp C_NEXT  &kp PG_UP      &kp C_VOL_UP  &kp C_BRI_UP    &kp C_MUTE
 &bootloader     &bt BT_CLR_ALL   &out OUT_TOG       &rgb_ug RGB_HUD  &rgb_ug RGB_SAD  &rgb_ug RGB_BRD                &sk LCTRL  &kp ENTER   &sk LEFT_ALT  &kp C_STOP     &mkp LCLK   &kp PG_DN      &kp C_VOL_DN  &kp C_BRI_DN    &kp CLCK
 &kp LSHFT       &sys_reset       &ext_power EP_TOG  &key_repeat      &rgb_ug RGB_EFF  &rgb_ug RGB_EFR  &kp C_MUTE               &sk LCMD                  &kp C_RW       &kp C_FF    &kp C_SHUFFLE  &kp C_PP      &kp SCROLLLOCK  &kp PAUSE_BREAK
-                                                    &kp LCTRL        &none            &kp SPACE                                                           &kp BACKSPACE  &none       &kp LALT
+                                                    &none            &kp LCTRL        &kp SPACE                                                           &kp BACKSPACE  &none       &kp LALT
             >;
 
             sensor-bindings = <&scroller_vert>;
