@@ -47,8 +47,8 @@ layers:
   - {t: '$$mdi:keyboard-return$$', h: '$$mdi:apple-keyboard-control$$'}
   - $$mdi:keyboard-space$$
   - {t: '$$mdi:backspace$$', type: backspace}
-  - {t: '$$mdi:keyboard-return$$', h: number}
-  - {t: '$$mdi:keyboard-space$$', h: '$$mdi:apple-keyboard-option$$'}
+  - {t: '$$mdi:keyboard-return$$', h: '$$mdi:apple-keyboard-option$$'}
+  - {t: '$$mdi:keyboard-space$$', h: number}
   number:
   - F1
   - F2
@@ -92,12 +92,12 @@ layers:
   - {t: ., h: $, s: '>'}
   - {t: /, s: '?'}
   - $$mdi:alpha-w-box$$
-  - {t: '$$mdi:backspace$$', h: LWIN}
-  - {t: '$$mdi:keyboard-return$$', h: '$$mdi:apple-keyboard-control$$'}
   - {t: '$$mdi:transfer$$', type: trans}
+  - {t: '$$mdi:keyboard-return$$', h: '$$mdi:apple-keyboard-control$$'}
+  - {t: '$$mdi:keyboard-space$$', h: LGUI}
   - {t: '$$mdi:backspace$$', type: backspace}
+  - {t: '$$mdi:keyboard-return$$', h: '$$mdi:apple-keyboard-option$$'}
   - {type: held}
-  - $$mdi:apple-keyboard-option$$
   utility:
   - {t: '$$mdi:apple-keyboard-shift$$', h: '$$mdi:gesture-tap-hold$$'}
   - {t: '$$mdi:apple-keyboard-control$$', h: '$$mdi:gesture-tap-hold$$'}
@@ -142,11 +142,11 @@ layers:
   - KP 3
   - {t: KP EQUAL, h: KP ENTER}
   - {type: held}
-  - PG UP
   - PG DN
+  - PG UP
   - $$mdi:apple-keyboard-control$$
+  - {t: '$$mdi:keyboard-return$$', h: '$$mdi:apple-keyboard-option$$'}
   - {t: '$$mdi:transfer$$', type: trans}
-  - $$mdi:apple-keyboard-option$$
   config:
   - '&studio_unlock'
   - RGB OFF
@@ -194,8 +194,8 @@ layers:
   - $$mdi:apple-keyboard-control$$
   - $$mdi:keyboard-space$$
   - {t: '$$mdi:backspace$$', type: backspace}
+  - {t: '$$mdi:keyboard-return$$', h: '$$mdi:apple-keyboard-option$$'}
   - {t: '$$mdi:minus-circle-outline$$', type: held}
-  - $$mdi:apple-keyboard-option$$
   konbini:
   - {t: '$$mdi:transfer$$', type: trans}
   - {t: /, s: '?'}
