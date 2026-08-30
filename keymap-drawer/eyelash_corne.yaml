@@ -136,7 +136,7 @@ layers:
   - '&lockPC'
   - {t: '$$mdi:menu-down$$', s: '$$mdi:mouse$$'}
   - '&mkp MB3'
-  - $$mdi:apple-keyboard-shift$$
+  - {t: KP NUMLOCK, h: '$$mdi:apple-keyboard-shift$$'}
   - {t: KP 1, h: KP 0}
   - {t: KP 2, h: KP DOT}
   - KP 3
