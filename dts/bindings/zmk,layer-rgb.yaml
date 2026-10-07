@@ -1,0 +1,24 @@
+description: |
+  Per-layer RGB underglow. Each child node gives the color/effect shown while
+  that layer is the highest active layer that has an entry here. Layers
+  without an entry fall through to the next lower layer that has one.
+
+compatible: "zmk,layer-rgb"
+
+child-binding:
+  description: Color and effect for one layer
+  properties:
+    layer:
+      type: int
+      required: true
+      description: Layer number (0 = first layer in the keymap)
+    color-hsb:
+      type: array
+      required: true
+      description: <hue(0-359) saturation(0-100) brightness(0-100)>
+    effect:
+      type: int
+      description: 0 solid, 1 breathe, 2 spectrum, 3 swirl. Omit to keep the current effect.
+    speed:
+      type: int
+      description: Animation speed 1-5. Omit to keep the current speed.

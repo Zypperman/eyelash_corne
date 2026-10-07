@@ -12,7 +12,7 @@ This repository provides ZMK firmware for the Eyelash Peripherals Corne keyboard
 ✅ **OLED Displays** - Custom status screens with nice!oled widgets on both halves
 ✅ **ZMK Studio** - Real-time keymap editing via USB (left half only)
 ✅ **Rotary Encoder** - Volume control and scrolling support
-✅ **RGB Underglow** - WS2812 LED support
+✅ **RGB Underglow** - WS2812 LED support, with a different color per layer
 ✅ **Soft Power-Off** - Q+S+Z combo for deep sleep
 ✅ **Mouse Keys** - Pointing device support
 
@@ -151,6 +151,43 @@ For the complete list of customization options, see the [zmk-nice-oled documenta
 ### Soft Power-Off
 
 Press **Q + S + Z** simultaneously and hold for 2 seconds to enter deep sleep. The keyboard cannot be awakened by key presses - press the reset button once to wake it.
+
+### Per-layer RGB underglow
+
+Stock ZMK (v0.3.0) has a single global underglow color, so this repo adds a
+small module (`src/layer_rgb.c`, wired up by `CMakeLists.txt`, `Kconfig`,
+`dts/bindings/` and `zephyr/module.yml`) that changes the underglow whenever
+the active layer changes. The colors live in
+[`config/layer_rgb.dtsi`](config/layer_rgb.dtsi):
+
+```dts
+main   { layer = <0>; color-hsb = <160 100 60>; effect = <3>; };
+number { layer = <1>; color-hsb = <30 100 60>;  effect = <0>; };
+```
+
+- The **highest active layer that has an entry** sets the color. A layer with
+  no entry falls through to the next lower one.
+- `effect`: 0 solid, 1 breathe, 2 spectrum, 3 swirl (optional). `speed`: 1-5 (optional).
+- The dongle tracks layers and sends each change to both halves through the
+  regular `&rgb_ug` behavior, so **only the dongle needs reflashing** after
+  you change colors. (The module is off on the halves, which are built as
+  peripherals.)
+- `&rgb_ug RGB_ON` / `RGB_OFF` still turn the lights on and off. Hue and
+  brightness keys still work, but the next layer change overrides them.
+- ZMK saves the underglow state to flash about 60 s after the last change, as
+  it does for the `&rgb_ug` keys. A half that wasn't connected when the
+  dongle sent a color shows its saved color until the next layer change.
+
+#### Emulator
+
+Open [`rgb-emulator/index.html`](rgb-emulator/index.html) in a browser (just
+double-click it, no server needed). It draws this keymap's layout and legends
+and simulates the firmware's effects. Hold or toggle layers to preview them
+(holding *number* and *utility* together shows *config*, like the keymap's
+conditional layer), adjust each layer's color, effect and speed, then copy or
+download the generated `layer_rgb.dtsi` into `config/`. The key legends are
+baked into the page, so if you change `eyelash_corne.keymap` they won't
+update. The colors and export still work.
 
 ### Encoder Functions
 
