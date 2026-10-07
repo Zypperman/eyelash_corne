@@ -1,0 +1,639 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Eyelash Corne Layer RGB</title>
+<style>
+  :root {
+    --bg: #0d0f12;
+    --panel: #161a20;
+    --panel-2: #1d222a;
+    --line: #2a313b;
+    --text: #e6e9ee;
+    --muted: #8b95a3;
+    --accent: #6ea8ff;
+    --warn: #e0b45a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  header { padding: 18px 16px 6px; max-width: 1200px; margin: 0 auto; }
+  h1 { font-size: 20px; margin: 0 0 4px; font-weight: 600; }
+  header p { margin: 0; color: var(--muted); }
+  main { max-width: 1200px; margin: 0 auto; padding: 8px 16px 40px; }
+  .stage {
+    background: #050607; border: 1px solid var(--line); border-radius: 12px;
+    overflow: hidden; position: relative;
+  }
+  canvas#board { display: block; width: 100%; height: auto; }
+  .status {
+    position: absolute; left: 12px; top: 10px; font-size: 13px; color: var(--muted);
+    background: rgba(0,0,0,.55); padding: 4px 10px; border-radius: 999px;
+  }
+  .status b { color: var(--text); font-weight: 600; }
+  canvas#strip { display: block; width: 100%; height: 14px; border-top: 1px solid var(--line); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
+  @media (max-width: 820px) { .grid { grid-template-columns: 1fr; } }
+  section.card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px;
+  }
+  section.card h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em;
+    color: var(--muted); margin: 0 0 10px; font-weight: 600; }
+  .layers { display: flex; flex-direction: column; gap: 6px; }
+  .layer {
+    display: grid; grid-template-columns: 22px 1fr auto auto; align-items: center; gap: 8px;
+    padding: 6px 8px; border-radius: 8px; background: var(--panel-2); border: 1px solid transparent;
+    cursor: pointer;
+  }
+  .layer.selected { border-color: var(--accent); }
+  .layer.driving .lname::after { content: " ● showing"; color: var(--accent); font-size: 12px; }
+  .swatch { width: 22px; height: 22px; border-radius: 6px; border: 1px solid #0006; }
+  .swatch.none { background: repeating-linear-gradient(45deg, #333 0 4px, #222 4px 8px) !important; }
+  .lname small { color: var(--muted); }
+  button, select, input[type=text] {
+    font: inherit; color: var(--text); background: #262c35; border: 1px solid var(--line);
+    border-radius: 7px; padding: 5px 10px;
+  }
+  button { cursor: pointer; user-select: none; touch-action: none; }
+  button:hover { background: #2f3742; }
+  button.on { background: var(--accent); color: #08101e; border-color: var(--accent); }
+  label.row { display: grid; grid-template-columns: 92px 1fr 46px; gap: 10px; align-items: center; margin: 8px 0; }
+  label.row span.v { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  .hue-track { background: linear-gradient(90deg, red, #ff0, lime, cyan, blue, #f0f, red); border-radius: 4px; height: 6px; }
+  .check { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+  .note { color: var(--muted); font-size: 12.5px; margin: 6px 0 0; }
+  .note.warn { color: var(--warn); }
+  textarea {
+    width: 100%; min-height: 230px; background: #0b0d10; color: #cfe3ff; border: 1px solid var(--line);
+    border-radius: 8px; padding: 10px; font: 12.5px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  .btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .disabled { opacity: .45; pointer-events: none; }
+  kbd { background: #262c35; border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Eyelash Corne layer RGB emulator</h1>
+  <p>Simulates ZMK v0.3.0 underglow (the same 50&nbsp;ms tick and math as the firmware) with this repo's per-layer module. Pick a color for each layer, then copy the result into <code>config/layer_rgb.dtsi</code>.</p>
+</header>
+<main>
+  <div class="stage">
+    <canvas id="board" width="1700" height="900"></canvas>
+    <div class="status" id="status"></div>
+    <canvas id="strip" width="1700" height="14" title="Raw LED strip, pixel 0 on the left"></canvas>
+  </div>
+
+  <div class="grid">
+    <section class="card">
+      <h2>Layers</h2>
+      <div class="layers" id="layers"></div>
+      <p class="note">Click a row to edit it. <b>Hold</b> works like a <code>&amp;mo</code> key (or hold <kbd>1</kbd>–<kbd>4</kbd> on your keyboard); <b>Toggle</b> works like <code>&amp;tog</code>. Holding <i>number</i> and <i>utility</i> together turns on <i>config</i> (the keymap's conditional layer). The highest active layer with a color wins. Layers set to "no color" fall through to the next one down.</p>
+    </section>
+
+    <section class="card" id="editor">
+      <h2 id="edTitle">Edit layer</h2>
+      <div class="check"><input type="checkbox" id="hasCfg"><label for="hasCfg">This layer sets a color</label></div>
+      <div id="cfgFields">
+        <div class="check"><input type="color" id="picker"><label for="picker">Pick a color (sets hue and saturation)</label></div>
+        <label class="row">Hue <div><input type="range" id="h" min="0" max="359"><div class="hue-track"></div></div><span class="v" id="hv"></span></label>
+        <label class="row">Saturation <input type="range" id="s" min="0" max="100"><span class="v" id="sv"></span></label>
+        <label class="row">Brightness <input type="range" id="b" min="0" max="100"><span class="v" id="bv"></span></label>
+        <label class="row">Effect
+          <select id="effect">
+            <option value="-1">Keep current</option>
+            <option value="0">Solid</option>
+            <option value="1">Breathe</option>
+            <option value="2">Spectrum</option>
+            <option value="3">Swirl</option>
+          </select><span></span></label>
+        <label class="row">Speed <input type="range" id="speed" min="0" max="5"><span class="v" id="spv"></span></label>
+        <p class="note" id="effNote"></p>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Keyboard settings</h2>
+      <div class="check"><input type="checkbox" id="rgbOn" checked><label for="rgbOn">Underglow on (<code>&amp;rgb_ug RGB_TOG</code>)</label></div>
+      <label class="row">Min bright % <input type="range" id="bmin" min="0" max="100"><span class="v" id="bminv"></span></label>
+      <label class="row">Max bright % <input type="range" id="bmax" min="0" max="100"><span class="v" id="bmaxv"></span></label>
+      <label class="row">LEDs / half <input type="range" id="leds" min="6" max="150"><span class="v" id="ledsv"></span></label>
+      <label class="row">Screen boost <input type="range" id="gain" min="1" max="4" step="0.1"><span class="v" id="gainv"></span></label>
+      <p class="note">ZMK scales your layer brightness into <code>CONFIG_ZMK_RGB_UNDERGLOW_BRT_MIN/MAX</code> (0–100% unless you set them in <code>config/eyelash_corne.conf</code>). The LED count is set by <code>chain-length</code> (7 per half in <code>eyelash_corne.dtsi</code>) and changes how wide the Swirl rainbow looks. Screen boost only brightens this preview; it doesn't change the config. LED positions are an approximation.</p>
+      <div class="btns"><button id="reset">Reset to repo defaults</button></div>
+    </section>
+
+    <section class="card">
+      <h2>config/layer_rgb.dtsi</h2>
+      <textarea id="out" spellcheck="false"></textarea>
+      <div class="btns">
+        <button id="copy">Copy</button>
+        <button id="download">Download</button>
+        <button id="import">Load from text box</button>
+      </div>
+      <p class="note">Replace <code>config/layer_rgb.dtsi</code> with this, commit, and flash the <b>dongle</b> (it tracks layers and sends the colors to both halves).</p>
+      <p class="note" id="importMsg"></p>
+    </section>
+  </div>
+</main>
+
+<script>
+const KEYS = [[0, 0.37, 0, 0, 0], [1, 0.37, 0, 0, 0], [2, 0.12, 0, 0, 0], [3, 0, 0, 0, 0], [4, 0.12, 0, 0, 0], [5, 0.24, 0, 0, 0], [9.25, 0.24, 0, 0, 0], [11.5, 0.24, 0, 0, 0], [12.5, 0.12, 0, 0, 0], [13.5, 0, 0, 0, 0], [14.5, 0.12, 0, 0, 0], [15.5, 0.37, 0, 0, 0], [16.5, 0.37, 0, 0, 0], [0, 1.37, 0, 0, 0], [1, 1.37, 0, 0, 0], [2, 1.12, 0, 0, 0], [3, 1, 0, 0, 0], [4, 1.12, 0, 0, 0], [5, 1.24, 0, 0, 0], [8.25, 1.24, 0, 0, 0], [9.25, 1.24, 0, 0, 0], [10.25, 1.24, 0, 0, 0], [11.5, 1.24, 0, 0, 0], [12.5, 1.12, 0, 0, 0], [13.5, 1, 0, 0, 0], [14.5, 1.12, 0, 0, 0], [15.5, 1.37, 0, 0, 0], [16.5, 1.37, 0, 0, 0], [0, 2.37, 0, 0, 0], [1, 2.37, 0, 0, 0], [2, 2.12, 0, 0, 0], [3, 2, 0, 0, 0], [4, 2.12, 0, 0, 0], [5, 2.24, 0, 0, 0], [6.25, 2.24, 0, 0, 0], [9.25, 2.24, 0, 0, 0], [11.5, 2.24, 0, 0, 0], [12.5, 2.12, 0, 0, 0], [13.5, 2, 0, 0, 0], [14.5, 2.12, 0, 0, 0], [15.5, 2.37, 0, 0, 0], [16.5, 2.37, 0, 0, 0], [3.5, 3.12, 0, 0, 0], [4.5, 3.12, 12, 4.5, 4.12], [5.5, 3.12, 24, 5.15, 4.33], [11, 3.12, -24, 12.3, 4.33], [12, 3.12, -12, 13, 4.12], [13, 3.12, 0, 0, 0]];
+const SIDE = [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1];  // 0 = left half, 1 = right half
+const LAYERS = [{"node": "default_layer", "name": "main", "labels": ["Tab", "Q", "W", "E", "R", "T", "Scr↑", "Y", "U", "I", "O", "P", "-", "Esc", "A", "S", "D", "F", "G", "Scr←", "APP", "Scr→", "H", "J", "K", "L", ";", "'", "Shift", "Z", "X", "C", "V", "B", "konbini", "Scr↓", "N", "M", ",", ".", "/", "\\", "Bksp", "Enter", "Space", "Bksp", "Enter", "Space"]}, {"node": "Rhold", "name": "number", "labels": ["F1", "F2", "F3", "F4", "F5", "F6", "↑", "F7", "F8", "F9", "F10", "F11", "F12", "Esc", "1", "2", "3", "4", "5", "←", "CMENU", "→", "6", "7", "8", "9", "0", "'", "Shift", "`", "PG DN", "[", "]", "PG UP", "Mute", "↓", "=", "-", ",", ".", "/", "Win", "", "Enter", "Space", "Bksp", "Enter", "held"]}, {"node": "Lhold", "name": "utility", "labels": ["Shift", "Ctrl", "Alt", "LGUI", "Tab", "Bksp", "Ms↑", "&mkp MB4", "&mkp MB5", "KP 7", "KP 8", "KP 9", "KP PLUS", "Scr←", "Del", "Scr→", "HOME", "↑", "END", "Ms←", "CMENU", "Ms→", "&mkp MB1", "&mkp MB2", "KP 4", "KP 5", "KP 6", "KP MINUS", "Enter", "Scr↓", "Scr↑", "←", "↓", "→", "&lockPC", "Ms↓", "&mkp MB3", "KP NUMLOCK", "KP 1", "KP 2", "KP 3", "KP EQUAL", "held", "PG DN", "PG UP", "Ctrl", "Enter", ""]}, {"node": "LRhold", "name": "config", "labels": ["&studio_unlock", "RGB OFF", "RGB ON", "RGB HUI", "RGB SAI", "RGB BRI", "Shift", "Prev", "Next", "PG UP", "Vol+", "Bri-", "Mute", "Boot", "BT CLR ALL", "ExtPwr", "RGB HUD", "RGB SAD", "RGB BRD", "Ctrl", "Enter", "Alt", "STOP", "LClk", "PG DN", "Vol-", "Bri+", "CLCK", "Shift", "Reset", "EP TOG", "&key_repeat", "RGB EFF", "RGB EFR", "Mute", "Cmd", "RW", "FF", "SHUFFLE", "Play", "SCROLLLOCK", "PAUSE BREAK", "held", "Ctrl", "Space", "Bksp", "Enter", "held"]}, {"node": "weird_stuff", "name": "konbini", "labels": ["", "/", "-", "+", "*", "=", "", "", "", "", "", "", "", "", "1", "2", "3", "4", "5", "", "", "", "", "PG UP", "HOME", "↑", "END", "", "", "6", "7", "8", "9", "0", "konbini", "", "", "PG DN", "←", "↓", "→", "held", "", "", "", "", "", ""]}];
+
+const EFFECTS = ["Solid", "Breathe", "Spectrum", "Swirl"];
+const DEFAULTS = {
+  // Matches config/layer_rgb.dtsi in the repo.
+  layers: [
+    { h: 160, s: 100, b: 60, effect: 3, speed: 0 },
+    { h: 30,  s: 100, b: 60, effect: 0, speed: 0 },
+    { h: 120, s: 100, b: 60, effect: 0, speed: 0 },
+    { h: 0,   s: 100, b: 60, effect: 0, speed: 0 },
+    { h: 280, s: 100, b: 60, effect: 0, speed: 0 },
+  ],
+  bmin: 0, bmax: 100, leds: 7, gain: 1.6, on: true,
+};
+const STORE = "eyelash-corne-layer-rgb-v1";
+
+let cfg = load();
+let selected = 0;
+const held = new Set();     // momentary (&mo)
+const toggled = new Set();  // &tog
+
+function load() {
+  try {
+    const raw = localStorage.getItem(STORE);
+    if (raw) {
+      const c = JSON.parse(raw);
+      if (Array.isArray(c.layers) && c.layers.length === LAYERS.length) return c;
+    }
+  } catch (e) {}
+  return structuredClone(DEFAULTS);
+}
+function save() { try { localStorage.setItem(STORE, JSON.stringify(cfg)); } catch (e) {} }
+
+/* ---------- Firmware model (zmk/app/src/rgb_underglow.c @ v0.3.0) ---------- */
+
+const fw = { h: 40, s: 100, b: 25, speed: 3, effect: 0, step: 0 };
+let appliedLayer = null;
+
+function activeLayers() {
+  const a = new Set([0, ...held, ...toggled]);
+  if (a.has(1) && a.has(2)) a.add(3);   // conditional_layers in eyelash_corne.keymap
+  return [...a].sort((x, y) => y - x);
+}
+function drivingLayer() {
+  for (const l of activeLayers()) if (cfg.layers[l]) return l;
+  return null;
+}
+// src/layer_rgb.c: apply_work_cb
+function applyLayer(force) {
+  const l = drivingLayer();
+  if (l === null || (l === appliedLayer && !force)) return;
+  appliedLayer = l;
+  const c = cfg.layers[l];
+  if (c.effect >= 0) { fw.effect = c.effect; fw.step = 0; }   // select_effect resets the step
+  if (c.speed) fw.speed = c.speed;
+  fw.h = c.h; fw.s = c.s; fw.b = c.b;
+}
+
+function hsbToRgb(h, s, b) {
+  const i = Math.floor(h / 60);
+  const v = b / 100, sf = s / 100;
+  const f = h / 360 * 6 - i;
+  const p = v * (1 - sf), q = v * (1 - f * sf), t = v * (1 - (1 - f) * sf);
+  let r, g, bl;
+  switch (i % 6) {
+    case 0: r = v; g = t; bl = p; break;
+    case 1: r = q; g = v; bl = p; break;
+    case 2: r = p; g = v; bl = t; break;
+    case 3: r = p; g = q; bl = v; break;
+    case 4: r = t; g = p; bl = v; break;
+    default: r = v; g = p; bl = q;
+  }
+  return [Math.trunc(r * 255), Math.trunc(g * 255), Math.trunc(bl * 255)];
+}
+const scaleMinMax = b => cfg.bmin + Math.floor((cfg.bmax - cfg.bmin) * b / 100);
+const scaleZeroMax = b => Math.floor(b * cfg.bmax / 100);
+
+let pixels = [];
+function tick() {
+  const n = cfg.leds;
+  pixels = new Array(n);
+  switch (fw.effect) {
+    case 0: {
+      const c = hsbToRgb(fw.h, fw.s, scaleMinMax(fw.b));
+      pixels.fill(c);
+      break;
+    }
+    case 1: {
+      const b = Math.trunc(Math.abs(fw.step - 1200) / 12);
+      pixels.fill(hsbToRgb(fw.h, fw.s, scaleZeroMax(b)));
+      fw.step += fw.speed * 10;
+      if (fw.step > 2400) fw.step = 0;
+      break;
+    }
+    case 2: {
+      pixels.fill(hsbToRgb(fw.step, fw.s, scaleMinMax(fw.b)));
+      fw.step = (fw.step + fw.speed) % 360;
+      break;
+    }
+    case 3: {
+      const per = Math.floor(360 / n);
+      for (let i = 0; i < n; i++) pixels[i] = hsbToRgb((per * i + fw.step) % 360, fw.s, scaleMinMax(fw.b));
+      fw.step = (fw.step + fw.speed * 2) % 360;
+      break;
+    }
+  }
+}
+
+/* ---------- Geometry ---------- */
+
+const U = 80, PAD = 1.4;
+function keyCorners([x, y, r, rx, ry]) {
+  const pts = [[x, y], [x + 1, y], [x + 1, y + 1], [x, y + 1]];
+  if (!r) return pts;
+  const a = r * Math.PI / 180, c = Math.cos(a), s = Math.sin(a);
+  return pts.map(([px, py]) => [rx + (px - rx) * c - (py - ry) * s, ry + (px - rx) * s + (py - ry) * c]);
+}
+const corners = KEYS.map(keyCorners);
+let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+corners.flat().forEach(([x, y]) => { minX = Math.min(minX, x); minY = Math.min(minY, y); maxX = Math.max(maxX, x); maxY = Math.max(maxY, y); });
+const board = document.getElementById("board");
+board.width = Math.round((maxX - minX + PAD * 2) * U);
+board.height = Math.round((maxY - minY + PAD * 2) * U);
+document.getElementById("strip").width = board.width;
+const toPx = ([x, y]) => [(x - minX + PAD) * U, (y - minY + PAD) * U];
+
+function hull(points) {
+  const p = points.slice().sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const cross = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const lo = [], up = [];
+  for (const q of p) { while (lo.length >= 2 && cross(lo[lo.length - 2], lo[lo.length - 1], q) <= 0) lo.pop(); lo.push(q); }
+  for (const q of p.reverse()) { while (up.length >= 2 && cross(up[up.length - 2], up[up.length - 1], q) <= 0) up.pop(); up.push(q); }
+  return lo.slice(0, -1).concat(up.slice(0, -1));
+}
+function inflate(poly, d) {
+  const cx = poly.reduce((s, p) => s + p[0], 0) / poly.length;
+  const cy = poly.reduce((s, p) => s + p[1], 0) / poly.length;
+  return poly.map(([x, y]) => { const dx = x - cx, dy = y - cy, l = Math.hypot(dx, dy); return [x + dx / l * d, y + dy / l * d]; });
+}
+function sampleRing(poly, n) {
+  const segs = poly.map((p, i) => [p, poly[(i + 1) % poly.length]]);
+  const lens = segs.map(([a, b]) => Math.hypot(b[0] - a[0], b[1] - a[1]));
+  const total = lens.reduce((a, b) => a + b, 0);
+  const out = [];
+  for (let k = 0; k < n; k++) {
+    let d = total * k / n, i = 0;
+    while (d > lens[i]) { d -= lens[i]; i++; }
+    const [a, b] = segs[i], t = d / lens[i];
+    out.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]);
+  }
+  return out;
+}
+const halves = [0, 1].map(side => {
+  const pts = corners.filter((c, i) => SIDE[i] === side).flat();
+  const shell = inflate(hull(pts), 0.35);
+  return { shell };
+});
+let ledPos = [];
+function layoutLeds() {
+  // The halves aren't mirror images (the left one has the joystick), so each gets its own ring.
+  ledPos = halves.map(h => sampleRing(inflate(h.shell, -0.15), cfg.leds));
+}
+
+/* ---------- Drawing ---------- */
+
+const ctx = board.getContext("2d");
+const stripCtx = document.getElementById("strip").getContext("2d");
+
+function legendFor(i) {
+  for (const l of activeLayers()) {
+    const lab = LAYERS[l].labels[i];
+    if (lab !== "") return lab === "✕" ? "" : lab;
+  }
+  return "";
+}
+function boost([r, g, b]) {
+  const k = cfg.gain;
+  return [Math.min(255, r * k), Math.min(255, g * k), Math.min(255, b * k)];
+}
+
+function draw() {
+  const W = board.width, H = board.height;
+  ctx.globalCompositeOperation = "source-over";
+  ctx.fillStyle = "#050607";
+  ctx.fillRect(0, 0, W, H);
+
+  if (cfg.on && pixels.length) {
+    ctx.globalCompositeOperation = "lighter";
+    const rad = U * 0.95;
+    for (const ring of ledPos) {
+      ring.forEach((p, i) => {
+        const [r, g, b] = boost(pixels[i]);
+        if (r + g + b < 1) return;
+        const [x, y] = toPx(p);
+        const grad = ctx.createRadialGradient(x, y, 0, x, y, rad);
+        grad.addColorStop(0, `rgba(${r},${g},${b},0.55)`);
+        grad.addColorStop(1, `rgba(${r},${g},${b},0)`);
+        ctx.fillStyle = grad;
+        ctx.fillRect(x - rad, y - rad, rad * 2, rad * 2);
+      });
+    }
+    ctx.globalCompositeOperation = "source-over";
+  }
+
+  // Case
+  for (const h of halves) {
+    ctx.beginPath();
+    h.shell.forEach((p, i) => { const [x, y] = toPx(p); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+    ctx.closePath();
+    ctx.fillStyle = "#16191e";
+    ctx.fill();
+    ctx.strokeStyle = "#2b3038";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  // Keys
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  KEYS.forEach((k, i) => {
+    const [x, y, r, rx, ry] = k;
+    ctx.save();
+    const [ox, oy] = toPx([rx, ry]);
+    if (r) { ctx.translate(ox, oy); ctx.rotate(r * Math.PI / 180); ctx.translate(-ox, -oy); }
+    const [px, py] = toPx([x, y]);
+    const m = 4;
+    ctx.fillStyle = "#23272e";
+    ctx.beginPath();
+    ctx.roundRect(px + m, py + m, U - m * 2, U - m * 2, 9);
+    ctx.fill();
+    ctx.fillStyle = "#2c313a";
+    ctx.beginPath();
+    ctx.roundRect(px + m + 5, py + m + 3, U - m * 2 - 10, U - m * 2 - 12, 7);
+    ctx.fill();
+    const lab = legendFor(i);
+    if (lab) {
+      const size = lab.length <= 2 ? 22 : lab.length <= 5 ? 16 : 12;
+      ctx.font = `600 ${size}px system-ui, sans-serif`;
+      ctx.fillStyle = "#d7dce4";
+      ctx.fillText(lab, px + U / 2, py + U / 2 - 3, U - 16);
+    }
+    ctx.restore();
+  });
+
+  // Raw strip
+  const sw = stripCtx.canvas.width, n = pixels.length || 1;
+  stripCtx.fillStyle = "#000";
+  stripCtx.fillRect(0, 0, sw, 14);
+  if (cfg.on) pixels.forEach((p, i) => {
+    stripCtx.fillStyle = `rgb(${boost(p).join(",")})`;
+    stripCtx.fillRect(Math.floor(i * sw / n), 0, Math.ceil(sw / n), 14);
+  });
+}
+
+/* ---------- UI ---------- */
+
+const $ = id => document.getElementById(id);
+
+function swatchCss(c) {
+  const [r, g, b] = hsbToRgb(c.h, c.s, Math.max(35, c.b));
+  return `rgb(${r},${g},${b})`;
+}
+
+function renderLayers() {
+  const box = $("layers");
+  box.innerHTML = "";
+  const driving = drivingLayer();
+  LAYERS.forEach((L, i) => {
+    const c = cfg.layers[i];
+    const row = document.createElement("div");
+    row.className = "layer" + (i === selected ? " selected" : "") + (i === driving ? " driving" : "");
+    const sw = document.createElement("div");
+    sw.className = "swatch" + (c ? "" : " none");
+    if (c) sw.style.background = swatchCss(c);
+    const name = document.createElement("div");
+    name.className = "lname";
+    const fx = c ? (c.effect >= 0 ? EFFECTS[c.effect] : "keep effect") : "no color";
+    name.innerHTML = `${i} · ${L.name} <small>${fx}</small>`;
+    row.append(sw, name);
+    if (i === 0) {
+      const s = document.createElement("small");
+      s.textContent = "always on";
+      s.style.color = "var(--muted)";
+      row.append(s, document.createElement("span"));
+    } else {
+      const hold = document.createElement("button");
+      hold.textContent = "Hold";
+      if (held.has(i)) hold.classList.add("on");
+      hold.addEventListener("pointerdown", e => { e.stopPropagation(); hold.setPointerCapture(e.pointerId); held.add(i); layerChanged(); });
+      const release = () => { if (held.delete(i)) layerChanged(); };
+      hold.addEventListener("pointerup", release);
+      hold.addEventListener("pointercancel", release);
+      hold.addEventListener("click", e => e.stopPropagation());
+      const tog = document.createElement("button");
+      tog.textContent = "Toggle";
+      if (toggled.has(i)) tog.classList.add("on");
+      tog.addEventListener("click", e => { e.stopPropagation(); toggled.has(i) ? toggled.delete(i) : toggled.add(i); layerChanged(); });
+      row.append(hold, tog);
+    }
+    row.addEventListener("click", () => { selected = i; renderLayers(); renderEditor(); });
+    box.append(row);
+  });
+  updateLayerState();
+}
+
+function updateLayerState() {
+  const driving = drivingLayer();
+  [...$("layers").children].forEach((row, i) => {
+    row.classList.toggle("driving", i === driving);
+    const [hold, tog] = row.querySelectorAll("button");
+    if (hold) { hold.classList.toggle("on", held.has(i)); tog.classList.toggle("on", toggled.has(i)); }
+  });
+  const d = driving === null ? "none" : `${driving} · ${LAYERS[driving].name}`;
+  $("status").innerHTML = `Showing layer <b>${d}</b> · ${cfg.on ? EFFECTS[fw.effect] + " · speed " + fw.speed : "underglow off"}`;
+}
+
+function hsbToHex(h, s) {
+  return "#" + hsbToRgb(h, s, 100).map(v => v.toString(16).padStart(2, "0")).join("");
+}
+function hexToHs(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  const r = (n >> 16) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
+  let h = 0;
+  if (d) {
+    if (max === r) h = 60 * (((g - b) / d) % 6);
+    else if (max === g) h = 60 * ((b - r) / d + 2);
+    else h = 60 * ((r - g) / d + 4);
+  }
+  if (h < 0) h += 360;
+  return { h: Math.round(h) % 360, s: max ? Math.round(d / max * 100) : 0 };
+}
+
+function renderEditor() {
+  const c = cfg.layers[selected];
+  $("edTitle").textContent = `Edit layer ${selected} · ${LAYERS[selected].name}`;
+  $("hasCfg").checked = !!c;
+  $("cfgFields").classList.toggle("disabled", !c);
+  const v = c || { h: 0, s: 100, b: 50, effect: 0, speed: 0 };
+  $("h").value = v.h; $("hv").textContent = v.h + "°";
+  $("s").value = v.s; $("sv").textContent = v.s + "%";
+  $("b").value = v.b; $("bv").textContent = v.b + "%";
+  $("picker").value = hsbToHex(v.h, v.s);
+  $("effect").value = v.effect;
+  $("speed").value = v.speed; $("spv").textContent = v.speed ? v.speed : "keep";
+  const notes = {
+    "-1": "Keeps whatever effect the previous layer (or your RGB_EFF key) left running.",
+    0: `Shown at ${scaleMinMax(v.b)}% LED brightness after the ${cfg.bmin}–${cfg.bmax}% limit.`,
+    1: "Breathe fades between off and full brightness, so the brightness slider has no effect here.",
+    2: "Spectrum cycles through every hue, so the hue slider has no effect here. Saturation and brightness still apply.",
+    3: "Swirl runs a rainbow along the LED strip, so the hue slider has no effect here. Saturation and brightness still apply.",
+  };
+  $("effNote").textContent = notes[v.effect];
+  $("effNote").className = "note" + (v.effect >= 1 ? " warn" : "");
+}
+
+function renderSettings() {
+  for (const k of ["bmin", "bmax", "leds", "gain"]) { $(k).value = cfg[k]; }
+  $("bminv").textContent = cfg.bmin; $("bmaxv").textContent = cfg.bmax;
+  $("ledsv").textContent = cfg.leds; $("gainv").textContent = (+cfg.gain).toFixed(1) + "×";
+  $("rgbOn").checked = cfg.on;
+}
+
+function generate() {
+  const lines = [
+    "/*",
+    " * Per-layer RGB underglow (handled by src/layer_rgb.c).",
+    " * Generated by rgb-emulator/index.html.",
+    " *",
+    " *   color-hsb  <hue 0-359  saturation 0-100  brightness 0-100>",
+    " *   effect     0 solid, 1 breathe, 2 spectrum, 3 swirl  (optional)",
+    " *   speed      1-5, for the animated effects             (optional)",
+    " */",
+    "",
+    "/ {",
+    "    layer_rgb {",
+    "        compatible = \"zmk,layer-rgb\";",
+    "",
+  ];
+  const names = LAYERS.map(L => L.name.replace(/[^a-z0-9_]/gi, "_").toLowerCase());
+  const w = Math.max(...names.map(n => n.length));
+  cfg.layers.forEach((c, i) => {
+    if (!c) return;
+    let s = `        ${names[i].padEnd(w)} { layer = <${i}>; color-hsb = <${c.h} ${c.s} ${c.b}>;`;
+    if (c.effect >= 0) s += ` effect = <${c.effect}>;`;
+    if (c.speed) s += ` speed = <${c.speed}>;`;
+    lines.push(s + " };");
+  });
+  lines.push("    };", "};", "");
+  $("out").value = lines.join("\n");
+}
+
+function parse(text) {
+  const layers = LAYERS.map(() => null);
+  const re = /\{\s*([^{}]*?layer\s*=\s*<\s*(\d+)\s*>[^{}]*?)\}/g;
+  let m, found = 0;
+  while ((m = re.exec(text))) {
+    const body = m[1], idx = +m[2];
+    const col = /color-hsb\s*=\s*<\s*(\d+)\s+(\d+)\s+(\d+)\s*>/.exec(body);
+    if (!col || idx >= layers.length) continue;
+    const eff = /effect\s*=\s*<\s*(\d+)\s*>/.exec(body);
+    const spd = /speed\s*=\s*<\s*(\d+)\s*>/.exec(body);
+    layers[idx] = {
+      h: Math.min(359, +col[1]), s: Math.min(100, +col[2]), b: Math.min(100, +col[3]),
+      effect: eff ? Math.min(3, +eff[1]) : -1,
+      speed: spd ? Math.max(1, Math.min(5, +spd[1])) : 0,
+    };
+    found++;
+  }
+  return found ? layers : null;
+}
+
+function changed() {
+  save(); generate(); applyLayer(true); renderLayers(); renderEditor();
+}
+function layerChanged() {
+  applyLayer(false); updateLayerState();
+}
+
+function editField(fn) {
+  return () => { const c = cfg.layers[selected]; if (!c) return; fn(c); changed(); };
+}
+$("hasCfg").addEventListener("change", e => {
+  cfg.layers[selected] = e.target.checked
+    ? (DEFAULTS.layers[selected] ? structuredClone(DEFAULTS.layers[selected]) : { h: 0, s: 100, b: 60, effect: 0, speed: 0 })
+    : null;
+  if (!e.target.checked && selected === 0) {
+    $("importMsg").textContent = "Without a layer 0 entry the LEDs keep the last layer's color when you return to the base layer.";
+  }
+  appliedLayer = null; changed();
+});
+$("h").addEventListener("input", editField(c => c.h = +$("h").value));
+$("s").addEventListener("input", editField(c => c.s = +$("s").value));
+$("b").addEventListener("input", editField(c => c.b = +$("b").value));
+$("picker").addEventListener("input", editField(c => Object.assign(c, hexToHs($("picker").value))));
+$("effect").addEventListener("change", editField(c => c.effect = +$("effect").value));
+$("speed").addEventListener("input", editField(c => c.speed = +$("speed").value));
+
+for (const k of ["bmin", "bmax", "leds", "gain"]) {
+  $(k).addEventListener("input", () => {
+    cfg[k] = +$(k).value;
+    if (k === "bmin" && cfg.bmin > cfg.bmax) cfg.bmax = cfg.bmin;
+    if (k === "bmax" && cfg.bmax < cfg.bmin) cfg.bmin = cfg.bmax;
+    if (k === "leds") layoutLeds();
+    save(); renderSettings(); renderEditor();
+  });
+}
+$("rgbOn").addEventListener("change", e => { cfg.on = e.target.checked; save(); updateLayerState(); });
+$("reset").addEventListener("click", () => { cfg = structuredClone(DEFAULTS); layoutLeds(); renderSettings(); appliedLayer = null; changed(); });
+
+$("copy").addEventListener("click", async () => {
+  try { await navigator.clipboard.writeText($("out").value); $("copy").textContent = "Copied"; }
+  catch (e) { $("out").select(); document.execCommand("copy"); $("copy").textContent = "Copied"; }
+  setTimeout(() => $("copy").textContent = "Copy", 1200);
+});
+$("download").addEventListener("click", () => {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([$("out").value], { type: "text/plain" }));
+  a.download = "layer_rgb.dtsi";
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+$("import").addEventListener("click", () => {
+  const layers = parse($("out").value);
+  if (!layers) { $("importMsg").textContent = "No layer entries found in the text box."; return; }
+  cfg.layers = layers; appliedLayer = null; changed();
+  $("importMsg").textContent = "Loaded.";
+});
+
+// Hold 1-5 on the computer keyboard = momentary layer.
+addEventListener("keydown", e => {
+  if (e.target.matches("input, textarea, select") || e.repeat) return;
+  const n = +e.key;
+  if (n >= 1 && n < LAYERS.length) { held.add(n); layerChanged(); }
+});
+addEventListener("keyup", e => {
+  const n = +e.key;
+  if (held.delete(n)) layerChanged();
+});
+addEventListener("blur", () => { if (held.size) { held.clear(); layerChanged(); } });
+
+layoutLeds();
+renderSettings();
+generate();
+applyLayer(true);
+renderLayers();
+renderEditor();
+tick();
+setInterval(() => { if (cfg.on) tick(); }, 50);   // K_TIMER period in rgb_underglow.c
+(function frame() { draw(); requestAnimationFrame(frame); })();
+</script>
+</body>
+</html>

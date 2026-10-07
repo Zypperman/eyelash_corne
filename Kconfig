@@ -1,0 +1,23 @@
+config ZMK_LAYER_RGB
+    bool "Per-layer RGB underglow color and effect"
+    default y
+    depends on ZMK_RGB_UNDERGLOW && DT_HAS_ZMK_LAYER_RGB_ENABLED
+    # Layer state only exists on the split central (the dongle); it pushes
+    # the color to both halves over the split link. The halves are built with
+    # CONFIG_ZMK_SPLIT_ROLE_CENTRAL=n, so this stays off for them.
+    depends on !ZMK_SPLIT || ZMK_SPLIT_ROLE_CENTRAL
+
+if ZMK_LAYER_RGB
+
+config ZMK_LAYER_RGB_DEBOUNCE_MS
+    int "Wait this long after a layer change before recoloring"
+    default 30
+    help
+      Coalesces quick layer flicks (e.g. a fast tap of a layer-tap key) into
+      one color change.
+
+config ZMK_LAYER_RGB_BOOT_DELAY_MS
+    int "Apply the base layer's color this long after boot"
+    default 3000
+
+endif

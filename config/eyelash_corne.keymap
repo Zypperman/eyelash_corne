@@ -11,6 +11,10 @@
 #include <dt-bindings/zmk/pointing.h>
 #include <dt-bindings/zmk/rgb.h>
 
+// Per-layer underglow colors: edit config/layer_rgb.dtsi (or generate it
+// with rgb-emulator/index.html).
+#include "layer_rgb.dtsi"
+
 &mmv_input_listener { input-processors = <&zip_xy_scaler 2 1>; };
 
 // split (not the combined zip_scroll_scaler) so horizontal speed is tunable

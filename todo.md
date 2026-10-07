@@ -18,7 +18,7 @@ based on firmware artifacts created by 8a60289ccf75f41b138ae7096aeb534f37675cdb 
 
 ## RGB lighting
 
-- [ ] add lighting for each layer
+- [x] add lighting for each layer (see `config/layer_rgb.dtsi`)
 - [ ] add bad apple idle video
 
 
