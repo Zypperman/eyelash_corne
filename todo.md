@@ -21,6 +21,13 @@ based on firmware artifacts created by 8a60289ccf75f41b138ae7096aeb534f37675cdb 
 - [x] add lighting for each layer (see `config/layer_rgb.dtsi`)
 - [ ] add bad apple idle video
 
+ ## Alt layouts
+ 
+ - [ ] add branch for colmak, learn and see with this keyboard lowkey not sure if its better but Im getting tired lmao 
+ - [ ] consider swithing to:
+       - the rotary encoder for vertical scroll
+       - the dpad encoder is a mouse
+       - whenever the mouse moves, we switch to a new layer for 500 ms where the 3 keys to the left of the home key (f key on qwerty format) will be M3,M2,M1, and below M2 and M3 will be M4 and M5 respectively 
 
 ## Connectivity
 
