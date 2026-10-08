@@ -23,11 +23,25 @@ based on firmware artifacts created by 8a60289ccf75f41b138ae7096aeb534f37675cdb 
 
  ## Alt layouts
  
- - [ ] add branch for colmak, learn and see with this keyboard lowkey not sure if its better but Im getting tired lmao 
- - [ ] consider swithing to:
+ - [ ] add branch for alternative keymap layouts/, learn and see with this keyboard lowkey not sure if its better but Im getting tired lmao 
+ - [ ] consider swithing to
        - the rotary encoder for vertical scroll
        - the dpad encoder is a mouse
        - whenever the mouse moves, we switch to a new layer for 500 ms where the 3 keys to the left of the home key (f key on qwerty format) will be M3,M2,M1, and below M2 and M3 will be M4 and M5 respectively 
+
+- alternative keymaps to consider:
+    - colmak-DH or colmak for easier transition from
+    -  (recommendedc)
+    - canary for apparently more fluid typing cuz of the inward rolling you get to do
+    - gallium for optimization but you sacrifice command chord keys i.e. ctrl alt gui stufs
+
+## keymap changes 
+
+- [ ] shift konbini layout such that momentary trigger button and arrows shift left by 1
+- [ ] shift l_scroll-del-r_scroll key right by 1
+      - u_scroll-d_scroll move to below the l_scroll-del keys. easier to manage            
+
+
 
 ## Connectivity
 
