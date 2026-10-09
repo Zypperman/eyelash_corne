@@ -71,7 +71,7 @@ The left half builds with ZMK Studio enabled while maintaining OLED functionalit
 
 1. **Enter bootloader mode**:
    - Double-tap the reset button on each half, OR
-   - Press the `&bootloader` key (Layer 3, right side)
+   - Press the `&bootloader` key (config layer, Layer 4, right side)
 
 2. **Flash the firmware**:
    - Keyboard appears as a USB drive
@@ -97,7 +97,7 @@ This is **expected behavior**. ZMK Studio should automatically connect to ttyACM
 1. **Connect left half via USB**
 2. **Visit [zmk.studio](https://zmk.studio/)** in Chrome/Edge
 3. **Click "Connect"** - it should detect ttyACM1
-4. **Unlock the keymap**: Press `&studio_unlock` key (Layer 3, top-left: F1 position)
+4. **Unlock the keymap**: Press `&studio_unlock` key (config layer, Layer 4, top-left)
 5. **Edit your keymap** in real-time!
 
 **Note**: The right half does NOT have Studio support to save resources.
