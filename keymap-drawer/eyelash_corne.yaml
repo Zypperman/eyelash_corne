@@ -112,7 +112,7 @@ layers:
   - KP 8
   - KP 9
   - {t: KP PLUS, h: KP ASTERISK}
-  - $$mdi:apple-keyboard-control$$
+  - {t: '$$mdi:transfer$$', type: trans}
   - $$mdi:pan-left$$
   - $$mdi:backspace-reverse-outline$$
   - $$mdi:pan-right$$
