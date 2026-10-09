@@ -6,7 +6,7 @@ layers:
   - W
   - F
   - P
-  - B
+  - G
   - $$mdi:pan-up$$
   - J
   - L
@@ -19,7 +19,7 @@ layers:
   - R
   - S
   - T
-  - G
+  - D
   - $$mdi:pan-left$$
   - APP
   - $$mdi:pan-right$$
@@ -33,8 +33,8 @@ layers:
   - Z
   - X
   - C
-  - D
   - V
+  - B
   - {t: konbini, h: toggle}
   - $$mdi:pan-down$$
   - K
