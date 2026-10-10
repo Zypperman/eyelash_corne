@@ -19,7 +19,7 @@
         compatible = "zmk,layer-rgb";
 
         main    { layer = <0>; color-hsb = <190 100 40>; effect = <0>; };
-        qwerty  { layer = <1>; color-hsb = <55 100 40>; effect = <0>; };
+        colemak { layer = <1>; color-hsb = <55 100 40>; effect = <0>; };
         number  { layer = <2>; color-hsb = <30 100 40>; effect = <0>; };
         utility { layer = <3>; color-hsb = <120 100 40>; effect = <0>; };
         config  { layer = <4>; color-hsb = <0 100 40>; effect = <0>; };
