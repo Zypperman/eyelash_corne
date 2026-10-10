@@ -16,6 +16,15 @@
 
 #include "layer_rgb.dtsi"
 
+// Layer indices. Keep these in the same order as the layers in the keymap
+// node below (and as the layer numbers in config/layer_rgb.dtsi).
+#define MAIN    0
+#define QWERTY  1
+#define NUM     2
+#define UTIL    3
+#define CONFIG  4
+#define KONBINI 5
+
 &mmv_input_listener { input-processors = <&zip_xy_scaler 2 1>; };
 
 // split (not the combined zip_scroll_scaler) so horizontal speed is tunable
@@ -136,7 +145,7 @@
         };
 
         gotolayer4 {
-            bindings = <&tog 4>;
+            bindings = <&tog KONBINI>;
             key-positions = <42 43>;
         };
     };
@@ -158,11 +167,27 @@
             bindings = <
 &kp TAB         &kp Q  &kp W  &kp F            &kp P            &kp B                                &msc SCRL_UP                     &kp J          &kp L           &kp U        &kp Y    &kp SEMI         &kp MINUS
 &kp ESCAPE      &kp A  &kp R  &kp S            &kp T            &kp G                &msc SCRL_LEFT  &kp K_APP       &msc SCRL_RIGHT  &kp M          &kp N           &kp E        &kp I    &kp O            &kp SQT
-&kp LEFT_SHIFT  &kp Z  &kp X  &kp C            &kp D            &kp V      &tog 4                    &msc SCRL_DOWN                   &kp K          &kp H           &kp COMMA    &kp DOT  &lt 4 BACKSLASH  &kp FSLH
-                              &lt 2 BACKSPACE  &mt LCTRL ENTER  &kp SPACE                                                             &kp BACKSPACE  &mt LALT ENTER  &lt 1 SPACE
+&kp LEFT_SHIFT  &kp Z  &kp X  &kp C            &kp D            &kp V      &tog KONBINI                    &msc SCRL_DOWN                   &kp K          &kp H           &kp COMMA    &kp DOT  &lt KONBINI BACKSLASH  &kp FSLH
+                              &lt UTIL BACKSPACE  &mt LCTRL ENTER  &kp SPACE                                                             &kp BACKSPACE  &mt LALT ENTER  &lt NUM SPACE
             >;
 
             sensor-bindings = <&LRscroller>;
+        };
+
+        // Fallback QWERTY, for when the main layer is some other layout.
+        // Toggle it on/off with the 5-way press on the utility layer. It sits
+        // right above main so the number/utility/config layers still win
+        // over it; only the letter and punctuation keys are set, everything
+        // else falls through to main.
+
+        qwerty {
+            display-name = "qwerty";
+            bindings = <
+&trans  &kp Q  &kp W  &kp E   &kp R   &kp T                    &trans          &kp Y   &kp U   &kp I      &kp O    &kp P     &trans
+&trans  &kp A  &kp S  &kp D   &kp F   &kp G            &trans  &trans  &trans  &kp H   &kp J   &kp K      &kp L    &kp SEMI  &kp SQT
+&trans  &kp Z  &kp X  &kp C   &kp V   &kp B   &trans           &trans          &kp N   &kp M   &kp COMMA  &kp DOT  &trans    &trans
+                      &trans  &trans  &trans                                   &trans  &trans  &trans
+            >;
         };
 
         Rhold {
@@ -181,7 +206,7 @@
             display-name = "utility";
             bindings = <
 &kp TAB     &sk LALT        &sk LGUI        &sk HOME         &kp END   &kp PG_UP                             &mmv MOVE_UP                     &mkp MB4   &mkp MB5               &kp KP_NUMBER_7  &kp KP_N8             &kp KP_N9  &mt KP_ASTERISK KP_PLUS
-&sk LCTRL   &msc SCRL_LEFT  &kp DEL         &msc SCRL_RIGHT  &kp UP    &kp PG_DN             &mmv MOVE_LEFT  &kp K_CMENU     &mmv MOVE_RIGHT  &mkp MB1   &mkp MB2               &kp KP_N4        &mt KP_NUMLOCK KP_N5  &kp KP_N6  &mt KP_DIVIDE KP_MINUS
+&sk LCTRL   &msc SCRL_LEFT  &kp DEL         &msc SCRL_RIGHT  &kp UP    &kp PG_DN             &mmv MOVE_LEFT  &tog QWERTY     &mmv MOVE_RIGHT  &mkp MB1   &mkp MB2               &kp KP_N4        &mt KP_NUMLOCK KP_N5  &kp KP_N6  &mt KP_DIVIDE KP_MINUS
 &kp LSHIFT  &msc SCRL_UP    &msc SCRL_DOWN  &kp LEFT         &kp DOWN  &kp RIGHT  &lockPC                    &mmv MOVE_DOWN                   &mkp MB3   &mt LSHIFT KP_NUMLOCK  &mt KP_N0 KP_N1  &mt KP_DOT KP_N2      &kp KP_N3  &mt KP_ENTER KP_EQUAL
                                             &trans           &trans    &trans                                                                 &kp LCTRL  &mt LEFT_ALT ENTER     &trans
             >;
@@ -206,7 +231,7 @@
             bindings = <
 &trans  &kp SLASH  &kp MINUS  &kp PLUS      &kp ASTERISK  &kp EQUAL                    &trans          &trans     &trans    &trans    &trans     &trans  &trans
 &trans  &kp N1     &kp N2     &kp N3        &kp N4        &kp N5               &trans  &trans  &trans  &kp PG_UP  &kp HOME  &kp UP    &kp END    &trans  &trans
-&trans  &kp N6     &kp N7     &mt COMMA N8  &mt DOT N9    &kp N0     &tog 4            &trans          &kp PG_DN  &kp LEFT  &kp DOWN  &kp RIGHT  &trans  &trans
+&trans  &kp N6     &kp N7     &mt COMMA N8  &mt DOT N9    &kp N0     &tog KONBINI            &trans          &kp PG_DN  &kp LEFT  &kp DOWN  &kp RIGHT  &trans  &trans
                               &trans        &trans        &trans                                       &trans     &trans    &trans
             >;
 
@@ -218,8 +243,8 @@
         compatible = "zmk,conditional-layers";
 
         config {
-            if-layers = <1 2>;
-            then-layer = <3>;
+            if-layers = <NUM UTIL>;
+            then-layer = <CONFIG>;
         };
     };
 };
