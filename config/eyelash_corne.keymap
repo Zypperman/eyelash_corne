@@ -18,6 +18,7 @@
 
 // Layer indices. Keep these in the same order as the layers in the keymap
 // node below (and as the layer numbers in config/layer_rgb.dtsi).
+
 #define MAIN    0
 #define QWERTY  1
 #define NUM     2
@@ -165,10 +166,10 @@
         default_layer {
             display-name = "main";
             bindings = <
-&kp TAB         &kp Q  &kp W  &kp F            &kp P            &kp G                                &msc SCRL_UP                     &kp J          &kp L           &kp U        &kp Y    &kp SEMI         &kp MINUS
-&kp ESCAPE      &kp A  &kp R  &kp S            &kp T            &kp D                &msc SCRL_LEFT  &kp K_APP       &msc SCRL_RIGHT  &kp M          &kp N           &kp E        &kp I    &kp O            &kp SQT
-&kp LEFT_SHIFT  &kp Z  &kp X  &kp C            &kp V            &kp B      &tog KONBINI                    &msc SCRL_DOWN                   &kp K          &kp H           &kp COMMA    &kp DOT  &lt KONBINI BACKSLASH  &kp FSLH
-                              &lt UTIL BACKSPACE  &mt LCTRL ENTER  &kp SPACE                                                             &kp BACKSPACE  &mt LALT ENTER  &lt NUM SPACE
+&kp TAB         &kp Q  &kp W  &kp F               &kp P            &kp G                                      &msc SCRL_UP                     &kp J          &kp L           &kp U          &kp Y    &kp SEMI               &kp MINUS
+&kp ESCAPE      &kp A  &kp R  &kp S               &kp T            &kp D                      &msc SCRL_LEFT  &kp K_APP       &msc SCRL_RIGHT  &kp H          &kp N           &kp E          &kp I    &kp O                  &kp SQT
+&kp LEFT_SHIFT  &kp Z  &kp X  &kp C               &kp V            &kp B      &tog KONBINI                    &msc SCRL_DOWN                   &kp K          &kp M           &kp COMMA      &kp DOT  &lt KONBINI BACKSLASH  &kp FSLH
+                              &lt UTIL BACKSPACE  &mt LCTRL ENTER  &kp SPACE                                                                   &kp BACKSPACE  &mt LALT ENTER  &lt NUM SPACE
             >;
 
             sensor-bindings = <&LRscroller>;
@@ -184,10 +185,10 @@
         qwerty {
             display-name = "qwerty";
             bindings = <
-&trans  &kp Q  &kp W  &kp E   &kp R   &kp T                    &trans          &kp Y   &kp U   &kp I      &kp O    &kp P     &trans
-&trans  &kp A  &kp S  &kp D   &kp F   &kp G            &trans  &trans  &trans  &kp H   &kp J   &kp K      &kp L    &kp SEMI  &kp SQT
-&trans  &kp Z  &kp X  &kp C   &kp V   &kp B   &trans           &trans          &kp N   &kp M   &kp COMMA  &kp DOT  &trans    &trans
-                      &trans  &trans  &trans                                   &trans  &trans  &trans
+&trans  &kp Q  &kp W  &kp E   &kp R   &kp T                     &trans          &kp Y   &kp U   &kp I      &kp O    &kp P     &trans
+&trans  &kp A  &kp S  &kp D   &kp F   &kp G             &trans  &trans  &trans  &kp H   &kp J   &kp K      &kp L    &kp SEMI  &kp SQT
+&trans  &kp Z  &kp X  &kp C   &kp V   &kp B   &trans            &trans          &kp N   &kp M   &kp COMMA  &kp DOT  &trans    &trans
+                      &trans  &trans  &trans                                    &trans  &trans  &trans
             >;
         };
 
@@ -230,10 +231,10 @@
         weird_stuff {
             display-name = "konbini";
             bindings = <
-&trans  &kp SLASH  &kp MINUS  &kp PLUS      &kp ASTERISK  &kp EQUAL                    &trans          &trans     &trans    &trans    &trans     &trans  &trans
-&trans  &kp N1     &kp N2     &kp N3        &kp N4        &kp N5               &trans  &trans  &trans  &kp PG_UP  &kp HOME  &kp UP    &kp END    &trans  &trans
+&trans  &kp SLASH  &kp MINUS  &kp PLUS      &kp ASTERISK  &kp EQUAL                          &trans          &trans     &trans    &trans    &trans     &trans  &trans
+&trans  &kp N1     &kp N2     &kp N3        &kp N4        &kp N5                     &trans  &trans  &trans  &kp PG_UP  &kp HOME  &kp UP    &kp END    &trans  &trans
 &trans  &kp N6     &kp N7     &mt COMMA N8  &mt DOT N9    &kp N0     &tog KONBINI            &trans          &kp PG_DN  &kp LEFT  &kp DOWN  &kp RIGHT  &trans  &trans
-                              &trans        &trans        &trans                                       &trans     &trans    &trans
+                              &trans        &trans        &trans                                             &trans     &trans    &trans
             >;
 
             sensor-bindings = <&scroller_vert>;
