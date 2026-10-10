@@ -13,10 +13,12 @@
 
 // Per-layer underglow colors: edit config/layer_rgb.dtsi (or generate it
 // with rgb-emulator/index.html).
+
 #include "layer_rgb.dtsi"
 
 // Layer indices. Keep these in the same order as the layers in the keymap
 // node below (and as the layer numbers in config/layer_rgb.dtsi).
+
 #define MAIN    0
 #define COLEMAK 1
 #define NUM     2
@@ -144,7 +146,7 @@
         };
 
         gotolayer4 {
-            bindings = <&tog KONBINI>;
+            bindings = <&tog 5>;
             key-positions = <42 43>;
         };
     };
@@ -164,10 +166,10 @@
         default_layer {
             display-name = "main";
             bindings = <
-&kp TAB         &kp Q  &kp W  &kp E            &kp R            &kp T                                &msc SCRL_UP                     &kp Y          &kp U           &kp I        &kp O    &kp P     &kp MINUS
-&kp ESCAPE      &kp A  &kp S  &kp D            &kp F            &kp G                &msc SCRL_LEFT  &kp K_APP       &msc SCRL_RIGHT  &kp H          &kp J           &kp K        &kp L    &kp SEMI  &kp SQT
-&kp LEFT_SHIFT  &kp Z  &kp X  &kp C            &kp V            &kp B      &tog KONBINI                    &msc SCRL_DOWN                   &kp N          &kp M           &kp COMMA    &kp DOT  &kp FSLH  &lt KONBINI BACKSLASH
-                              &lt UTIL BACKSPACE  &mt LCTRL ENTER  &kp SPACE                                                             &kp BACKSPACE  &mt LALT ENTER  &lt NUM SPACE
+&kp TAB         &kp Q  &kp W  &kp E            &kp R            &kp T                                &msc SCRL_UP                     &kp Y          &kp U           &kp I        &kp O    &kp P        &kp MINUS
+&kp ESCAPE      &kp A  &kp S  &kp D            &kp F            &kp G                &msc SCRL_LEFT  &kp K_APP       &msc SCRL_RIGHT  &kp H          &kp J           &kp K        &kp L    &kp SEMI     &kp SQT
+&kp LEFT_SHIFT  &kp Z  &kp X  &kp C            &kp V            &kp B      &tog 5                    &msc SCRL_DOWN                   &kp N          &kp M           &kp COMMA    &kp DOT  &lt 5 SLASH  &kp BSLH
+                              &lt 3 BACKSPACE  &mt LCTRL ENTER  &kp SPACE                                                             &kp BACKSPACE  &mt LALT ENTER  &lt 2 SPACE
             >;
 
             sensor-bindings = <&LRscroller>;
@@ -181,10 +183,10 @@
         colemak {
             display-name = "colemak";
             bindings = <
-&trans  &kp Q  &kp W  &kp F   &kp P   &kp G                    &trans          &kp J   &kp L   &kp U      &kp Y    &kp SEMI  &trans
-&trans  &kp A  &kp R  &kp S   &kp T   &kp D            &trans  &trans  &trans  &kp H   &kp N   &kp E      &kp I    &kp O     &kp SQT
-&trans  &kp Z  &kp X  &kp C   &kp V   &kp B   &trans           &trans          &kp K   &kp M   &kp COMMA  &kp DOT  &kp FSLH  &trans
-                      &trans  &trans  &trans                                   &trans  &trans  &trans
+&trans  &kp Q  &kp W  &kp F   &kp P   &kp G                     &trans          &kp J   &kp L   &kp U      &kp Y    &kp SEMI    &trans
+&trans  &kp A  &kp R  &kp S   &kp T   &kp D             &trans  &trans  &trans  &kp H   &kp N   &kp E      &kp I    &kp O       &kp SQT
+&trans  &kp Z  &kp X  &kp C   &kp V   &kp B   &trans            &trans          &kp K   &kp M   &kp COMMA  &kp DOT  &lt 5 FSLH  &trans
+                      &trans  &trans  &trans                                    &trans  &trans  &trans
             >;
         };
 
@@ -193,7 +195,7 @@
             bindings = <
 &kp F1          &kp F2     &kp F3     &kp F4            &kp F5             &kp F6                                  &kp UP                  &kp F7         &kp F8              &kp F9           &kp F10         &kp F11    &kp F12
 &gresc          &kp N1     &kp N2     &kp N3            &kp N4             &kp N5                        &kp LEFT  &kp K_CMENU  &kp RIGHT  &kp N6         &kp N7              &kp N8           &kp N9          &kp N0     &kp SINGLE_QUOTE
-&kp LEFT_SHIFT  &kp GRAVE  &kp PG_DN  &kp LEFT_BRACKET  &kp RIGHT_BRACKET  &kp PG_UP       &kp C_MUTE              &kp DOWN                &kp EQUAL      &kp MINUS           &mt POUND COMMA  &mt DOLLAR DOT  &kp SLASH  &caps_word
+&kp LEFT_SHIFT  &kp TILDE  &kp PG_DN  &kp LEFT_BRACKET  &kp RIGHT_BRACKET  &kp PG_UP       &kp C_MUTE              &kp DOWN                &kp EQUAL      &kp MINUS           &mt POUND COMMA  &mt DOLLAR DOT  &kp SLASH  &caps_word
                                       &trans            &mt LCTRL ENTER    &mt LGUI SPACE                                                  &kp BACKSPACE  &mt LEFT_ALT ENTER  &trans
             >;
 
@@ -203,10 +205,10 @@
         Lhold {
             display-name = "utility";
             bindings = <
-&sk LEFT_SHIFT  &sk LCTRL       &sk LEFT_ALT     &sk LGUI  &kp TAB    &kp BACKSPACE                             &mmv MOVE_UP                     &mkp MB4   &mkp MB5               &kp KP_NUMBER_7  &kp KP_N8             &kp KP_N9  &mt KP_ASTERISK KP_PLUS
-&msc SCRL_LEFT  &kp DEL         &msc SCRL_RIGHT  &kp HOME  &kp UP     &kp END                   &mmv MOVE_LEFT  &tog COLEMAK    &mmv MOVE_RIGHT  &mkp MB1   &mkp MB2               &kp KP_N4        &mt KP_NUMLOCK KP_N5  &kp KP_N6  &mt KP_DIVIDE KP_MINUS
-&kp ENTER       &msc SCRL_DOWN  &msc SCRL_UP     &kp LEFT  &kp DOWN   &kp RIGHT      &lockPC                    &mmv MOVE_DOWN                   &mkp MB3   &mt LSHIFT KP_NUMLOCK  &mt KP_N0 KP_N1  &mt KP_DOT KP_N2      &kp KP_N3  &mt KP_ENTER KP_EQUAL
-                                                 &trans    &kp PG_DN  &kp PG_UP                                                                  &kp LCTRL  &mt LEFT_ALT ENTER     &trans
+&kp TAB    &sk LALT        &sk LGUI      &kp HOME         &kp END    &kp PG_UP                             &mmv MOVE_UP                     &mkp MB4   &mkp MB5               &kp KP_NUMBER_7  &kp KP_N8             &kp KP_N9  &mt KP_ASTERISK KP_PLUS
+&sk LCTRL  &msc SCRL_LEFT  &kp DEL       &msc SCRL_RIGHT  &kp UP     &kp PG_DN             &mmv MOVE_LEFT  &tog 1          &mmv MOVE_RIGHT  &mkp MB1   &mkp MB2               &kp KP_N4        &mt KP_NUMLOCK KP_N5  &kp KP_N6  &mt KP_DIVIDE KP_MINUS
+&trans     &msc SCRL_DOWN  &msc SCRL_UP  &kp LEFT         &kp DOWN   &kp RIGHT  &lockPC                    &mmv MOVE_DOWN                   &mkp MB3   &mt LSHIFT KP_NUMLOCK  &mt KP_N0 KP_N1  &mt KP_DOT KP_N2      &kp KP_N3  &mt KP_ENTER KP_EQUAL
+                                         &trans           &kp PG_DN  &kp PG_UP                                                              &kp LCTRL  &mt LEFT_ALT ENTER     &trans
             >;
 
             sensor-bindings = <&rgb_encoder>;
@@ -227,10 +229,10 @@
         weird_stuff {
             display-name = "konbini";
             bindings = <
-&trans  &kp SLASH  &kp MINUS  &kp PLUS      &kp ASTERISK  &kp EQUAL                    &trans          &trans  &trans     &trans    &trans    &trans     &trans
-&trans  &kp N1     &kp N2     &kp N3        &kp N4        &kp N5               &trans  &trans  &trans  &trans  &kp PG_UP  &kp HOME  &kp UP    &kp END    &trans
-&trans  &kp N6     &kp N7     &mt COMMA N8  &mt DOT N9    &kp N0     &tog KONBINI            &trans          &trans  &kp PG_DN  &kp LEFT  &kp DOWN  &kp RIGHT  &trans
-                              &trans        &trans        &trans                                       &trans  &trans     &trans
+&trans  &kp SLASH  &kp MINUS  &kp PLUS      &kp ASTERISK  &kp EQUAL                    &trans          &trans     &kp DEL   &trans        &trans     &trans  &trans
+&trans  &kp N1     &kp N2     &kp N3        &kp N4        &kp N5               &trans  &tog 1  &trans  &kp PG_UP  &kp HOME  &kp UP_ARROW  &kp END    &trans  &trans
+&trans  &kp N6     &kp N7     &mt COMMA N8  &mt DOT N9    &kp N0     &tog 5            &trans          &kp PG_DN  &kp LEFT  &kp DOWN      &kp RIGHT  &trans  &trans
+                              &trans        &trans        &trans                                       &trans     &trans    &trans
             >;
 
             sensor-bindings = <&scroller_vert>;
@@ -241,8 +243,8 @@
         compatible = "zmk,conditional-layers";
 
         config {
-            if-layers = <NUM UTIL>;
-            then-layer = <CONFIG>;
+            if-layers = <2 3>;
+            then-layer = <4>;
         };
     };
 };
