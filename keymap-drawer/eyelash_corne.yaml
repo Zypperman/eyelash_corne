@@ -23,7 +23,7 @@ layers:
   - $$mdi:pan-left$$
   - APP
   - $$mdi:pan-right$$
-  - M
+  - H
   - N
   - E
   - I
@@ -38,7 +38,7 @@ layers:
   - {t: konbini, h: toggle}
   - $$mdi:pan-down$$
   - K
-  - H
+  - M
   - {t: ',', s: <}
   - {t: ., s: '>'}
   - {t: \, h: konbini, s: '|'}
