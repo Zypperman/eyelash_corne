@@ -4,45 +4,45 @@ layers:
   - $$mdi:keyboard-tab$$
   - Q
   - W
-  - E
-  - R
-  - T
-  - $$mdi:pan-up$$
-  - Y
-  - U
-  - I
-  - O
+  - F
   - P
+  - B
+  - $$mdi:pan-up$$
+  - J
+  - L
+  - U
+  - Y
+  - {t: ;, s: ':'}
   - {t: '-', s: _}
   - $$mdi:keyboard-esc$$
   - A
+  - R
   - S
-  - D
-  - F
+  - T
   - G
   - $$mdi:pan-left$$
   - APP
   - $$mdi:pan-right$$
-  - H
-  - J
-  - K
-  - L
-  - {t: ;, s: ':'}
+  - M
+  - N
+  - E
+  - I
+  - O
   - {t: '''', s: '"'}
   - $$mdi:apple-keyboard-shift$$
   - Z
   - X
   - C
+  - D
   - V
-  - B
   - {t: konbini, h: toggle}
   - $$mdi:pan-down$$
-  - N
-  - M
+  - K
+  - H
   - {t: ',', s: <}
   - {t: ., s: '>'}
-  - {t: /, s: '?'}
   - {t: \, h: konbini, s: '|'}
+  - {t: /, s: '?'}
   - {t: '$$mdi:backspace$$', h: utility}
   - {t: '$$mdi:keyboard-return$$', h: '$$mdi:apple-keyboard-control$$'}
   - $$mdi:keyboard-space$$
@@ -90,7 +90,7 @@ layers:
   - M
   - {t: ',', s: <}
   - {t: ., s: '>'}
-  - {t: /, s: '?'}
+  - {t: '$$mdi:transfer$$', type: trans}
   - {t: '$$mdi:transfer$$', type: trans}
   - {t: '$$mdi:transfer$$', type: trans}
   - {t: '$$mdi:transfer$$', type: trans}
@@ -148,12 +148,12 @@ layers:
   - {t: '$$mdi:keyboard-return$$', h: '$$mdi:apple-keyboard-option$$'}
   - {type: held}
   utility:
-  - {t: '$$mdi:apple-keyboard-shift$$', h: '$$mdi:gesture-tap-hold$$'}
-  - {t: '$$mdi:apple-keyboard-control$$', h: '$$mdi:gesture-tap-hold$$'}
+  - $$mdi:keyboard-tab$$
   - {t: '$$mdi:apple-keyboard-option$$', h: '$$mdi:gesture-tap-hold$$'}
   - {t: LGUI, h: '$$mdi:gesture-tap-hold$$'}
-  - $$mdi:keyboard-tab$$
-  - {t: '$$mdi:backspace$$', type: backspace}
+  - {t: HOME, h: '$$mdi:gesture-tap-hold$$'}
+  - END
+  - PG UP
   - {t: '$$mdi:menu-up$$', s: '$$mdi:mouse$$'}
   - '&mkp MB4'
   - '&mkp MB5'
@@ -161,12 +161,12 @@ layers:
   - KP 8
   - KP 9
   - {t: KP PLUS, h: KP ASTERISK}
+  - {t: '$$mdi:apple-keyboard-control$$', h: '$$mdi:gesture-tap-hold$$'}
   - $$mdi:pan-left$$
   - $$mdi:backspace-reverse-outline$$
   - $$mdi:pan-right$$
-  - HOME
   - $$mdi:arrow-up-bold$$
-  - END
+  - PG DN
   - {t: '$$mdi:menu-left$$', s: '$$mdi:mouse$$'}
   - {t: qwerty, h: toggle}
   - {t: '$$mdi:menu-right$$', s: '$$mdi:mouse$$'}
@@ -176,9 +176,9 @@ layers:
   - {t: KP 5, h: KP NUMLOCK}
   - KP 6
   - {t: KP MINUS, h: KP DIVIDE}
-  - {t: '$$mdi:keyboard-return$$', type: enter}
-  - $$mdi:pan-down$$
+  - $$mdi:apple-keyboard-shift$$
   - $$mdi:pan-up$$
+  - $$mdi:pan-down$$
   - $$mdi:arrow-left-bold$$
   - $$mdi:arrow-down-bold$$
   - $$mdi:arrow-right-bold$$
@@ -191,8 +191,8 @@ layers:
   - KP 3
   - {t: KP EQUAL, h: KP ENTER}
   - {type: held}
-  - PG DN
-  - PG UP
+  - {t: '$$mdi:transfer$$', type: trans}
+  - {t: '$$mdi:transfer$$', type: trans}
   - $$mdi:apple-keyboard-control$$
   - {t: '$$mdi:keyboard-return$$', h: '$$mdi:apple-keyboard-option$$'}
   - {t: '$$mdi:transfer$$', type: trans}
@@ -268,11 +268,11 @@ layers:
   - {t: '$$mdi:transfer$$', type: trans}
   - {t: '$$mdi:transfer$$', type: trans}
   - {t: '$$mdi:transfer$$', type: trans}
-  - {t: '$$mdi:transfer$$', type: trans}
   - PG UP
   - HOME
   - $$mdi:arrow-up-bold$$
   - END
+  - {t: '$$mdi:transfer$$', type: trans}
   - {t: '$$mdi:transfer$$', type: trans}
   - {t: '$$mdi:transfer$$', type: trans}
   - {t: '6', s: ^}
@@ -282,12 +282,12 @@ layers:
   - {t: '0', s: )}
   - {t: konbini, h: toggle}
   - {t: '$$mdi:transfer$$', type: trans}
-  - {t: '$$mdi:transfer$$', type: trans}
   - PG DN
   - $$mdi:arrow-left-bold$$
   - $$mdi:arrow-down-bold$$
   - $$mdi:arrow-right-bold$$
   - {type: held}
+  - {t: '$$mdi:transfer$$', type: trans}
   - {t: '$$mdi:transfer$$', type: trans}
   - {t: '$$mdi:transfer$$', type: trans}
   - {t: '$$mdi:transfer$$', type: trans}

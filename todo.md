@@ -23,7 +23,7 @@ based on firmware artifacts created by 8a60289ccf75f41b138ae7096aeb534f37675cdb 
 
  ## Alt layouts
  
- - [ ] add branch for alternative keymap layouts/, learn and see with this keyboard lowkey not sure if its better but Im getting tired lmao 
+ - [x] add branch for alternative keymap layouts/, learn and see with this keyboard lowkey not sure if its better but Im getting tired lmao 
  - [ ] consider swithing to
        - the rotary encoder for vertical scroll
        - the dpad encoder is a mouse
@@ -37,8 +37,8 @@ based on firmware artifacts created by 8a60289ccf75f41b138ae7096aeb534f37675cdb 
 
 ## keymap changes 
 
-- [ ] shift konbini layout such that momentary trigger button and arrows shift left by 1
-- [ ] shift l_scroll-del-r_scroll key right by 1
+- [x] shift konbini layout such that momentary trigger button and arrows shift left by 1
+- [x] shift l_scroll-del-r_scroll key right by 1
       - u_scroll-d_scroll move to below the l_scroll-del keys. easier to manage            
 
 
