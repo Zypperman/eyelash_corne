@@ -111,7 +111,7 @@ layers:
   - F9
   - F10
   - F11
-  - F12
+  - {t: '=', s: +}
   - {t: '$$mdi:keyboard-esc$$', s: '`'}
   - {t: '1', s: '!'}
   - {t: '2', s: '@'}
@@ -126,7 +126,7 @@ layers:
   - {t: '8', s: '*'}
   - {t: '9', s: (}
   - {t: '0', s: )}
-  - {t: '''', s: '"'}
+  - $$mdi:arrow-up-bold$$
   - $$mdi:apple-keyboard-shift$$
   - '~'
   - PG DN
@@ -135,12 +135,12 @@ layers:
   - PG UP
   - $$mdi:volume-off$$
   - $$mdi:arrow-down-bold$$
-  - {t: '=', s: +}
-  - {t: '-', s: _}
-  - {t: ',', h: '#', s: <}
-  - {t: ., h: $, s: '>'}
-  - {t: /, s: '?'}
+  - $
   - $$mdi:alpha-w-box$$
+  - F12
+  - $$mdi:arrow-left-bold$$
+  - $$mdi:arrow-right-bold$$
+  - $$mdi:arrow-down-bold$$
   - {t: '$$mdi:transfer$$', type: trans}
   - {t: '$$mdi:keyboard-return$$', h: '$$mdi:apple-keyboard-control$$'}
   - {t: '$$mdi:keyboard-space$$', h: LGUI}
