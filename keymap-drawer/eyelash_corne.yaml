@@ -128,11 +128,11 @@ layers:
   - {t: '0', s: )}
   - $$mdi:arrow-up-bold$$
   - $$mdi:apple-keyboard-shift$$
-  - '~'
-  - PG DN
+  - {t: '`', s: '~'}
   - {t: '[', s: '{'}
   - {t: ']', s: '}'}
   - PG UP
+  - PG DN
   - $$mdi:volume-off$$
   - $$mdi:arrow-down-bold$$
   - $
