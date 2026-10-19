@@ -113,7 +113,7 @@ layers:
   - F11
   - {t: '=', s: +}
   - {t: '$$mdi:keyboard-esc$$', s: '`'}
-  - {t: '1', s: '!'}
+  - {t: '1', h: '$$mdi:apple-keyboard-option$$'}
   - {t: '2', s: '@'}
   - {t: '3', s: '#'}
   - {t: '4', s: $}
@@ -124,8 +124,8 @@ layers:
   - {t: '6', s: ^}
   - {t: '7', s: '&'}
   - {t: '8', s: '*'}
-  - {t: '9', s: (}
-  - {t: '0', s: )}
+  - {t: '9', h: HOME, s: (}
+  - {t: '0', h: END, s: )}
   - $$mdi:arrow-up-bold$$
   - $$mdi:apple-keyboard-shift$$
   - {t: '`', s: '~'}
