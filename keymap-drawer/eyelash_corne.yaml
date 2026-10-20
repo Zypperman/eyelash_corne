@@ -173,7 +173,7 @@ layers:
   - '&mkp MB1'
   - '&mkp MB2'
   - KP 4
-  - {t: KP 5, h: KP NUMLOCK}
+  - KP 5
   - KP 6
   - {t: KP MINUS, h: KP DIVIDE}
   - {t: '$$mdi:transfer$$', type: trans}
