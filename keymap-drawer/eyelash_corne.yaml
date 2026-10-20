@@ -191,8 +191,8 @@ layers:
   - KP 3
   - {t: KP EQUAL, h: KP ENTER}
   - {type: held}
-  - PG DN
-  - PG UP
+  - '&copy'
+  - '&paste'
   - $$mdi:apple-keyboard-control$$
   - {t: '$$mdi:keyboard-return$$', h: '$$mdi:apple-keyboard-option$$'}
   - {t: '$$mdi:transfer$$', type: trans}
