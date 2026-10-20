@@ -34,7 +34,7 @@ layers:
   - X
   - C
   - V
-  - B
+  - {t: B, h: '$$mdi:apple-keyboard-option$$'}
   - {t: konbini, h: toggle}
   - $$mdi:pan-down$$
   - N
@@ -83,7 +83,7 @@ layers:
   - X
   - C
   - V
-  - B
+  - {t: B, h: '$$mdi:apple-keyboard-option$$'}
   - {t: '$$mdi:transfer$$', type: trans}
   - {t: '$$mdi:transfer$$', type: trans}
   - K
