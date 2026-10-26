@@ -1,0 +1,20 @@
+/*
+ * The simulator's dongle: the panel fitted is a 160x68 Sharp memory LCD (LS011B7DH03, the
+ * nice!view's panel) mounted landscape, in place of jerry_dongle.overlay's 128x64 SH1106.
+ * Applied after the firmware's overlays.
+ */
+&oled {
+    status = "disabled";
+};
+
+/ {
+    chosen {
+        zephyr,display = &dongle_panel;
+    };
+
+    dongle_panel: ls0xx@0 {
+        compatible = "sharp,ls0xx";
+        width = <160>;
+        height = <68>;
+    };
+};

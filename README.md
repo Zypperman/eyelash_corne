@@ -189,38 +189,58 @@ download the generated `layer_rgb.dtsi` into `config/`. The key legends are
 baked into the page, so if you change `eyelash_corne.keymap` they won't
 update. The colors and export still work.
 
-### OLED Display Simulator
+### Display Simulator
 
-Open [`oled-emulator/index.html`](oled-emulator/index.html) in a browser (no
-server needed) to see both halves' OLEDs, in a page styled after
-[keymap-editor](https://github.com/nickcoutsos/keymap-editor). The displays
+[`oled-emulator/`](oled-emulator/) is a browser simulator for all three
+displays, styled after
+[keymap-editor](https://github.com/nickcoutsos/keymap-editor). The panels
 aren't an imitation: they run **real LVGL 8.3.7** (the revision ZMK v0.3.0's
-Zephyr pins) and **nice!oled's own peripheral-screen code**, compiled to
-WebAssembly, through a port of Zephyr's SSD1306 display glue and ZMK's
-activity tracking. Both halves show the peripheral screen because the jerry
-dongle is the split central.
+Zephyr pins) and the firmware's own display code, **zmk-nice-oled** on the
+halves and **zmk-dongle-display** on the dongle, compiled to WebAssembly. A
+port of Zephyr's display glue and ZMK's event, activity and WPM code drives
+them.
+
+Every panel is a **160×68 Sharp memory LCD** (LS011B7DH03, the nice!view's
+panel). The halves show it portrait, the dongle landscape. Note that
+`build.yaml` and the shield devicetree still describe OLEDs: `nice_oled` on a
+128×32 SSD1306, and a 128×64 SH1106 on the dongle. So the simulator builds the
+halves with zmk-nice-oled's own 160×68 shield, `nice_epaper`, and mounts the
+same panel on the dongle (`oled-emulator/lvgl-sim/panels/`). The rest comes from
+this repo's files.
 
 - **Typing**: three keys pressed in turn at 30 WPM (adjustable), on the left
-  half, the right half, or split across both. Each press counts as activity
-  on that half, so ZMK's blank-on-idle works as on the keyboard: a half's
-  OLED turns off 30 s after its last keypress, and the half deep-sleeps after
-  `ZMK_IDLE_SLEEP_TIMEOUT`. The WPM readout is what the dongle computes; ZMK
-  doesn't send it to the halves.
-- **Displays**: change battery level, USB power and each half's split link
-  live. Pick pixel color, and speed time up to 60× to watch the timers run out.
+  half, the right half, or split across both. Each press counts as activity on
+  that half and reaches the dongle as the split central, which computes WPM
+  and shows modifiers. ZMK's blank-on-idle and deep sleep run on their real
+  timers. A memory LCD can't blank, so on idle its last image stays while
+  updates stop.
+- **Displays**: battery levels, USB power, each half's split link, the
+  dongle's output (USB or BLE profile), modifiers and Caps Lock, all live.
+  "Central" boots the left half as split central, to preview nice!oled's
+  central screen.
 - **Art**: drop a GIF, images or a video. Dither it (six methods side by side)
-  and play it in nice!oled's animation slot or on a bare screen, on either or
-  both halves.
-- **Config**: edit `CONFIG_NICE_OLED_*` lines like a `.conf` file. Positions,
-  timing and the animation choice recompile the display in a few
-  milliseconds. `CONFIG_NICE_OLED_WIDGET_INVERTED` switches to a second
-  prebuilt module.
+  and play it in nice!oled's animation slot or on a bare screen, on either
+  half, both, or the dongle.
+- **Config**: edit `CONFIG_NICE_OLED_*` positions, timing and the animation;
+  they apply in milliseconds.
+- **IDE**: edit any source, `.conf`, Kconfig, `CMakeLists.txt` or devicetree
+  file and press Build. The page re-evaluates the configuration (Python in the
+  browser), recompiles only what changed with clang compiled to WebAssembly,
+  links, and swaps the new firmware into that display. Errors link to the
+  line; a failed build leaves the display on its last good build. Edits stay
+  in your browser until you reset them.
 - **Export**: your frames as nice!oled-format `lv_img_dsc_t` arrays, the
   `.conf` lines you changed, and PNG snapshots.
 
-The compiled module lives in `oled-emulator/lvgl-sim.js`. After changing OLED
-settings in a `.conf` file or `build.yaml`, rebuild it. You need git, clang and
-wasm-ld (stock LLVM, no Emscripten):
+Open `oled-emulator/index.html` straight from a checkout for everything but the
+IDE. The IDE needs the GitHub Pages site, which
+[`.github/workflows/pages.yml`](.github/workflows/pages.yml) builds and
+publishes on pushes to `main`. Turn it on once under **Settings → Pages →
+Source: GitHub Actions**.
+
+The compiled displays live in `oled-emulator/lvgl-sim.js`; rebuild it after
+changing display settings in a `.conf` file or `build.yaml`. You need git,
+clang and wasm-ld (stock LLVM, no Emscripten):
 
 ```sh
 pip install kconfiglib
@@ -228,9 +248,13 @@ python3 oled-emulator/lvgl-sim/build.py              # pinned zmk-nice-oled
 python3 oled-emulator/lvgl-sim/build.py --nice-oled-rev main
 ```
 
-The build evaluates the real Kconfig files (ZMK display, both shields,
-Zephyr's LVGL module, LVGL) against this repo's `.conf` files and
-`build.yaml`. It then compiles the same nice!oled sources its CMakeLists picks.
+`--wasm2js PATH` also writes `lvgl-sim-js.js`, the same modules as plain
+JavaScript for viewers that block WebAssembly. `--ide --vendor NODE_MODULES`
+writes the IDE's prebuilt objects and copies its browser toolchain
+(`@yowasp/clang`, `pyodide`, `codemirror`) into the site, as the Pages workflow
+does. The build evaluates the real Kconfig files against this repo's `.conf`
+files and `build.yaml`, then compiles the sources each module's CMakeLists
+picks.
 
 ### Encoder Functions
 

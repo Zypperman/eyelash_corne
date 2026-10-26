@@ -1,0 +1,8 @@
+/*
+ * The simulator's halves: the panel fitted is a 160x68 Sharp memory LCD (LS011B7DH03, the
+ * nice!view's panel), which zmk-nice-oled's nice_epaper.overlay adds and chooses as the
+ * display. The shield's 128x32 SSD1306 isn't fitted. Applied after the firmware's overlays.
+ */
+&oled {
+    status = "disabled";
+};

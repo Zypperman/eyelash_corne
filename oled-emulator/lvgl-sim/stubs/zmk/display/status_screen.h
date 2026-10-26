@@ -1,2 +1,5 @@
+/* zmk/app/include/zmk/display/status_screen.h (ZMK v0.3.0): the declarations the display code uses */
 #pragma once
-#include <zmk/sim_zmk.h>
+#include <zephyr/kernel.h>
+#include <lvgl.h>
+lv_obj_t *zmk_display_status_screen();

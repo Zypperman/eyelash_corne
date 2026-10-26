@@ -3,21 +3,20 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Eyelash OLED Simulator</title>
+<title>Eyelash Display Simulator</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
-  /* Layout: keymap-editor style top bar + tab row, the typing simulator always on stage,
-     then the active tab's controls beside a sticky pair of magnified panels. */
+  /* Layout: keymap-editor style top bar + tab row, the typing simulator, then the stage with all three
+     displays laid out as on the desk (left half, dongle, right half), then the active tab. */
   :root {
     --bg: #ffffff;
     --fg: #2b3036;
     --muted: #8a9199;
     --key: #f2f2f2;
     --key-fg: #6b7177;
-    --key-hover: rgba(60, 179, 113, 0.85);
     --panel: #f5f6f7;
     --line: #e2e4e7;
     --field: #ffffff;
@@ -27,7 +26,7 @@
     --blue-ink: #ffffff;
     --warn: #b7791f;
     --bad: #c0392b;
-    --pcb: #1d3557;
+    --bezel: #1d3557;
     --font-ui: Quicksand, Avenir, "Segoe UI", sans-serif;
     --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   }
@@ -35,13 +34,13 @@
     :root:not([data-theme="light"]) {
       --bg: #1b2530; --fg: #e9eef2; --muted: #8c9aa7; --key: #2c3a46; --key-fg: #e9eef2;
       --panel: #222e3a; --line: #33414e; --field: #1a232d; --blue: #3b6fd8; --warn: #e0b45a; --bad: #ef6f5e;
-      --pcb: #142338; color-scheme: dark;
+      --bezel: #142338; color-scheme: dark;
     }
   }
   :root[data-theme="dark"] {
     --bg: #1b2530; --fg: #e9eef2; --muted: #8c9aa7; --key: #2c3a46; --key-fg: #e9eef2;
     --panel: #222e3a; --line: #33414e; --field: #1a232d; --blue: #3b6fd8; --warn: #e0b45a; --bad: #ef6f5e;
-    --pcb: #142338; color-scheme: dark;
+    --bezel: #142338; color-scheme: dark;
   }
   * { box-sizing: border-box; }
   html, body { background: var(--bg); color: var(--fg); }
@@ -66,10 +65,7 @@
     cursor: pointer; font-size: 18px; display: grid; place-items: center;
   }
   .icon-btn:hover { border-color: var(--accent); color: var(--accent); }
-  .build-pill {
-    display: grid; background: var(--blue); color: var(--blue-ink); border-radius: 6px; padding: 4px 10px;
-    line-height: 1.2; min-width: 0;
-  }
+  .build-pill { display: grid; background: var(--blue); color: var(--blue-ink); border-radius: 6px; padding: 4px 10px; line-height: 1.2; min-width: 0; }
   .build-pill span { font-size: 14px; }
   .build-pill small { font-size: 12.5px; opacity: .85; font-variant-numeric: tabular-nums; }
   .build-pill.flash { animation: flash .5s ease-out; }
@@ -77,11 +73,8 @@
   .spacer { flex: 1; }
 
   /* tabs */
-  .tabs { display: flex; flex-wrap: wrap; gap: 4px 6px; margin: 16px 0 6px; }
-  .tabs button {
-    border: 0; background: none; padding: 5px 9px; border-radius: 5px; cursor: pointer;
-    font-size: 16px; letter-spacing: .02em; text-transform: uppercase;
-  }
+  .tabs { display: flex; flex-wrap: wrap; gap: 4px 6px; margin: 16px 0 10px; }
+  .tabs button { border: 0; background: none; padding: 5px 9px; border-radius: 5px; cursor: pointer; font-size: 16px; letter-spacing: .02em; text-transform: uppercase; }
   .tabs button:hover { color: var(--accent); }
   .tabs button.on { background: var(--accent); color: var(--accent-ink); }
 
@@ -89,83 +82,74 @@
   .typing { display: flex; flex-wrap: wrap; gap: 14px 28px; align-items: center; background: var(--panel); border-radius: 10px; padding: 14px 16px; }
   .keys { display: flex; gap: 8px; }
   .key {
-    position: relative; width: 64px; height: 64px; display: grid; place-items: center;
-    background: var(--key); color: var(--key-fg); border-radius: 5px; font-size: 26px;
+    position: relative; width: 60px; height: 60px; display: grid; place-items: center;
+    background: var(--key); color: var(--key-fg); border-radius: 5px; font-size: 24px;
     border: 1px solid var(--line); transition: background .08s, transform .08s;
   }
   .key .h { position: absolute; top: 3px; left: 5px; font-size: 11px; opacity: .6; }
   .key.down { background: var(--accent); color: var(--accent-ink); transform: translateY(2px); }
   .typing-ctl { display: grid; gap: 6px; min-width: 260px; flex: 1; }
-  .typing-ctl .row { gap: 10px; }
-  .readouts { display: flex; flex-wrap: wrap; gap: 10px 24px; }
-  .readouts div { display: grid; line-height: 1.25; min-width: 120px; }
+  .readouts { display: flex; flex-wrap: wrap; gap: 10px 22px; }
+  .readouts div { display: grid; line-height: 1.25; min-width: 110px; }
   .readouts small { color: var(--muted); font-size: 12.5px; }
-  .readouts b { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .readouts b { font-size: 19px; font-weight: 600; font-variant-numeric: tabular-nums; }
   .readouts span { font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
   .readouts b.off { color: var(--muted); }
 
-  /* below the typing bar */
-  .work { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 22px; margin-top: 18px; align-items: start; }
-  @media (max-width: 860px) {
-    .work { grid-template-columns: minmax(0, 1fr); }
-    .inspect { order: -1; position: static; }
-  }
-  .inspect {
-    position: sticky; top: calc(env(safe-area-inset-top, 0px) + 10px); display: flex; gap: 14px;
-    background: var(--panel); border-radius: 10px; padding: 12px; justify-content: center;
-  }
-  .inspect figure { margin: 0; display: grid; gap: 6px; justify-items: center; }
-  .inspect canvas { display: block; background: #000; border-radius: 3px; image-rendering: pixelated; cursor: pointer; }
-  .inspect figure.sel canvas { outline: 2px solid var(--accent); outline-offset: 3px; }
-  .inspect figcaption { font-size: 13px; color: var(--muted); text-align: center; max-width: 140px; }
-  .inspect figcaption b { color: var(--fg); font-weight: 600; display: block; }
+  /* stage: the displays */
+  .stage { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 18px 28px; margin: 18px 0 6px; }
+  .disp { margin: 0; display: grid; gap: 8px; justify-items: center; }
+  .disp .bezel { background: var(--bezel); padding: 8px; border-radius: 6px; box-shadow: 0 6px 18px rgba(0, 0, 0, .25); border: 2px solid transparent; cursor: pointer; }
+  .disp.sel .bezel { border-color: var(--accent); }
+  .disp canvas { display: block; background: #000; image-rendering: pixelated; border-radius: 2px; }
+  .disp figcaption { font-size: 13px; color: var(--muted); text-align: center; max-width: 220px; line-height: 1.3; }
+  .disp figcaption b { color: var(--fg); font-weight: 600; display: block; }
+  .stage-ctl { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 18px; color: var(--muted); font-size: 13.5px; margin-bottom: 14px; align-items: center; }
+  .stage-ctl input[type=range] { width: 120px; }
+
   .tab { display: none; min-width: 0; }
-  .tab.on { display: grid; gap: 20px; }
+  .tab.on { display: grid; gap: 18px; }
   h2 { font-size: 22px; font-weight: 600; margin: 0 0 8px; }
   h3 { font-size: 15px; font-weight: 700; margin: 0 0 6px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
   .row { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
-  .chip {
-    display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: var(--panel);
-    border: 1px solid var(--line); cursor: pointer;
-  }
+  .chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; background: var(--field); border: 1px solid var(--line); cursor: pointer; }
   .chip.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
-  .knobs { display: flex; flex-wrap: wrap; gap: 18px; }
-  .knob-card { width: 128px; height: 128px; border-radius: 50%; background: var(--key); display: grid; place-items: center; text-align: center; padding: 14px; }
+  .knobs { display: flex; flex-wrap: wrap; gap: 16px; }
+  .knob-card { width: 124px; height: 124px; border-radius: 50%; background: var(--key); display: grid; place-items: center; text-align: center; padding: 12px; }
   .knob-card label { display: grid; gap: 4px; font-size: 13px; color: var(--key-fg); justify-items: center; }
-  .knob-card b { font-size: 22px; font-variant-numeric: tabular-nums; }
-  .knob-card input[type=range] { width: 92px; }
+  .knob-card b { font-size: 21px; font-variant-numeric: tabular-nums; }
+  .knob-card input[type=range] { width: 88px; }
   label.f { display: grid; grid-template-columns: 110px minmax(0, 1fr) 54px; gap: 10px; align-items: center; margin: 6px 0; }
   label.f .v { text-align: right; font: 12.5px var(--font-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
   .pair { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 10px; align-items: center; margin: 6px 0; }
   .nums { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
   .nums label { display: grid; gap: 2px; font-size: 12px; color: var(--muted); }
   input[type=range] { width: 100%; accent-color: var(--accent); }
-  input[type=number], input[type=text], select, textarea {
-    background: var(--field); border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; min-width: 0; width: 100%;
-  }
+  input[type=number], input[type=text], select, textarea { background: var(--field); border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; min-width: 0; width: 100%; }
   input[type=number] { font-family: var(--font-mono); font-size: 13px; }
   input[type=checkbox] { accent-color: var(--accent); width: 16px; height: 16px; }
   .check { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
   .btn { border: 1px solid var(--line); background: var(--panel); border-radius: 6px; padding: 6px 12px; cursor: pointer; }
   .btn:hover { border-color: var(--accent); }
   .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
-  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .btn:disabled { opacity: .5; cursor: default; }
+  .seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
   .seg button { border: 0; background: var(--field); padding: 6px 12px; cursor: pointer; }
   .seg button + button { border-left: 1px solid var(--line); }
   .seg button.on { background: var(--accent); color: var(--accent-ink); }
   .card { background: var(--panel); border-radius: 10px; padding: 14px; min-width: 0; }
   .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
-  .note { color: var(--muted); font-size: 13.5px; margin: 6px 0 0; max-width: 75ch; }
+  .note { color: var(--muted); font-size: 13.5px; margin: 6px 0 0; max-width: 78ch; }
   .note.warn { color: var(--warn); }
   .drop { display: grid; place-items: center; gap: 2px; text-align: center; padding: 16px; border: 2px dashed var(--line); border-radius: 10px; cursor: pointer; background: var(--field); }
   .drop.drag, .drop:hover { border-color: var(--accent); }
   .thumbs { display: flex; flex-wrap: wrap; gap: 8px; }
   .thumb { display: grid; gap: 4px; justify-items: center; padding: 6px; border-radius: 8px; border: 2px solid transparent; background: var(--field); cursor: pointer; font-size: 12px; color: var(--muted); }
   .thumb.on { border-color: var(--accent); color: var(--fg); }
-  .thumb canvas { image-rendering: pixelated; background: #000; }
+  .thumb canvas { image-rendering: pixelated; background: #000; max-width: 100%; height: auto; }
   textarea { font: 13px/1.6 var(--font-mono); resize: vertical; }
-  textarea.conf { min-height: 230px; }
-  .log { list-style: none; margin: 8px 0 0; padding: 0; font: 12.5px/1.6 var(--font-mono); }
+  textarea.conf { min-height: 220px; }
+  .log { list-style: none; margin: 8px 0 0; padding: 0; font: 12.5px/1.6 var(--font-mono); overflow-wrap: anywhere; }
   .log li::before { display: inline-block; width: 1.4em; }
   .log .ok::before { content: "✓"; color: var(--accent); }
   .log .skip::before { content: "✗"; color: var(--bad); }
@@ -176,10 +160,30 @@
   td { padding: 2px 10px 2px 0; border-bottom: 1px solid var(--line); white-space: nowrap; }
   .pngs { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; }
   .pngs figure { margin: 0; display: grid; gap: 4px; font-size: 12.5px; color: var(--muted); }
-  .pngs img { image-rendering: pixelated; background: #000; border-radius: 3px; }
+  .pngs img { image-rendering: pixelated; background: #000; border-radius: 3px; max-width: 100%; height: auto; }
   .error { background: var(--bad); color: #fff; padding: 10px 14px; border-radius: 8px; margin-top: 12px; }
+  .banner { background: var(--panel); border: 1px solid var(--line); padding: 10px 14px; border-radius: 8px; margin-top: 12px; font-size: 14px; }
   .footer { margin-top: 28px; font-size: 13px; color: var(--muted); font-style: italic; }
-  .footer a { color: var(--blue); }
+  .footer a, .note a, .banner a { color: var(--blue); }
+
+  /* IDE */
+  .ide { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 12px; min-height: 60vh; }
+  @media (max-width: 820px) { .ide { grid-template-columns: minmax(0, 1fr); } }
+  .ide-tree { background: var(--panel); border-radius: 10px; padding: 8px; overflow: auto; max-height: 72vh; font: 12.5px/1.5 var(--font-mono); }
+  .ide-tree details { margin-left: 8px; }
+  .ide-tree summary { color: var(--fg); }
+  .ide-tree button { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 1px 6px; border-radius: 4px; cursor: pointer; font: inherit; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ide-tree button:hover { color: var(--fg); }
+  .ide-tree button.on { background: var(--accent); color: var(--accent-ink); }
+  .ide-tree button.edited::after { content: " ●"; color: var(--warn); }
+  .ide-main { display: grid; grid-template-rows: auto minmax(300px, 1fr) auto; gap: 8px; min-width: 0; }
+  .ide-editor { min-height: 300px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--field); }
+  .ide-editor textarea { width: 100%; height: 100%; min-height: 420px; border: 0; border-radius: 0; resize: none; white-space: pre; overflow: auto; tab-size: 4; }
+  .ide-log { background: #0e1419; color: #cfd8df; border-radius: 8px; padding: 10px; font: 12px/1.5 var(--font-mono); max-height: 260px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .ide-log a { color: #ffb86b; cursor: pointer; text-decoration: underline; }
+  .ide-log .err { color: #ff8a7a; } .ide-log .warn { color: #ffd27a; } .ide-log .ok { color: #7ee0a3; }
+  .progress { height: 4px; background: var(--line); border-radius: 2px; overflow: hidden; }
+  .progress i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .2s; }
   .hidden { display: none !important; }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
@@ -187,11 +191,11 @@
 <body>
 <div class="wrap">
   <header class="topbar">
-    <div class="repo"><b>eyelash_corne <span>/ nice!oled</span></b><small>⎇ main · peripheral screens</small></div>
-    <button class="icon-btn" id="rebuildBtn" type="button" title="Recompile both halves (reboots the simulated displays)" aria-label="Recompile">⟳</button>
+    <div class="repo"><b>eyelash_corne <span>/ displays</span></b><small>⎇ main · nice!oled + dongle display</small></div>
+    <button class="icon-btn" id="rebuildBtn" type="button" title="Reboot all displays" aria-label="Reboot displays">⟳</button>
     <div class="build-pill" id="buildPill"><span id="buildName">LVGL</span><small id="buildStatus">loading…</small></div>
     <span class="spacer"></span>
-    <button class="icon-btn" id="playBtn" type="button" title="Pause animations" aria-label="Pause">❚❚</button>
+    <button class="icon-btn" id="playBtn" type="button" title="Pause time" aria-label="Pause">❚❚</button>
     <button class="icon-btn" id="themeBtn" type="button" title="Switch light and dark" aria-label="Theme">◐</button>
   </header>
 
@@ -199,16 +203,18 @@
     <button type="button" data-tab="displays" class="on">Displays</button>
     <button type="button" data-tab="art">Art</button>
     <button type="button" data-tab="config">Config</button>
+    <button type="button" data-tab="ide">IDE</button>
     <button type="button" data-tab="export">Export</button>
   </nav>
 
   <div id="loadError" class="error hidden"></div>
+  <div id="engineNote" class="banner hidden"></div>
 
   <section class="typing" aria-label="Typing simulator">
     <div class="keys" id="keys">
-      <div class="key"><span class="h"></span>1</div>
-      <div class="key"><span class="h"></span>2</div>
-      <div class="key"><span class="h"></span>3</div>
+      <div class="key"><span class="h"></span>A</div>
+      <div class="key"><span class="h"></span>B</div>
+      <div class="key"><span class="h"></span>C</div>
     </div>
     <div class="typing-ctl">
       <div class="row">
@@ -218,150 +224,172 @@
       <label class="f">Typing <input type="range" id="wpm" min="5" max="150" step="5" value="30"><span class="v" id="wpmV">30 WPM</span></label>
     </div>
     <div class="readouts">
-      <div title="zmk/app/src/wpm.c: recomputed every second from key releases, over a window that resets every 5 seconds, so a steady 30 WPM reads between 24 and 36"><small>WPM, as the dongle counts it</small><b id="wpmOut">0</b><span>never sent to the halves</span></div>
-      <div><small>Left half</small><b id="actL">active</b><span id="actLsub"></span></div>
-      <div><small>Right half</small><b id="actR">active</b><span id="actRsub"></span></div>
+      <div title="zmk/app/src/wpm.c on the dongle: recomputed every second from key releases, over a window that resets every 5 seconds"><small>WPM on the dongle</small><b id="wpmOut">0</b><span>halves never receive it</span></div>
+      <div><small>Left half</small><b id="actleft">active</b><span id="actleftsub"></span></div>
+      <div><small>Right half</small><b id="actright">active</b><span id="actrightsub"></span></div>
+      <div><small>Dongle</small><b id="actdongle">active</b><span id="actdonglesub"></span></div>
     </div>
   </section>
 
-  <div class="work">
-    <div style="min-width:0">
-      <section class="tab on" id="tab-displays">
-        <div>
-          <h2>Display state</h2>
-          <p class="note" style="margin-top:0">Both halves are split peripherals of the jerry dongle, so each runs nice!oled's peripheral screen. These change what its widgets read from ZMK, live, without a reboot. Battery and USB go to both halves; each half reports its own split link.</p>
-        </div>
-        <div class="knobs">
-          <div class="knob-card"><label>Battery<b id="battV">80%</b><input type="range" id="batt" min="0" max="100" value="80" aria-label="Battery percent"></label></div>
-          <div class="knob-card"><label>USB power<b id="usbV">off</b><input type="checkbox" id="usb"></label></div>
-          <div class="knob-card"><label>Left link<b id="linkLV">connected</b><input type="checkbox" id="linkL" checked></label></div>
-          <div class="knob-card"><label>Right link<b id="linkRV">connected</b><input type="checkbox" id="linkR" checked></label></div>
-        </div>
-        <div class="card">
-          <h3>Playback &amp; panel</h3>
-          <label class="f">Time speed <input type="range" id="speed" min="0" max="7" step="1" value="2" aria-label="Time speed"><span class="v" id="speedV">1×</span></label>
-          <p class="note" style="margin-top:0">Speeds up everything: animations, typing, and the idle and deep-sleep timers (30 s and 20 min in your config).</p>
-          <div class="pair">Pixel color
-            <div class="seg" id="colorSeg"><button type="button" data-v="white" class="on">White</button><button type="button" data-v="blue">Blue</button><button type="button" data-v="amber">Amber</button></div>
-          </div>
-          <label class="f">Glow <input type="range" id="glow" min="0" max="1" step="0.05" value="0.35"><span class="v" id="glowV">0.35</span></label>
-          <div class="check"><input type="checkbox" id="grid" checked><label for="grid">Show unlit pixel grid in the magnified view</label></div>
-          <p class="note" id="statsNote"></p>
-        </div>
-      </section>
-
-      <section class="tab" id="tab-art">
-        <div class="grid2">
-          <div class="card">
-            <h3>Source</h3>
-            <label class="drop" id="drop" for="file"><b>Drop a GIF, images or a video</b><span class="note" style="margin:0">Several images play as frames in name order.</span></label>
-            <input type="file" id="file" accept="image/*,video/*" multiple hidden>
-            <div class="row" style="margin-top:10px">
-              <button class="btn" type="button" data-sample="kronii">Kronii (repo sample)</button>
-              <button class="btn" type="button" data-sample="moon">Moon phases</button>
-              <button class="btn" type="button" data-sample="none">Back to nice!oled art</button>
-            </div>
-            <div id="videoBox" class="hidden">
-              <p class="note">Video plays live. Capture it to turn it into frames the displays can loop.</p>
-              <div class="row"><button class="btn" type="button" id="vidToggle">Pause video</button><button class="btn primary" type="button" id="capBtn">Capture frames</button><span class="note" id="capStatus" style="margin:0"></span></div>
-            </div>
-            <p class="note" id="srcNote"></p>
-          </div>
-          <div class="card">
-            <h3>Where it goes</h3>
-            <div class="pair">Halves
-              <div class="seg" id="targetSeg"><button type="button" data-v="left">Left</button><button type="button" data-v="right">Right</button><button type="button" data-v="both" class="on">Both</button></div>
-            </div>
-            <div class="pair">Screen
-              <div class="seg" id="modeSeg"><button type="button" data-v="nice" class="on">nice!oled + art</button><button type="button" data-v="art">Art only</button></div>
-            </div>
-            <div class="pair">Box (board px)
-              <div class="nums">
-                <label>x<input type="number" id="bx" value="0"></label>
-                <label>y<input type="number" id="by" value="32"></label>
-                <label>w<input type="number" id="bw" value="32" min="1" max="128"></label>
-                <label>h<input type="number" id="bh" value="96" min="1" max="128"></label>
-              </div>
-            </div>
-            <div class="row"><button class="btn" type="button" id="boxBelow">Below status 32×96</button><button class="btn" type="button" id="boxFull">Full 32×128</button></div>
-            <label class="f">FPS <input type="range" id="fps" min="1" max="30" step="1" value="12"><span class="v" id="fpsV">12</span></label>
-            <p class="note" id="artNote">In nice!oled + art, your frames play in nice!oled's own animation object, moved with <code>ANIMATION_PERIPHERAL_CUSTOM_X/Y</code>. Art only boots a bare screen holding just your animation.</p>
-          </div>
-        </div>
-        <div class="grid2">
-          <div class="card">
-            <h3>Framing</h3>
-            <div class="pair">Fit
-              <select id="fit"><option value="cover">Cover (crop)</option><option value="contain">Contain</option><option value="stretch">Stretch</option></select>
-            </div>
-            <label class="f">Zoom <input type="range" id="zoom" min="0.25" max="6" step="0.01" value="1"><span class="v" id="zoomV">1.00×</span></label>
-            <label class="f">Shift x <input type="range" id="offX" min="-128" max="128" value="0"><span class="v" id="offXV">0</span></label>
-            <label class="f">Shift y <input type="range" id="offY" min="-128" max="128" value="0"><span class="v" id="offYV">0</span></label>
-            <div class="pair">Rotate
-              <select id="rot"><option value="0">0°</option><option value="90">90°</option><option value="180">180°</option><option value="270">270°</option></select>
-            </div>
-            <div class="check"><input type="checkbox" id="flip"><label for="flip">Mirror</label></div>
-            <div class="check"><input type="checkbox" id="smooth" checked><label for="smooth">Smooth scaling (turn off for pixel art)</label></div>
-          </div>
-          <div class="card">
-            <h3>Tone &amp; dither</h3>
-            <div class="pair">Method <select id="dither"></select></div>
-            <label class="f">Threshold <input type="range" id="thr" min="1" max="254" value="128"><span class="v" id="thrV">128</span></label>
-            <label class="f">Brightness <input type="range" id="bright" min="-100" max="100" value="0"><span class="v" id="brightV">0</span></label>
-            <label class="f">Contrast <input type="range" id="contrast" min="-100" max="100" value="0"><span class="v" id="contrastV">0</span></label>
-            <label class="f">Gamma <input type="range" id="gamma" min="0.3" max="3" step="0.01" value="1"><span class="v" id="gammaV">1.00</span></label>
-            <div class="check"><input type="checkbox" id="invert"><label for="invert">Invert</label></div>
-          </div>
-        </div>
-        <div class="card">
-          <h3>Dither comparison</h3>
-          <div class="thumbs" id="thumbs"></div>
-          <p class="note">The first frame through each method. Ordered (Bayer) dithers stay still between frames; error diffusion looks finer on stills but crawls when animated.</p>
-        </div>
-      </section>
-
-      <section class="tab" id="tab-config">
-        <div class="card">
-          <div class="row" style="justify-content:space-between">
-            <div class="seg" id="cfgSide"><button type="button" data-v="left" class="on">Left half</button><button type="button" data-v="right">Right half</button></div>
-            <button class="btn" type="button" id="cfgReset">Reset to firmware</button>
-          </div>
-          <p class="note">Edit like a <code>.conf</code> file. Each change recompiles that half's display: positions and timing go straight into the build, the animation choice swaps frame sets, and <code>CONFIG_NICE_OLED_WIDGET_INVERTED</code> loads the other prebuilt module.</p>
-          <textarea class="conf" id="conf" spellcheck="false" aria-label="Kconfig options"></textarea>
-          <ul class="log" id="confLog"></ul>
-        </div>
-        <details class="card">
-          <summary>Resolved configuration from the firmware build (<span id="cfgCount">0</span> symbols)</summary>
-          <div class="table-scroll"><table id="cfgTable"></table></div>
-          <p class="note">Evaluated by <code>oled-emulator/lvgl-sim/build.py</code> from the real Kconfig files and this repo's <code>.conf</code> files. To change any other option, edit the <code>.conf</code> and rerun the build.</p>
-        </details>
-      </section>
-
-      <section class="tab" id="tab-export">
-        <div class="card">
-          <h3>Your art as nice!oled frames</h3>
-          <div class="pair">Name <input type="text" id="cname" value="kronii" spellcheck="false"></div>
-          <div class="row"><button class="btn primary" type="button" id="genBtn">Generate</button><button class="btn" type="button" id="copyBtn">Copy</button><span class="note" id="genNote" style="margin:0"></span></div>
-          <textarea id="out" readonly spellcheck="false" style="min-height:200px;margin-top:10px" placeholder="Load art in the Art tab, then Generate."></textarea>
-          <p class="note">Frames are stored in panel orientation (rotated from what you see on the board), with nice!oled's palette block, so they drop in for an existing animation's frames, for example in place of <code>pokemon_imgs</code> in a fork of zmk-nice-oled.</p>
-        </div>
-        <div class="card">
-          <h3>Config changes</h3>
-          <textarea id="confOut" readonly spellcheck="false" style="min-height:120px"></textarea>
-        </div>
-        <div class="card">
-          <h3>Snapshots</h3>
-          <div class="pngs" id="pngs"></div>
-          <p class="note">Right-click or long-press to save. 1-bit PNGs, as the panel shows them on the board.</p>
-        </div>
-      </section>
-    </div>
-
-    <aside class="inspect" id="inspect" aria-label="Magnified displays">
-      <figure id="figL"><canvas id="bigL"></canvas><figcaption id="capL"></figcaption></figure>
-      <figure id="figR"><canvas id="bigR"></canvas><figcaption id="capR"></figcaption></figure>
-    </aside>
+  <div class="stage" id="stage">
+    <figure class="disp" id="disp-left"><div class="bezel"><canvas id="cv-left" width="204" height="480" aria-label="Left half display"></canvas></div><figcaption id="cap-left"></figcaption></figure>
+    <figure class="disp" id="disp-dongle"><div class="bezel"><canvas id="cv-dongle" width="480" height="204" aria-label="Dongle display"></canvas></div><figcaption id="cap-dongle"></figcaption></figure>
+    <figure class="disp" id="disp-right"><div class="bezel"><canvas id="cv-right" width="204" height="480" aria-label="Right half display"></canvas></div><figcaption id="cap-right"></figcaption></figure>
   </div>
+  <div class="stage-ctl">
+    <label class="check" style="margin:0"><input type="checkbox" id="showDongle" checked> Dongle display</label>
+    <label class="row" style="gap:8px">Size <input type="range" id="scale" min="2" max="5" step="1" value="3" aria-label="Display size"></label>
+    <span id="panelNote"></span>
+  </div>
+
+  <section class="tab on" id="tab-displays">
+    <div class="knobs">
+      <div class="knob-card"><label>Left battery<b id="battLV">80%</b><input type="range" id="battL" min="0" max="100" value="80"></label></div>
+      <div class="knob-card"><label>Right battery<b id="battRV">80%</b><input type="range" id="battR" min="0" max="100" value="80"></label></div>
+      <div class="knob-card"><label>Halves on USB<b id="usbV">off</b><input type="checkbox" id="usb"></label></div>
+      <div class="knob-card"><label>Left link<b id="linkLV">connected</b><input type="checkbox" id="linkL" checked></label></div>
+      <div class="knob-card"><label>Right link<b id="linkRV">connected</b><input type="checkbox" id="linkR" checked></label></div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h3>Dongle &amp; host</h3>
+        <div class="pair">Output
+          <div class="seg" id="outSeg"><button type="button" data-v="usb" class="on">USB</button><button type="button" data-v="0">BT 1</button><button type="button" data-v="1">BT 2</button><button type="button" data-v="2">BT 3</button></div>
+        </div>
+        <div class="check"><input type="checkbox" id="bleConn" checked><label for="bleConn">Bluetooth profile connected</label></div>
+        <div class="pair">Holding
+          <div class="row" id="modChips" style="gap:6px">
+            <button type="button" class="chip" data-mod="0">Ctrl</button><button type="button" class="chip" data-mod="1">Shift</button>
+            <button type="button" class="chip" data-mod="2">Alt</button><button type="button" class="chip" data-mod="3">GUI</button>
+          </div>
+        </div>
+        <div class="check"><input type="checkbox" id="caps"><label for="caps">Caps Lock on (host LED report)</label></div>
+        <p class="note">Modifiers are real key events on the dongle, so they show on its modifier widget (and count toward WPM, as in ZMK).</p>
+      </div>
+      <div class="card">
+        <h3>Left half firmware</h3>
+        <div class="seg" id="roleSeg"><button type="button" data-v="firmware" class="on">Peripheral (your build)</button><button type="button" data-v="central">Central (preview)</button></div>
+        <p class="note">Your build.yaml makes both halves peripherals of the dongle. "Central" boots nice!oled's central screen instead (layer, WPM Bongo Cat, modifiers, profiles), as the left half would show it built with <code>ZMK_SPLIT_ROLE_CENTRAL=y</code>.</p>
+      </div>
+      <div class="card">
+        <h3>Time &amp; panel</h3>
+        <label class="f">Time speed <input type="range" id="speed" min="0" max="7" step="1" value="2"><span class="v" id="speedV">1×</span></label>
+        <p class="note" style="margin-top:0">Speeds up animations, typing, and the idle and deep-sleep timers (30 s and 20 min on the halves).</p>
+        <div id="oledLook"><div class="pair">Pixel color
+          <div class="seg" id="colorSeg"><button type="button" data-v="white" class="on">White</button><button type="button" data-v="blue">Blue</button><button type="button" data-v="amber">Amber</button></div>
+        </div>
+        <label class="f">Glow <input type="range" id="glow" min="0" max="1" step="0.05" value="0.35"><span class="v" id="glowV">0.35</span></label></div>
+        <div class="check"><input type="checkbox" id="grid" checked><label for="grid">Show the pixel grid</label></div>
+        <p class="note" id="statsNote"></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="tab" id="tab-art">
+    <div class="grid2">
+      <div class="card">
+        <h3>Source</h3>
+        <label class="drop" id="drop" for="file"><b>Drop a GIF, images or a video</b><span class="note" style="margin:0">Several images play as frames in name order.</span></label>
+        <input type="file" id="file" accept="image/*,video/*" multiple hidden>
+        <div class="row" style="margin-top:10px">
+          <button class="btn" type="button" data-sample="kronii">Kronii (repo sample)</button>
+          <button class="btn" type="button" data-sample="moon">Moon phases</button>
+          <button class="btn" type="button" data-sample="none">Back to firmware art</button>
+        </div>
+        <div id="videoBox" class="hidden">
+          <p class="note">Video previews in the dither thumbnails. Capture it to turn it into frames the displays can loop.</p>
+          <div class="row"><button class="btn" type="button" id="vidToggle">Pause video</button><button class="btn primary" type="button" id="capBtn">Capture frames</button><span class="note" id="capStatus" style="margin:0"></span></div>
+        </div>
+        <p class="note" id="srcNote"></p>
+      </div>
+      <div class="card">
+        <h3>Where it goes</h3>
+        <div class="pair">Display
+          <div class="seg" id="targetSeg"><button type="button" data-v="left">Left</button><button type="button" data-v="right">Right</button><button type="button" data-v="both" class="on">Both halves</button><button type="button" data-v="dongle">Dongle</button></div>
+        </div>
+        <div class="pair">Screen
+          <div class="seg" id="modeSeg"><button type="button" data-v="status" class="on">nice!oled + art</button><button type="button" data-v="art">Art only</button></div>
+        </div>
+        <div class="pair">Box (px)
+          <div class="nums">
+            <label>x<input type="number" id="bx" value="0"></label>
+            <label>y<input type="number" id="by" value="32"></label>
+            <label>w<input type="number" id="bw" value="68" min="1" max="160"></label>
+            <label>h<input type="number" id="bh" value="128" min="1" max="160"></label>
+          </div>
+        </div>
+        <div class="row"><button class="btn" type="button" id="boxBelow">Below status</button><button class="btn" type="button" id="boxFull">Whole screen</button></div>
+        <label class="f">FPS <input type="range" id="fps" min="1" max="30" step="1" value="12"><span class="v" id="fpsV">12</span></label>
+        <p class="note" id="artNote">Box coordinates are as you see the display. On the halves, "nice!oled + art" plays your frames in nice!oled's own animation object, moved with <code>ANIMATION_PERIPHERAL_CUSTOM_X/Y</code>; "Art only" boots a bare screen holding just your animation (the only option on the dongle).</p>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h3>Framing</h3>
+        <div class="pair">Fit <select id="fit"><option value="cover">Cover (crop)</option><option value="contain">Contain</option><option value="stretch">Stretch</option></select></div>
+        <label class="f">Zoom <input type="range" id="zoom" min="0.25" max="6" step="0.01" value="1"><span class="v" id="zoomV">1.00×</span></label>
+        <label class="f">Shift x <input type="range" id="offX" min="-128" max="128" value="0"><span class="v" id="offXV">0</span></label>
+        <label class="f">Shift y <input type="range" id="offY" min="-128" max="128" value="0"><span class="v" id="offYV">0</span></label>
+        <div class="pair">Rotate <select id="rot"><option value="0">0°</option><option value="90">90°</option><option value="180">180°</option><option value="270">270°</option></select></div>
+        <div class="check"><input type="checkbox" id="flip"><label for="flip">Mirror</label></div>
+        <div class="check"><input type="checkbox" id="smooth" checked><label for="smooth">Smooth scaling (turn off for pixel art)</label></div>
+      </div>
+      <div class="card">
+        <h3>Tone &amp; dither</h3>
+        <div class="pair">Method <select id="dither"></select></div>
+        <label class="f">Threshold <input type="range" id="thr" min="1" max="254" value="128"><span class="v" id="thrV">128</span></label>
+        <label class="f">Brightness <input type="range" id="bright" min="-100" max="100" value="0"><span class="v" id="brightV">0</span></label>
+        <label class="f">Contrast <input type="range" id="contrast" min="-100" max="100" value="0"><span class="v" id="contrastV">0</span></label>
+        <label class="f">Gamma <input type="range" id="gamma" min="0.3" max="3" step="0.01" value="1"><span class="v" id="gammaV">1.00</span></label>
+        <div class="check"><input type="checkbox" id="invert"><label for="invert">Invert</label></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Dither comparison</h3>
+      <div class="thumbs" id="thumbs"></div>
+      <p class="note">The first frame through each method. Ordered (Bayer) dithers stay still between frames; error diffusion looks finer on stills but crawls when animated.</p>
+    </div>
+  </section>
+
+  <section class="tab" id="tab-config">
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <div class="seg" id="cfgSide"><button type="button" data-v="left" class="on">Left half</button><button type="button" data-v="right">Right half</button><button type="button" data-v="dongle">Dongle</button></div>
+        <button class="btn" type="button" id="cfgReset">Reset to firmware</button>
+      </div>
+      <p class="note">Edit like a <code>.conf</code> file; each change recompiles that display. Positions and timing go straight into the build, the animation choice swaps frame sets, and <code>CONFIG_NICE_OLED_WIDGET_INVERTED</code> loads the other prebuilt module. Any other option needs a real recompile: use the IDE tab.</p>
+      <textarea class="conf" id="conf" spellcheck="false" aria-label="Kconfig options"></textarea>
+      <ul class="log" id="confLog"></ul>
+    </div>
+    <details class="card">
+      <summary>Resolved configuration from the firmware build (<span id="cfgCount">0</span> symbols)</summary>
+      <div class="table-scroll"><table id="cfgTable"></table></div>
+      <p class="note">Evaluated by <code>oled-emulator/lvgl-sim/build.py</code> from the real Kconfig files and this repo's <code>.conf</code> files and <code>build.yaml</code>.</p>
+    </details>
+  </section>
+
+  <section class="tab" id="tab-ide">
+    <div id="ideHost"><p class="note">Loading the IDE…</p></div>
+  </section>
+
+  <section class="tab" id="tab-export">
+    <div class="card">
+      <h3>Your art as image frames</h3>
+      <div class="pair">Name <input type="text" id="cname" value="kronii" spellcheck="false"></div>
+      <div class="row"><button class="btn primary" type="button" id="genBtn">Generate</button><button class="btn" type="button" id="copyBtn">Copy</button><span class="note" id="genNote" style="margin:0"></span></div>
+      <textarea id="out" readonly spellcheck="false" style="min-height:200px;margin-top:10px" placeholder="Load art in the Art tab, then Generate."></textarea>
+      <p class="note">Frames are stored in panel orientation (for the halves, rotated from what you see), with nice!oled's palette block, so they drop in for an existing animation's frames, for example in place of <code>pokemon_imgs</code> in a fork of zmk-nice-oled.</p>
+    </div>
+    <div class="card">
+      <h3>Config changes</h3>
+      <textarea id="confOut" readonly spellcheck="false" style="min-height:120px"></textarea>
+    </div>
+    <div class="card">
+      <h3>Snapshots</h3>
+      <div class="pngs" id="pngs"></div>
+      <p class="note">Right-click or long-press to save. 1-bit PNGs, as each panel shows them.</p>
+    </div>
+  </section>
 
   <p class="footer" id="footer"></p>
 </div>
@@ -373,118 +401,211 @@
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => [...document.querySelectorAll(s)];
 
-/* ---------------- data ---------------- */
 const KRONII = '/////////////////////////////////////////////////7/////P////4/////P//v/5//3//H/3//4/z///A7///wB///8Af///AD///wA///8AD///gHn/eQD//7AD///QAf//4AH//+AA///gAH3/4AA7/+AAD//AAA//xGAD/8CAAf/F6AP/w+gH/5PwR/8Z4Mf/O4fD/yADw/4wA8MAcIDHAHRAHwBkAF8AQAD/AFQJ/wC8EYMB+DGPH3g1Hx9wPB8ffGQfDz/8Dw4B+A8GAHAHAAAAAwAAAAMABgADAA+AHwAPwD8wDuAfTw5gHzwEQB9wgAAfwMAADwNgAA8B4AAHAgAAAwOAAIMAAAGHAAAXBwAAOAMAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAA4AAAAPwAAAD/AAAA/+AAAP/gH/7/4A///+AP///gD///4A///+Af///gH///4B///+Af///gH///4Av///AH///wB///8A////gf///4H///wA///wAf//+AH///wD////A////wH///+B////gf///8H////Q////kf///wH///4B////AP///+D////gf///4D////n/8=';
 const SIM = window.LVGL_SIM;
-const BOARD_W = 32, BOARD_H = 128;
 const COLORS = { white: '#eef6ff', blue: '#4cc4ff', amber: '#ffc24a' };
-const ANIM_LABEL = { crystal: 'gem', cat: 'cat', head: 'head', spaceman: 'spaceman', pokemon: 'pokemon', custom: 'your art' };
+const ANIM_LABEL = { kconfig: 'firmware', crystal: 'gem', cat: 'cat', head: 'head', spaceman: 'spaceman', pokemon: 'pokemon', custom: 'your art' };
 const ANIM_SYMBOL = { crystal: 'GEM', cat: 'CAT', head: 'HEAD', spaceman: 'SPACEMAN', pokemon: 'POKEMON' };
+const DISPLAY_IDS = ['left', 'right', 'dongle'];
+const NAMES = { left: 'Left half', right: 'Right half', dongle: 'Dongle' };
 
-/* ---------------- simulator ---------------- */
-const view = { color: 'white', glow: 0.35, grid: true, speed: 1, playing: true };
-const world = { battery: 80, usb: false, link: { left: true, right: true } };
-let META, FIRMWARE_VARIANT;
-const modules = {};
+/* ---------------- engine: WebAssembly, or the same modules as plain JavaScript ---------------- */
+let META, engine = 'wasm';
+const wasmModules = {};
+const customBuilds = {}; // 'ide:<display>' -> { module: WebAssembly.Module, meta } from the IDE tab
+const view = { color: 'white', glow: 0.35, grid: true, speed: 1, playing: true, scale: 3, dongle: true };
+const world = {
+  battery: { left: 80, right: 80 }, usb: false, link: { left: true, right: true },
+  output: 'usb', bleConnected: true, mods: 0, caps: false,
+};
 
 function b64bytes(b64) {
   const bin = atob(b64), out = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
   return out;
 }
-const moduleFor = (id) => modules[id] || (modules[id] = WebAssembly.compile(b64bytes(SIM.wasm[id])));
+const buildMeta = (build) => (customBuilds[build] && customBuilds[build].meta) || META.builds[build];
 
-class Half {
-  constructor(side) {
-    this.side = side;
-    this.gddram = new Uint8Array(512);
-    this.board = new Uint8Array(BOARD_W * BOARD_H);
+async function chooseEngine() {
+  try {
+    await WebAssembly.compile(new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0]));
+    return 'wasm';
+  } catch (err) {
+    if (!window.LVGL_SIM_JS) await loadScript('lvgl-sim-js.js');
+    if (!window.LVGL_SIM_JS) throw new Error('This viewer blocks WebAssembly and the JavaScript build (lvgl-sim-js.js) is not available.');
+    return 'js';
+  }
+}
+function loadScript(src) {
+  return new Promise((res) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = res; document.head.append(s); });
+}
+async function instantiate(build) {
+  if (customBuilds[build]) return (await WebAssembly.instantiate(customBuilds[build].module, {})).exports;
+  if (engine === 'js') return window.LVGL_SIM_JS[build]();
+  const mod = await (wasmModules[build] || (wasmModules[build] = WebAssembly.compile(b64bytes(SIM.wasm[build]))));
+  return (await WebAssembly.instantiate(mod, {})).exports;
+}
+
+/* ---------------- one simulated display ---------------- */
+class Display {
+  constructor(id) {
+    this.id = id;
     this.art = null;
+    this.role = 'firmware';
     this.reset();
   }
-  get firmware() { return META.sides[this.side]; }
-  reset() {
-    this.kcfg = { ...this.firmware.kcfg };
-    this.anim = this.firmware.animation;
-    this.variant = FIRMWARE_VARIANT;
-    this.mode = 'nice';
+  get build() {
+    if (customBuilds['ide:' + this.id]) return 'ide:' + this.id;
+    if (this.id === 'dongle') return 'dongle';
+    if (this.role === 'central') return 'central';
+    return this.inverted ? 'peripheral-inverted' : 'peripheral';
   }
-  variantSet() { return META.variants.find((v) => v.id === this.variant).set; }
+  get meta() { return buildMeta(this.build); }
+  get panel() { return this.meta.panel; }
+  get portrait() { return this.id !== 'dongle'; }
+  get central() { return this.meta.central; }
+  get size() { const p = this.panel; return this.portrait ? { w: p.height, h: p.width } : { w: p.width, h: p.height }; }
+  firmwareSide() {
+    if (customBuilds['ide:' + this.id]) return customBuilds['ide:' + this.id].meta.side;
+    if (this.id === 'dongle') return META.builds.dongle.side;
+    if (this.role === 'central') return META.builds.central.side;
+    return META.sides[this.id];
+  }
+  reset() {
+    const side = this.firmwareSide();
+    this.kcfg = { ...side.kcfg };
+    // the halves share one peripheral build, so each picks its animation; IDE builds are configured per display
+    this.anim = this.id === 'dongle' || this.role === 'central' || customBuilds['ide:' + this.id] ? 'kconfig' : side.animation;
+    this.inverted = false;
+    this.mode = 'status';
+  }
   async compile() {
     const t0 = performance.now();
-    const inst = await WebAssembly.instantiate(await moduleFor(this.variant), {});
-    const e = inst.exports;
-    const k = new Int32Array(e.memory.buffer, e.sim_kcfg_ptr(), META.runtime.length);
-    META.runtime.forEach((n, i) => { k[i] = this.kcfg[n] | 0; });
-    let anim = this.anim, x = 0, y = 0, duration = this.kcfg.NICE_OLED_WIDGET_ANIMATION_PERIPHERAL_MS;
-    if (anim === 'custom') {
-      const a = this.art;
-      const per = Math.ceil(a.wp / 8) * a.hp;
+    const e = await instantiate(this.build);
+    const m = this.meta;
+    const k = new Int32Array(e.memory.buffer, e.sim_kcfg_ptr(), Math.max(1, m.runtime.length));
+    m.runtime.forEach((n, i) => { k[i] = (n in this.kcfg ? this.kcfg[n] : m.side.kcfg[n]) | 0; });
+    let x = 0, y = 0, duration = this.kcfg.NICE_OLED_WIDGET_ANIMATION_PERIPHERAL_MS || 1000;
+    if (this.anim === 'custom') {
+      const a = this.art, per = Math.ceil(a.wp / 8) * a.hp;
       const ptr = e.sim_alloc_frames(a.frames.length, a.wp, a.hp);
-      if (!ptr) throw new Error('Not enough LVGL memory for these frames');
+      if (!ptr) throw new Error('not enough LVGL memory for these frames');
       const mem = new Uint8Array(e.memory.buffer);
       a.frames.forEach((f, i) => mem.set(f, ptr + i * per));
       e.sim_commit_frames();
       x = a.X; y = a.Y; duration = a.duration;
     }
-    const rc = e.sim_init(this.mode === 'art' ? 1 : 0, META.animations.indexOf(anim), x, y, duration);
+    const rc = e.sim_init(this.mode === 'art' ? 1 : 0, META.animations.indexOf(this.anim), x, y, duration);
     if (rc !== 0) throw new Error('sim_init failed: ' + rc);
     this.e = e;
-    this.applyWorld();
+    this.board = new Uint8Array(this.size.w * this.size.h);
+    this.applyWorld(true);
     this.read();
-    this.compileMs = performance.now() - t0;
-    return this.compileMs;
+    return performance.now() - t0;
   }
-  applyWorld() { if (this.e) this.e.sim_set_state(world.battery, world.usb ? 1 : 0, world.link[this.side] ? 1 : 0); }
-  advance(ms) { if (this.e) this.e.sim_step(ms); }
-  read() {
+  applyWorld(boot, only) {
+    const e = this.e; if (!e) return;
+    const want = (what) => !only || only === what;
+    if (this.id === 'dongle') {
+      if (want('battery')) {
+        // two separate ticks: ZMK's widget listener keeps one pending update, so back-to-back events drop the first
+        e.sim_set_peripheral_battery(0, world.battery.left); e.sim_step(META.tickMs);
+        e.sim_set_peripheral_battery(1, world.battery.right);
+      }
+      if (boot) e.sim_set_usb(2);
+    } else {
+      if (want('battery')) e.sim_set_battery(world.battery[this.id]);
+      if (want('usb')) e.sim_set_usb(world.usb ? (this.central ? 2 : 1) : 0);
+      if (want('link') && !this.central) e.sim_set_split_connected(world.link[this.id] ? 1 : 0);
+    }
+    if (this.central && want('output')) {
+      const usb = world.output === 'usb';
+      e.sim_set_output(usb ? 0 : 1, usb ? 0 : +world.output, world.bleConnected ? 1 : 0, 0);
+    }
+    if (this.central && want('caps')) e.sim_set_hid_indicators(world.caps ? 2 : 0);
+    if (this.central && boot) for (let i = 0; i < 4; i++) if (world.mods & (1 << i)) e.sim_key(255, 100 + i, 1, 0xe0 + i);
+  }
+  key(source, position, down, keycode) {
     if (!this.e) return;
-    this.gddram.set(new Uint8Array(this.e.memory.buffer, this.e.sim_gddram(), 512));
-    // board view: panel column 127 at the top, page row 0 on the left (nice!oled's text reads upright)
-    const inv = META.panel.inversionOn, g = this.gddram, b = this.board;
-    for (let r = 0; r < BOARD_H; r++) {
-      const x = 127 - r;
-      for (let c = 0; c < BOARD_W; c++) b[r * BOARD_W + c] = ((g[(c >> 3) * 128 + x] >> (c & 7)) & 1) ^ (inv ? 1 : 0);
+    if (this.stat(6) === 2) { if (down) rebootDisplay(this, 'woke from deep sleep'); return; }
+    this.guard((e) => e.sim_key(source, position, down ? 1 : 0, this.central ? keycode : 0));
+  }
+  advance(ms) { if (this.e) this.guard((e) => e.sim_step(ms)); }
+  // a trap (an IDE build's bug, say) stops this display, not the page
+  guard(fn) {
+    try { fn(this.e); }
+    catch (err) {
+      this.e = null;
+      showError(`${NAMES[this.id]} stopped: ${err.message}.` + (customBuilds['ide:' + this.id]
+        ? ' This is the IDE build: fix it and build again, or switch back to the firmware build.' : ''));
+      refreshCaptions();
+    }
+  }
+  // the Sharp memory LCD (ls0xx) or an OLED; they read and look different
+  get lcd() { return this.panel.controller === 'ls0xx'; }
+  read() {
+    const e = this.e; if (!e) return;
+    const p = this.panel, W = p.width, g = new Uint8Array(e.memory.buffer, e.sim_panel(), W * p.height / 8);
+    const inv = p.inversionOn ? 1 : 0, b = this.board, bw = this.size.w, bh = this.size.h;
+    if (this.lcd) { // ls0xx lines: W / 8 bytes each, bit 0 the leftmost pixel, 1 is white
+      const px = (x, y) => (g[y * (W >> 3) + (x >> 3)] >> (x & 7)) & 1;
+      if (this.portrait) { for (let r = 0; r < bh; r++) for (let c = 0; c < bw; c++) b[r * bw + c] = px(W - 1 - r, c); }
+      else { for (let y = 0; y < bh; y++) for (let x = 0; x < bw; x++) b[y * bw + x] = px(x, y); }
+      return;
+    }
+    if (this.portrait) { // panel column W-1 at the top, page row 0 on the left: how nice!oled's text reads upright
+      for (let r = 0; r < bh; r++) { const x = W - 1 - r; for (let c = 0; c < bw; c++) b[r * bw + c] = ((g[(c >> 3) * W + x] >> (c & 7)) & 1) ^ inv; }
+    } else {
+      for (let y = 0; y < bh; y++) for (let x = 0; x < bw; x++) b[y * bw + x] = ((g[(y >> 3) * W + x] >> (y & 7)) & 1) ^ inv;
     }
   }
   stat(i) { return this.e ? this.e.sim_stat(i) : 0; }
-  key(down) {
-    if (!this.e) return;
-    if (this.stat(6) === 2) { if (down) compileHalves([this], `${this.side} woke from deep sleep`); return; }
-    this.e.sim_key(down ? 1 : 0);
-  }
   describe() {
     const frames = this.stat(4);
-    const what = this.mode === 'art' ? 'art only' : ANIM_LABEL[this.anim];
-    return `${what} · ${frames} frame${frames === 1 ? '' : 's'}`;
+    const anim = this.anim === 'kconfig' ? this.meta.side.animation : this.anim;
+    let what = this.mode === 'art' ? 'art only' : this.anim === 'custom' ? 'your art' : this.role === 'central' ? 'central screen' : this.id === 'dongle' ? 'dongle display' : ANIM_LABEL[anim];
+    if (customBuilds['ide:' + this.id]) what += ' · IDE build';
+    return `${what}${frames ? ` · ${frames} frame${frames === 1 ? '' : 's'}` : ''}`;
   }
 }
-const halves = {};
+const displays = {};
 
-async function compileHalves(list, reason) {
+async function compileDisplays(list, reason) {
   const times = [];
-  for (const h of list) {
-    try { times.push(await h.compile()); }
-    catch (err) { showError(`${h.side} half: ${err.message}`); return; }
+  for (const d of list) {
+    try { times.push(await d.compile()); }
+    catch (err) { showError(`${NAMES[d.id]}: ${err.message}`); return false; }
   }
   const ms = times.reduce((a, b) => a + b, 0);
-  const pill = $('#buildPill');
-  $('#buildStatus').textContent = `${reason} · ${list.map((h) => h.side).join(' + ')} recompiled in ${ms.toFixed(1)} ms`;
-  pill.classList.remove('flash'); void pill.offsetWidth; pill.classList.add('flash');
+  $('#loadError').classList.add('hidden');
+  describePanels();
+  $('#buildStatus').textContent = `${reason} · ${list.map((d) => d.id).join(' + ')} ${engine === 'js' ? 'started' : 'recompiled'} in ${ms.toFixed(1)} ms`;
+  const pill = $('#buildPill'); pill.classList.remove('flash'); void pill.offsetWidth; pill.classList.add('flash');
   refreshCaptions();
   renderAll();
+  return true;
 }
-
+const rebootDisplay = (d, why) => compileDisplays([d], `${NAMES[d.id]} ${why}`);
 function showError(msg) { const el = $('#loadError'); el.textContent = msg; el.classList.remove('hidden'); }
 
-/* ---------------- panel drawing ---------------- */
+/* ---------------- drawing ---------------- */
+// opts.lcd: a Sharp memory LCD, reflective, 1 = white; otherwise an OLED, 1 = lit
 function drawPanel(cv, bits, W, H, scale, opts) {
   const cw = W * scale, ch = H * scale;
   if (cv.width !== cw || cv.height !== ch) { cv.width = cw; cv.height = ch; }
   const ctx = cv.getContext('2d');
+  const g = scale >= 3 ? Math.round(scale * (opts.gap || 0)) / 2 : 0, ps = scale - 2 * g;
+  if (opts.lcd) {
+    ctx.fillStyle = opts.grid && g ? '#2b302d' : '#1c201e'; ctx.fillRect(0, 0, cw, ch);
+    const grid = opts.grid && g;
+    ctx.fillStyle = '#1c201e';
+    if (grid) for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (!bits[y * W + x]) ctx.fillRect(x * scale + g, y * scale + g, ps, ps);
+    ctx.fillStyle = '#d3d8cc';
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (bits[y * W + x]) ctx.fillRect(x * scale + (grid ? g : 0), y * scale + (grid ? g : 0), grid ? ps : scale, grid ? ps : scale);
+    return;
+  }
   ctx.save();
   ctx.fillStyle = '#020303'; ctx.fillRect(0, 0, cw, ch);
-  const g = scale >= 3 ? Math.round(scale * (opts.gap || 0)) / 2 : 0, ps = scale - 2 * g;
   if (opts.grid && scale >= 3) {
     ctx.fillStyle = '#0f1416';
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (!bits[y * W + x]) ctx.fillRect(x * scale + g, y * scale + g, ps, ps);
@@ -499,82 +620,85 @@ function drawPanel(cv, bits, W, H, scale, opts) {
   }
   ctx.restore();
 }
-
-const bigCv = { left: $('#bigL'), right: $('#bigR') };
-const DARK = new Uint8Array(BOARD_W * BOARD_H);
 function renderAll() {
-  for (const side of ['left', 'right']) {
-    const h = halves[side]; if (!h) continue;
-    drawPanel(bigCv[side], h.stat(5) ? DARK : h.board, BOARD_W, BOARD_H, 3, { gap: 0.14, glow: view.glow, grid: view.grid });
+  for (const id of DISPLAY_IDS) {
+    const d = displays[id]; if (!d || !d.e) continue;
+    if (id === 'dongle' && !view.dongle) continue;
+    const { w, h } = d.size;
+    // powered off: an OLED goes dark, a memory LCD (normally white) goes white
+    const bits = d.stat(5) ? new Uint8Array(w * h).fill(d.lcd ? 1 : 0) : d.board;
+    drawPanel($('#cv-' + id), bits, w, h, view.scale, { gap: 0.14, glow: view.glow, grid: view.grid, lcd: d.lcd });
   }
+}
+function describePanels() {
+  const kind = (p) => p.controller === 'ls0xx' ? 'Sharp memory LCD' : `${p.controller.toUpperCase()} OLED`;
+  const l = displays.left.panel, d = displays.dongle.panel;
+  $('#panelNote').textContent = `Halves: ${l.width}×${l.height} ${kind(l)}, mounted portrait. Dongle: ${d.width}×${d.height} ${kind(d)}, landscape.`;
+  $('#oledLook').classList.toggle('hidden', DISPLAY_IDS.every((id) => displays[id].lcd));
 }
 function refreshCaptions() {
-  for (const [side, id] of [['left', '#capL'], ['right', '#capR']]) {
-    const h = halves[side];
-    $(id).innerHTML = `<b>${side === 'left' ? 'Left' : 'Right'}</b>${h.describe()}`;
+  for (const id of DISPLAY_IDS) {
+    const d = displays[id]; if (!d) continue;
+    $('#cap-' + id).innerHTML = `<b>${NAMES[id]}</b>${escapeHtml(d.describe())}`;
   }
-  const s = ['left', 'right'].map((side) => {
-    const h = halves[side];
-    return `${side}: ${h.stat(0)} flushes, ${(h.stat(3) / 1024).toFixed(1)} KB LVGL heap${h.stat(1) ? `, ${h.stat(1)} rejected` : ''}${h.stat(2) ? ', render buffer overrun!' : ''}`;
-  });
-  $('#statsNote').textContent = s.join(' · ');
+  $('#statsNote').textContent = DISPLAY_IDS.map((id) => {
+    const d = displays[id];
+    return `${id}: ${d.stat(0)} flushes, ${(d.stat(3) / 1024).toFixed(1)} KB LVGL heap${d.stat(1) ? `, ${d.stat(1)} rejected` : ''}${d.stat(2) ? ', render buffer overrun!' : ''}`;
+  }).join(' · ');
 }
+const escapeHtml = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 /* ---------------- typing ---------------- */
-// Three keys pressed in turn. Each press and release is a position event on the half the key is on,
-// which is what ZMK's activity tracking (and so the blank-on-idle timer) listens to.
+// Three keys pressed in turn. Each is a key on one half: that half sees a local position event (activity),
+// the dongle sees it arrive from that peripheral and, as the central, the keycode (WPM, modifiers).
 const typing = { on: true, wpm: 30, where: 'split', idx: 0, next: 0, down: -1, upAt: 0 };
 const KEY_SIDES = { left: ['left', 'left', 'left'], right: ['right', 'right', 'right'], split: ['left', 'left', 'right'] };
-const keyEls = () => $$('#keys .key');
+const KEYCODES = [0x04, 0x05, 0x06]; // HID usages for A, B, C
 let simTime = 0;
 
+function keyEvent(i, down) {
+  const side = KEY_SIDES[typing.where][i], source = side === 'left' ? 0 : 1;
+  const half = displays[side];
+  if (half.role === 'central') half.key(255, i, down, KEYCODES[i]);
+  else {
+    half.key(255, i, down, 0);
+    if (displays.left.role === 'central' && side === 'right') displays.left.key(0, i, down, KEYCODES[i]);
+  }
+  displays.dongle.key(source, i, down, KEYCODES[i]);
+}
 function typingStep(now) {
-  const interval = 60000 / (typing.wpm * 5);  // a "word" is five keystrokes
+  const interval = 60000 / (typing.wpm * 5); // a "word" is five keystrokes
   if (typing.down >= 0 && now >= typing.upAt) {
-    halves[KEY_SIDES[typing.where][typing.down]].key(false);
-    keyEls()[typing.down].classList.remove('down');
-    wpm.count++;  // ZMK counts key releases
+    keyEvent(typing.down, false);
+    $$('#keys .key')[typing.down].classList.remove('down');
     typing.down = -1;
   }
   if (typing.on && typing.down < 0 && now >= typing.next) {
     const i = typing.idx;
-    halves[KEY_SIDES[typing.where][i]].key(true);
-    keyEls()[i].classList.add('down');
+    keyEvent(i, true);
+    $$('#keys .key')[i].classList.add('down');
     typing.down = i;
     typing.upAt = now + Math.min(100, interval * 0.4);
     typing.idx = (i + 1) % 3;
     typing.next = Math.max(typing.next + interval, now);
   }
 }
-
-// zmk/app/src/wpm.c as the dongle runs it: every second, WPM = (releases / 5) / minutes elapsed;
-// the count and the window reset every 5 seconds.
-const wpm = { count: 0, counter: 0, state: 0, next: 1000 };
-function wpmStep(now) {
-  while (now >= wpm.next) {
-    wpm.next += 1000;
-    wpm.counter++;
-    wpm.state = Math.min(255, Math.floor((wpm.count / 5) / (wpm.counter / 60)));
-    if (wpm.counter >= 5) { wpm.counter = 0; wpm.count = 0; }
-  }
-}
-
-function labelKeys() {
-  keyEls().forEach((el, i) => { el.querySelector('.h').textContent = KEY_SIDES[typing.where][i] === 'left' ? 'L' : 'R'; });
-}
+function labelKeys() { $$('#keys .key').forEach((el, i) => { el.querySelector('.h').textContent = KEY_SIDES[typing.where][i] === 'left' ? 'L' : 'R'; }); }
 
 function renderActivity() {
-  $('#wpmOut').textContent = wpm.state;
-  for (const [side, id] of [['left', 'L'], ['right', 'R']]) {
-    const h = halves[side], act = h.firmware.activity, st = h.stat(6), since = h.stat(7);
+  $('#wpmOut').textContent = displays.dongle.stat(8);
+  for (const id of DISPLAY_IDS) {
+    const d = displays[id], act = d.meta.side.activity, st = d.stat(6), since = d.stat(7);
     let main, sub = '';
-    if (st === 2) { main = 'deep sleep'; sub = 'next keypress on this half reboots it'; }
+    const blanks = act.blankOnIdle ? (d.lcd ? 'image held' : 'display off') : '';
+    if (st === 2) { main = 'deep sleep'; sub = 'next keypress reboots it'; }
     else if (st === 1) {
-      main = act.blankOnIdle ? 'idle, display off' : 'idle';
-      if (act.sleepMs) sub = world.usb ? 'no deep sleep on USB power' : `deep sleep in ${fmtSecs(act.sleepMs - since)}`;
+      main = blanks ? `idle, ${blanks}` : 'idle';
+      const powered = id === 'dongle' || world.usb;
+      if (act.sleepMs) sub = powered ? 'no deep sleep on USB power' : `deep sleep in ${fmtSecs(act.sleepMs - since)}`;
     } else {
       main = 'active';
-      sub = act.blankOnIdle ? `display blanks in ${fmtSecs(act.idleMs - since)}` : `idle in ${fmtSecs(act.idleMs - since)}`;
+      sub = `${act.blankOnIdle ? (d.lcd ? 'updates pause' : 'display blanks') : 'idle'} in ${fmtSecs(act.idleMs - since)}`;
     }
     $('#act' + id).textContent = main;
     $('#act' + id).classList.toggle('off', st !== 0);
@@ -584,43 +708,35 @@ function renderActivity() {
 const fmtSecs = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return s >= 120 ? `${Math.ceil(s / 60)} min` : `${s} s`; };
 
 /* ---------------- clock ---------------- */
-let last = performance.now(), acc = 0;
+let last = performance.now(), acc = 0, booted = false;
 function tick(t) {
   requestAnimationFrame(tick);
-  let dt = Math.min(100, t - last); last = t;
-  if (!META || !halves.left || !halves.left.e) return;
+  const dt = Math.min(100, t - last); last = t;
+  if (!booted) return;
   if (video && !video.paused) liveVideoFrame();
   if (!view.playing) return;
   acc += dt * view.speed;
-  const tickMs = META.tickMs;
-  if (acc < tickMs) return;
-  for (; acc >= tickMs; acc -= tickMs) {
-    simTime += tickMs;
+  const step = META.tickMs;
+  if (acc < step) return;
+  for (; acc >= step; acc -= step) {
+    simTime += step;
     typingStep(simTime);
-    wpmStep(simTime);
-    halves.left.advance(tickMs); halves.right.advance(tickMs);
+    for (const id of DISPLAY_IDS) displays[id].advance(step);
   }
-  halves.left.read(); halves.right.read();
+  for (const id of DISPLAY_IDS) displays[id].read();
   renderAll();
   renderActivity();
 }
-setInterval(() => { if (halves.left && halves.left.e) refreshCaptions(); }, 1000);
+setInterval(() => { if (booted) refreshCaptions(); }, 1000);
 
-/* ---------------- half selection ---------------- */
-function selectSide(side) {
-  $('#figL').classList.toggle('sel', side === 'left');
-  $('#figR').classList.toggle('sel', side === 'right');
-  if (cfgSide !== side) { cfgSide = side; segSet('#cfgSide', side); writeConf(); }
-}
-
-/* ---------------- art pipeline ---------------- */
+/* ---------------- art ---------------- */
 const A = {
-  target: 'both', mode: 'nice', bx: 0, by: 32, bw: 32, bh: 96, fps: 12,
+  target: 'both', mode: 'status', bx: 0, by: 32, bw: 68, bh: 128, fps: 12,
   fit: 'cover', zoom: 1, offX: 0, offY: 0, rot: 0, flip: false, smooth: true,
   dither: 'atkinson', thr: 128, bright: 0, contrast: 0, gamma: 1, invert: false,
 };
 const DITHERS = [['threshold', 'Threshold'], ['bayer4', 'Bayer 4×4'], ['bayer8', 'Bayer 8×8'], ['floyd', 'Floyd–Steinberg'], ['atkinson', 'Atkinson'], ['jjn', 'Jarvis']];
-let frames = []; // {src, w, h, crisp}
+let frames = [];
 let video = null, sourceName = 'art';
 
 const work = document.createElement('canvas');
@@ -675,42 +791,45 @@ function dither(v, w, h, mode) {
 }
 const artBits = (f, mode = A.dither) => dither(tone(sampleLum(f, A.bw, A.bh)), A.bw, A.bh, mode);
 
-/* Board-space art -> the panel-space frame lv_animimg draws (the panel is mounted rotated). */
-function toPanelFrame(bits, bw, bh) {
-  const wp = bh, hp = bw, stride = Math.ceil(wp / 8), out = new Uint8Array(stride * hp);
-  for (let iy = 0; iy < hp; iy++) for (let ix = 0; ix < wp; ix++)
-    if (bits[(bh - 1 - ix) * bw + iy]) out[iy * stride + (ix >> 3)] |= 0x80 >> (ix & 7);
-  return out;
+/* What you see -> the image lv_animimg draws. The halves' panels are mounted rotated; the dongle's isn't. */
+function toPanelFrame(bits, bw, bh, portrait) {
+  const wp = portrait ? bh : bw, hp = portrait ? bw : bh, stride = Math.ceil(wp / 8), out = new Uint8Array(stride * hp);
+  for (let iy = 0; iy < hp; iy++) for (let ix = 0; ix < wp; ix++) {
+    const on = portrait ? bits[(bh - 1 - ix) * bw + iy] : bits[iy * bw + ix];
+    if (on) out[iy * stride + (ix >> 3)] |= 0x80 >> (ix & 7);
+  }
+  return { data: out, wp, hp };
 }
+const artTargets = () => A.target === 'both' ? [displays.left, displays.right] : [displays[A.target]];
 
 let applyTimer = null;
 function scheduleApply() { clearTimeout(applyTimer); applyTimer = setTimeout(applyArt, 160); }
-
-function targets() { return A.target === 'both' ? [halves.left, halves.right] : [halves[A.target]]; }
-
 function applyArt() {
   renderThumbs();
   if (!frames.length) return;
   let list = frames, note = '';
   if (list.length > 255) { list = list.slice(0, 255); note = `Using the first 255 of ${frames.length} frames: lv_animimg_set_src() takes an 8-bit frame count. `; }
-  const panelFrames = list.map((f) => toPanelFrame(artBits(f), A.bw, A.bh));
+  const targets = artTargets();
+  const portrait = targets[0].portrait, H = targets[0].panel.width;
+  const mode = A.target === 'dongle' ? 'art' : A.mode;
+  const encoded = list.map((f) => toPanelFrame(artBits(f), A.bw, A.bh, portrait));
   const art = {
-    frames: panelFrames, wp: A.bh, hp: A.bw,
-    X: BOARD_H - A.by - A.bh, Y: A.bx,
+    frames: encoded.map((e) => e.data), wp: encoded[0].wp, hp: encoded[0].hp,
+    X: portrait ? H - A.by - A.bh : A.bx, Y: portrait ? A.bx : A.by,
     duration: Math.max(1, Math.round(list.length * 1000 / A.fps)),
-    bits: list.length, bytes: panelFrames.length * (panelFrames[0].length + 8),
+    bytes: encoded.length * (encoded[0].data.length + 8), bw: A.bw, bh: A.bh,
   };
-  for (const h of targets()) {
-    h.art = art; h.anim = 'custom'; h.mode = A.mode;
-    if (A.mode === 'nice') {
-      h.kcfg.NICE_OLED_WIDGET_ANIMATION_PERIPHERAL_CUSTOM_X = art.X;
-      h.kcfg.NICE_OLED_WIDGET_ANIMATION_PERIPHERAL_CUSTOM_Y = art.Y;
-      h.kcfg.NICE_OLED_WIDGET_ANIMATION_PERIPHERAL_MS = art.duration;
+  for (const d of targets) {
+    d.art = art; d.anim = 'custom'; d.mode = mode;
+    if (mode === 'status') {
+      d.kcfg.NICE_OLED_WIDGET_ANIMATION_PERIPHERAL_CUSTOM_X = art.X;
+      d.kcfg.NICE_OLED_WIDGET_ANIMATION_PERIPHERAL_CUSTOM_Y = art.Y;
+      d.kcfg.NICE_OLED_WIDGET_ANIMATION_PERIPHERAL_MS = art.duration;
     }
   }
-  $('#srcNote').textContent = `${note}${list.length} frame${list.length > 1 ? 's' : ''} of ${A.bw}×${A.bh}, ${fmtBytes(art.bytes)} as nice!oled images.`;
+  $('#srcNote').textContent = `${note}${list.length} frame${list.length > 1 ? 's' : ''} of ${A.bw}×${A.bh}, ${fmtBytes(art.bytes)} as image data.`;
   writeConf();
-  compileHalves(targets(), 'art');
+  compileDisplays(targets, 'art');
 }
 const fmtBytes = (b) => b < 1024 ? b + ' B' : (b / 1024).toFixed(1) + ' KB';
 
@@ -728,13 +847,13 @@ function renderThumbs() {
     }
   }
   const f = video && video.readyState >= 2 ? { src: video, w: video.videoWidth, h: video.videoHeight } : frames[0];
+  const scale = A.bw > 80 || A.bh > 80 ? 1 : 2;
   for (const [mode] of DITHERS) {
     const t = thumbCv[mode];
     t.b.classList.toggle('on', mode === A.dither);
-    drawPanel(t.cv, f ? artBits(f, mode) : new Uint8Array(A.bw * A.bh), A.bw, A.bh, 2, { glow: 0 });
+    drawPanel(t.cv, f ? artBits(f, mode) : new Uint8Array(A.bw * A.bh), A.bw, A.bh, scale, { glow: 0, lcd: artTargets()[0].lcd });
   }
 }
-
 async function loadFiles(list) {
   const files = [...list].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
   if (!files.length) return;
@@ -769,7 +888,6 @@ async function loadFiles(list) {
   applyArt();
 }
 function setFps(f) { A.fps = Math.max(1, Math.min(30, Math.round(f))); $('#fps').value = A.fps; $('#fpsV').textContent = A.fps; }
-
 function stopVideo() { if (!video) return; video.pause(); URL.revokeObjectURL(video.src); video = null; $('#videoBox').classList.add('hidden'); }
 async function loadVideo(file) {
   stopVideo();
@@ -785,7 +903,6 @@ let lastVideoT = -1;
 function liveVideoFrame() {
   if (video.currentTime === lastVideoT || video.readyState < 2) return;
   lastVideoT = video.currentTime;
-  frames = [{ src: video, w: video.videoWidth, h: video.videoHeight }];
   renderThumbs();
 }
 async function captureVideo() {
@@ -803,7 +920,6 @@ async function captureVideo() {
   frames = out; $('#cname').value = cIdent(sourceName);
   applyArt();
 }
-
 function bitsToFrame(bytes, w, h) {
   const c = document.createElement('canvas'); c.width = w; c.height = h;
   const ctx = c.getContext('2d'), img = ctx.createImageData(w, h), stride = Math.ceil(w / 8);
@@ -834,32 +950,46 @@ function moonFrames() {
   }
   return out;
 }
+// boxes in display coordinates: the whole screen, or (halves) what's under nice!oled's status rows
+const STATUS_ROWS = 32;
+function screenBox(target) { const { w, h } = (target === 'dongle' ? displays.dongle : displays.left).size; return [0, 0, w, h]; }
+function belowStatusBox() { const [, , w, h] = screenBox('both'); return [0, STATUS_ROWS, w, h - STATUS_ROWS]; }
+function defaultBox() {
+  if (A.target === 'dongle') return setBox(...screenBox('dongle'));
+  if (A.mode === 'status') return setBox(...belowStatusBox());
+  return setBox(...screenBox('both'));
+}
 function loadSample(name) {
   stopVideo();
   if (name === 'none') {
     frames = [];
-    for (const h of targets()) { h.reset(); h.art = null; }
+    for (const d of artTargets()) { d.reset(); d.art = null; }
     writeConf(); renderThumbs(); $('#srcNote').textContent = '';
-    compileHalves(targets(), 'reset');
+    compileDisplays(artTargets(), 'reset');
     return;
   }
   if (name === 'kronii') {
     frames = [bitsToFrame(Uint8Array.from(atob(KRONII), (c) => c.charCodeAt(0)), 32, 128)];
-    Object.assign(A, { smooth: false }); $('#smooth').checked = false;
-    setBox(0, 0, 32, 128); setMode('art');
+    A.smooth = false; $('#smooth').checked = false;
+    if (A.target === 'dongle') { setTarget('both'); }
+    const [, , w, h] = screenBox('both');
+    setMode('art'); setBox(Math.max(0, (w - 32) >> 1), Math.max(0, (h - 128) >> 1), 32, 128);
   } else {
     frames = moonFrames();
-    Object.assign(A, { smooth: true }); $('#smooth').checked = true;
-    setBox(0, 32, 32, 96); setMode('nice'); setFps(12);
+    A.smooth = true; $('#smooth').checked = true;
+    setFps(12); defaultBox();
   }
   sourceName = name; $('#cname').value = name;
   applyArt();
 }
-function setBox(x, y, w, h) {
-  Object.assign(A, { bx: x, by: y, bw: w, bh: h });
-  $('#bx').value = x; $('#by').value = y; $('#bw').value = w; $('#bh').value = h;
-}
+function setBox(x, y, w, h) { Object.assign(A, { bx: x, by: y, bw: w, bh: h }); $('#bx').value = x; $('#by').value = y; $('#bw').value = w; $('#bh').value = h; }
 function setMode(m) { A.mode = m; segSet('#modeSeg', m); }
+function setTarget(t) {
+  A.target = t; segSet('#targetSeg', t);
+  $('#modeSeg').classList.toggle('hidden', t === 'dongle');
+  const [, , w, h] = screenBox(t);
+  $('#bw').max = w; $('#bh').max = h;
+}
 
 /* ---------------- config tab ---------------- */
 let cfgSide = 'left';
@@ -869,38 +999,37 @@ const CONF_SHOWN = [
   'NICE_OLED_WIDGET_BATTERY_CUSTOM_X', 'NICE_OLED_WIDGET_BATTERY_CUSTOM_Y',
   'NICE_OLED_WIDGET_OUTPUT_BT_CUSTOM_X', 'NICE_OLED_WIDGET_OUTPUT_BT_CUSTOM_Y',
 ];
-function confLines(h, onlyChanged) {
-  const lines = [];
-  const fw = h.firmware, changed = (n) => h.kcfg[n] !== fw.kcfg[n];
-  if (h.anim === 'custom') lines.push('# animation: your art from the Art tab (set one of GEM, CAT, HEAD, SPACEMAN, POKEMON to switch back)');
-  else if (!onlyChanged || h.anim !== fw.animation) lines.push(`CONFIG_NICE_OLED_WIDGET_ANIMATION_PERIPHERAL_${ANIM_SYMBOL[h.anim]}=y`);
-  for (const n of CONF_SHOWN) if (!onlyChanged || changed(n)) lines.push(`CONFIG_${n}=${h.kcfg[n]}`);
-  for (const n of META.runtime) if (!CONF_SHOWN.includes(n) && changed(n)) lines.push(`CONFIG_${n}=${h.kcfg[n]}`);
-  for (const [n, v] of Object.entries(h.variantSet())) {
-    const fwv = META.variants.find((x) => x.firmware).set[n];
-    if (!onlyChanged || v !== fwv) lines.push(`CONFIG_${n}=${v}`);
-  }
+function confLines(d, onlyChanged) {
+  const lines = [], fw = d.firmwareSide(), m = d.meta;
+  const changed = (n) => d.kcfg[n] !== fw.kcfg[n];
+  if (d.anim === 'custom') lines.push('# animation: your art from the Art tab');
+  else if (d.anim !== 'kconfig' && (!onlyChanged || d.anim !== fw.animation)) lines.push(`CONFIG_NICE_OLED_WIDGET_ANIMATION_PERIPHERAL_${ANIM_SYMBOL[d.anim]}=y`);
+  for (const n of CONF_SHOWN) if (m.runtime.includes(n) && (!onlyChanged || changed(n))) lines.push(`CONFIG_${n}=${d.kcfg[n]}`);
+  for (const n of m.runtime) if (!CONF_SHOWN.includes(n) && changed(n)) lines.push(`CONFIG_${n}=${d.kcfg[n]}`);
+  if (d.id !== 'dongle' && d.role !== 'central' && (!onlyChanged || d.inverted)) lines.push(`CONFIG_NICE_OLED_WIDGET_INVERTED=${d.inverted ? 'y' : 'n'}`);
   return lines;
 }
 function writeConf() {
-  const h = halves[cfgSide];
-  if (!h) return;
-  if (document.activeElement !== $('#conf')) $('#conf').value = confLines(h, false).join('\n') + '\n';
-  $('#confOut').value = ['left', 'right'].map((side) => {
-    const lines = confLines(halves[side], true);
-    return `# ${side} half (boards/shields/eyelash_corne/eyelash_corne_${side}.conf)\n${lines.length ? lines.join('\n') : '# no changes from the firmware build'}`;
+  const d = displays[cfgSide];
+  if (!d) return;
+  if (document.activeElement !== $('#conf')) {
+    const lines = confLines(d, false);
+    $('#conf').value = (lines.length ? lines.join('\n') : '# nothing this display can change live: use the IDE tab') + '\n';
+  }
+  $('#confOut').value = DISPLAY_IDS.map((id) => {
+    const lines = confLines(displays[id], true);
+    const file = id === 'dongle' ? 'jerry_dongle.conf' : `eyelash_corne_${id}.conf`;
+    return `# ${NAMES[id]} (boards/shields/eyelash_corne/${file})\n${lines.length ? lines.join('\n') : '# no changes from the firmware build'}`;
   }).join('\n\n');
-  const cfg = h.firmware.config, rows = Object.entries(cfg);
+  const rows = Object.entries(d.meta.side.config);
   $('#cfgCount').textContent = rows.length;
-  $('#cfgTable').innerHTML = rows.map(([k, v]) => `<tr><td>CONFIG_${k}</td><td>${typeof v === 'string' ? JSON.stringify(v) : v === 1 ? 'y' : v}</td></tr>`).join('');
+  $('#cfgTable').innerHTML = rows.map(([k, v]) => `<tr><td>CONFIG_${k}</td><td>${escapeHtml(typeof v === 'string' ? JSON.stringify(v) : v === 1 ? 'y' : v)}</td></tr>`).join('');
 }
-
 let confTimer = null;
 function onConfEdit() {
   clearTimeout(confTimer);
   confTimer = setTimeout(() => {
-    const h = halves[cfgSide], log = [], before = JSON.stringify([h.kcfg, h.anim, h.variant]);
-    const vset = { ...h.variantSet() };
+    const d = displays[cfgSide], log = [], before = JSON.stringify([d.kcfg, d.anim, d.inverted]);
     for (const raw of $('#conf').value.split('\n')) {
       const line = raw.trim();
       if (!line || line.startsWith('#')) continue;
@@ -908,32 +1037,28 @@ function onConfEdit() {
       if (!m) { log.push(['skip', `${line}: not a CONFIG_NAME=value line`]); continue; }
       const [, name, value] = m;
       const am = name.match(/^NICE_OLED_WIDGET_ANIMATION_PERIPHERAL_(GEM|CAT|HEAD|SPACEMAN|POKEMON)$/);
-      if (META.runtime.includes(name)) {
+      if (d.meta.runtime.includes(name)) {
         const n = parseInt(value, 0);
         if (Number.isNaN(n)) { log.push(['skip', `${name}: needs a number`]); continue; }
-        h.kcfg[name] = n; log.push(['ok', `${name}=${n} (live)`]);
-      } else if (am) {
-        if (/^y$/i.test(value)) { h.anim = am[1] === 'GEM' ? 'crystal' : am[1].toLowerCase(); log.push(['ok', `${name}=y (frame set)`]); }
-      } else if (name in vset) {
-        const v = /^y$/i.test(value) ? 'y' : 'n';
-        vset[name] = v; log.push(['ok', `${name}=${v} (prebuilt module)`]);
+        d.kcfg[name] = n; log.push(['ok', `${name}=${n} (live)`]);
+      } else if (am && d.anim !== 'kconfig') {
+        if (/^y$/i.test(value)) { d.anim = am[1] === 'GEM' ? 'crystal' : am[1].toLowerCase(); log.push(['ok', `${name}=y (frame set)`]); }
+      } else if (name === 'NICE_OLED_WIDGET_INVERTED' && d.id !== 'dongle' && d.role !== 'central') {
+        d.inverted = /^y$/i.test(value); log.push(['ok', `${name}=${d.inverted ? 'y' : 'n'} (prebuilt module)`]);
       } else {
-        const fw = h.firmware.config[name];
+        const fw = d.meta.side.config[name];
         const same = fw !== undefined && String(fw === 1 ? 'y' : fw) === value.replace(/^"|"$/g, '');
-        log.push(same ? ['info', `${name}: same as firmware`] : ['skip', `${name}: compile-time, rerun build.py to try it`]);
+        log.push(same ? ['info', `${name}: same as firmware`] : ['skip', `${name}: compile-time, recompile it in the IDE tab`]);
       }
     }
-    const want = META.variants.find((v) => Object.entries(v.set).every(([k, x]) => vset[k] === x));
-    if (want) h.variant = want.id;
     $('#confLog').innerHTML = log.map(([c, t]) => `<li class="${c}">${escapeHtml(t)}</li>`).join('');
-    if (JSON.stringify([h.kcfg, h.anim, h.variant]) !== before) {
-      if (h.anim !== 'custom') h.mode = 'nice';
+    if (JSON.stringify([d.kcfg, d.anim, d.inverted]) !== before) {
+      if (d.anim !== 'custom') d.mode = 'status';
       writeConf();
-      compileHalves([h], 'config');
+      compileDisplays([d], 'config');
     }
   }, 350);
 }
-const escapeHtml = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 /* ---------------- export ---------------- */
 const cIdent = (s) => (s.toLowerCase().replace(/[^a-z0-9_]+/g, '_').replace(/^_+|_+$/g, '').replace(/^(\d)/, '_$1') || 'art');
@@ -943,11 +1068,11 @@ function hexLines(bytes, per = 16) {
   return out.join('\n');
 }
 function generate() {
-  const h = [halves.left, halves.right].find((x) => x.anim === 'custom' && x.art);
-  if (!h) { $('#genNote').textContent = 'No art loaded yet: use the Art tab first.'; return; }
-  const a = h.art, name = cIdent($('#cname').value), multi = a.frames.length > 1;
+  const d = DISPLAY_IDS.map((id) => displays[id]).find((x) => x.anim === 'custom' && x.art);
+  if (!d) { $('#genNote').textContent = 'No art loaded yet: use the Art tab first.'; return; }
+  const a = d.art, name = cIdent($('#cname').value), multi = a.frames.length > 1;
   const id = (i) => multi ? `${name}_${String(i).padStart(2, '0')}` : name;
-  let s = `/* ${name}: ${a.frames.length} frame${multi ? 's' : ''}, ${a.wp}x${a.hp} in panel orientation (${A.bw}x${A.bh} on the board).\n` +
+  let s = `/* ${name}: ${a.frames.length} frame${multi ? 's' : ''}, ${a.wp}x${a.hp} in panel orientation (${a.bw}x${a.bh} as seen on the ${NAMES[d.id].toLowerCase()}).\n` +
     ` * Generated by oled-emulator/index.html. Palette block matches nice!oled's assets. */\n#include <lvgl.h>\n\n#ifndef LV_ATTRIBUTE_MEM_ALIGN\n#define LV_ATTRIBUTE_MEM_ALIGN\n#endif\n`;
   a.frames.forEach((f, i) => {
     s += `\nstatic const LV_ATTRIBUTE_MEM_ALIGN uint8_t ${id(i)}_map[] = {\n#if CONFIG_NICE_OLED_WIDGET_INVERTED\n  0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff,\n#else\n  0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0xff,\n#endif\n${hexLines(f)}\n};\n\n` +
@@ -960,27 +1085,85 @@ function generate() {
 }
 function makePngs() {
   const box = $('#pngs'); box.innerHTML = '';
-  for (const side of ['left', 'right']) {
-    const h = halves[side]; if (!h) continue;
-    const c = document.createElement('canvas');
-    drawPanel(c, h.board, BOARD_W, BOARD_H, 4, { gap: 0, glow: 0 });
+  for (const id of DISPLAY_IDS) {
+    const d = displays[id]; if (!d || !d.e) continue;
+    const c = document.createElement('canvas'), { w, h } = d.size;
+    drawPanel(c, d.board, w, h, 4, { gap: 0, glow: 0, lcd: d.lcd });
     const fig = document.createElement('figure'), img = new Image();
-    img.src = c.toDataURL('image/png'); img.alt = `${side} display`; img.width = 64; img.height = 256;
-    fig.append(img, Object.assign(document.createElement('figcaption'), { textContent: `${side}, ${h.describe()}` }));
+    img.src = c.toDataURL('image/png'); img.alt = `${NAMES[id]} display`; img.width = w * 2; img.height = h * 2;
+    fig.append(img, Object.assign(document.createElement('figcaption'), { textContent: `${NAMES[id]}, ${d.describe()}` }));
     box.append(fig);
+  }
+}
+
+/* ---------------- IDE hook ---------------- */
+// The IDE tab (ide.js) compiles a display's firmware in the browser and hands the result here.
+window.OledSim = {
+  get meta() { return META; },
+  role(id) { return displays[id].role; },
+  hasBuild(id) { return !!customBuilds['ide:' + id]; },
+  async runBuild(id, wasmBytes, meta) {
+    const d = displays[id], key = 'ide:' + id, prev = customBuilds[key];
+    let module;
+    try { module = await WebAssembly.compile(wasmBytes); }
+    catch (err) { showError(`${NAMES[id]}: the IDE build is not a valid module: ${err.message}`); return false; }
+    customBuilds[key] = { module, meta };
+    d.art = null; d.reset();
+    if (await compileDisplays([d], 'IDE build')) return true;
+    // keep the last build that started
+    const msg = $('#loadError').textContent;
+    if (prev) customBuilds[key] = prev; else delete customBuilds[key];
+    d.reset();
+    await compileDisplays([d], 'restored');
+    showError(`${msg} The display is back on its previous build.`);
+    return false;
+  },
+  async revertBuild(id) {
+    delete customBuilds['ide:' + id];
+    displays[id].reset();
+    return compileDisplays([displays[id]], 'firmware build');
+  },
+};
+async function setLeftRole(role) {
+  const d = displays.left; d.role = role; d.art = null;
+  delete customBuilds['ide:left']; // it was built for the other role
+  d.reset();
+  writeConf();
+  window.dispatchEvent(new CustomEvent('oledsim:role', { detail: { id: 'left', role } }));
+  await compileDisplays([d], role === 'central' ? 'central preview' : 'peripheral');
+}
+let ideLoaded = false;
+async function openIde() {
+  if (ideLoaded) return;
+  ideLoaded = true;
+  const host = $('#ideHost');
+  if (engine !== 'wasm' || location.protocol === 'file:' || window.OLEDSIM_NO_IDE) {
+    host.innerHTML = '<div class="card"><h3>IDE</h3><p class="note">The IDE recompiles the firmware\'s display code in your browser with a WebAssembly build of clang, about 30 MB on first use. It needs a normal web page served over http(s) with WebAssembly allowed, so it doesn\'t run ' +
+      (location.protocol === 'file:' ? 'from a file:// page: serve <code>oled-emulator/</code> (for example <code>python3 -m http.server</code>) or use the GitHub Pages site.' : 'in this viewer. Open the GitHub Pages site instead (see the repo README).') + '</p></div>';
+    return;
+  }
+  try {
+    const mod = await import(new URL('ide.js', location.href).href);
+    await mod.mountIde(host, window.OledSim);
+  } catch (err) {
+    host.innerHTML = `<div class="card"><h3>IDE</h3><p class="note warn">The IDE could not start: ${escapeHtml(err.message)}</p></div>`;
   }
 }
 
 /* ---------------- controls ---------------- */
 function segSet(sel, v) { $$(`${sel} button`).forEach((b) => b.classList.toggle('on', b.dataset.v === v)); }
 function onSeg(sel, fn) { $(sel).addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; segSet(sel, b.dataset.v); fn(b.dataset.v); }); }
-
+function selectDisplay(id) {
+  DISPLAY_IDS.forEach((x) => $('#disp-' + x).classList.toggle('sel', x === id));
+  if (cfgSide !== id) { cfgSide = id; segSet('#cfgSide', id); $('#confLog').innerHTML = ''; writeConf(); }
+}
 function bindControls() {
   $$('#tabs button').forEach((b) => b.addEventListener('click', () => {
     $$('#tabs button').forEach((x) => x.classList.toggle('on', x === b));
     $$('.tab').forEach((t) => t.classList.toggle('on', t.id === 'tab-' + b.dataset.tab));
     if (b.dataset.tab === 'export') { generate(); makePngs(); }
     if (b.dataset.tab === 'art') renderThumbs();
+    if (b.dataset.tab === 'ide') openIde();
   }));
   $('#themeBtn').addEventListener('click', () => {
     const root = document.documentElement;
@@ -991,30 +1174,43 @@ function bindControls() {
   $('#playBtn').addEventListener('click', () => {
     view.playing = !view.playing;
     $('#playBtn').textContent = view.playing ? '❚❚' : '▶';
-    $('#playBtn').title = view.playing ? 'Pause animations' : 'Play animations';
+    $('#playBtn').title = view.playing ? 'Pause time' : 'Resume time';
   });
-  $('#rebuildBtn').addEventListener('click', () => compileHalves([halves.left, halves.right], 'manual'));
+  $('#rebuildBtn').addEventListener('click', () => compileDisplays(DISPLAY_IDS.map((id) => displays[id]), 'reboot'));
 
-  const live = () => { for (const h of Object.values(halves)) { h.applyWorld(); h.read(); } renderAll(); renderActivity(); };
-  $('#batt').addEventListener('input', (e) => { world.battery = +e.target.value; $('#battV').textContent = world.battery + '%'; live(); });
-  $('#usb').addEventListener('change', (e) => { world.usb = e.target.checked; $('#usbV').textContent = world.usb ? 'on' : 'off'; live(); });
-  $('#linkL').addEventListener('change', (e) => { world.link.left = e.target.checked; $('#linkLV').textContent = e.target.checked ? 'connected' : 'lost'; live(); });
-  $('#linkR').addEventListener('change', (e) => { world.link.right = e.target.checked; $('#linkRV').textContent = e.target.checked ? 'connected' : 'lost'; live(); });
-  const SPEEDS = [0.25, 0.5, 1, 2, 4, 10, 30, 60];
-  $('#speed').addEventListener('input', (e) => { view.speed = SPEEDS[+e.target.value]; $('#speedV').textContent = view.speed + '×'; });
-  $('#glow').addEventListener('input', (e) => { view.glow = +e.target.value; $('#glowV').textContent = view.glow.toFixed(2); renderAll(); });
+  const live = (what) => { for (const id of DISPLAY_IDS) { displays[id].applyWorld(false, what); displays[id].read(); } renderAll(); renderActivity(); };
+  const bind = (id, fn) => $(id).addEventListener('input', fn);
+  bind('#battL', (e) => { world.battery.left = +e.target.value; $('#battLV').textContent = e.target.value + '%'; live('battery'); });
+  bind('#battR', (e) => { world.battery.right = +e.target.value; $('#battRV').textContent = e.target.value + '%'; live('battery'); });
+  $('#usb').addEventListener('change', (e) => { world.usb = e.target.checked; $('#usbV').textContent = world.usb ? 'on' : 'off'; live('usb'); });
+  $('#linkL').addEventListener('change', (e) => { world.link.left = e.target.checked; $('#linkLV').textContent = e.target.checked ? 'connected' : 'lost'; live('link'); });
+  $('#linkR').addEventListener('change', (e) => { world.link.right = e.target.checked; $('#linkRV').textContent = e.target.checked ? 'connected' : 'lost'; live('link'); });
+  onSeg('#outSeg', (v) => { world.output = v; live('output'); });
+  $('#bleConn').addEventListener('change', (e) => { world.bleConnected = e.target.checked; live('output'); });
+  $('#caps').addEventListener('change', (e) => { world.caps = e.target.checked; live('caps'); });
+  $$('#modChips .chip').forEach((chip) => chip.addEventListener('click', () => {
+    const i = +chip.dataset.mod, down = !(world.mods & (1 << i));
+    world.mods ^= 1 << i;
+    chip.classList.toggle('on', down);
+    for (const id of DISPLAY_IDS) if (displays[id].central) displays[id].key(id === 'dongle' ? 0 : 255, 100 + i, down, 0xe0 + i);
+  }));
+  onSeg('#roleSeg', (v) => setLeftRole(v));
+  bind('#speed', (e) => { const S = [0.25, 0.5, 1, 2, 4, 10, 30, 60]; view.speed = S[+e.target.value]; $('#speedV').textContent = view.speed + '×'; });
+  bind('#glow', (e) => { view.glow = +e.target.value; $('#glowV').textContent = view.glow.toFixed(2); renderAll(); });
   $('#grid').addEventListener('change', (e) => { view.grid = e.target.checked; renderAll(); });
+  bind('#scale', (e) => { view.scale = +e.target.value; renderAll(); });
+  $('#showDongle').addEventListener('change', (e) => { view.dongle = e.target.checked; $('#disp-dongle').classList.toggle('hidden', !view.dongle); renderAll(); });
   onSeg('#colorSeg', (v) => { view.color = v; renderAll(); });
+  for (const id of DISPLAY_IDS) $('#disp-' + id).addEventListener('click', () => selectDisplay(id));
+
   $('#typeBtn').addEventListener('click', () => {
     typing.on = !typing.on;
     if (typing.on) typing.next = simTime;
     $('#typeBtn').textContent = typing.on ? 'Stop typing' : 'Start typing';
     $('#typeBtn').classList.toggle('primary', typing.on);
   });
-  $('#wpm').addEventListener('input', (e) => { typing.wpm = +e.target.value; $('#wpmV').textContent = typing.wpm + ' WPM'; });
+  bind('#wpm', (e) => { typing.wpm = +e.target.value; $('#wpmV').textContent = typing.wpm + ' WPM'; });
   onSeg('#keysSeg', (v) => { typing.where = v; labelKeys(); });
-  $('#figL').addEventListener('click', () => selectSide('left'));
-  $('#figR').addEventListener('click', () => selectSide('right'));
 
   // art
   const sel = $('#dither');
@@ -1030,20 +1226,19 @@ function bindControls() {
   num('#gamma', 'gamma', (v) => v.toFixed(2)); num('#fps', 'fps', String);
   num('#fit', 'fit'); num('#rot', 'rot'); num('#flip', 'flip'); num('#smooth', 'smooth'); num('#invert', 'invert'); num('#dither', 'dither');
   for (const k of ['bx', 'by', 'bw', 'bh']) $('#' + k).addEventListener('input', (e) => {
-    const lim = k === 'bw' ? [1, 128] : k === 'bh' ? [1, 128] : [-128, 128];
-    A[k] = Math.max(lim[0], Math.min(lim[1], +e.target.value || 0));
+    A[k] = Math.max(k === 'bw' || k === 'bh' ? 1 : -160, Math.min(160, +e.target.value || 0));
     scheduleApply();
   });
-  $('#boxBelow').addEventListener('click', () => { setBox(0, 32, 32, 96); setMode('nice'); scheduleApply(); });
-  $('#boxFull').addEventListener('click', () => { setBox(0, 0, 32, 128); scheduleApply(); });
-  onSeg('#targetSeg', (v) => { A.target = v; scheduleApply(); });
+  $('#boxBelow').addEventListener('click', () => { if (A.target === 'dongle') setTarget('both'); setBox(...belowStatusBox()); setMode('status'); scheduleApply(); });
+  $('#boxFull').addEventListener('click', () => { setBox(...screenBox(A.target)); scheduleApply(); });
+  onSeg('#targetSeg', (v) => { setTarget(v); defaultBox(); scheduleApply(); });
   onSeg('#modeSeg', (v) => { A.mode = v; scheduleApply(); });
   $('#file').addEventListener('change', (e) => { loadFiles(e.target.files); e.target.value = ''; });
   const drop = $('#drop');
   for (const el of [drop, document.body]) {
     el.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('drag'); });
     el.addEventListener('dragleave', () => drop.classList.remove('drag'));
-    el.addEventListener('drop', (e) => { e.preventDefault(); drop.classList.remove('drag'); loadFiles(e.dataTransfer.files); });
+    el.addEventListener('drop', (e) => { if (!e.dataTransfer.files.length) return; e.preventDefault(); drop.classList.remove('drag'); loadFiles(e.dataTransfer.files); });
   }
   $$('[data-sample]').forEach((b) => b.addEventListener('click', () => loadSample(b.dataset.sample)));
   $('#vidToggle').addEventListener('click', () => {
@@ -1053,12 +1248,12 @@ function bindControls() {
   $('#capBtn').addEventListener('click', captureVideo);
 
   // config
-  onSeg('#cfgSide', (v) => { cfgSide = v; $('#confLog').innerHTML = ''; writeConf(); });
+  onSeg('#cfgSide', (v) => { cfgSide = v; $('#confLog').innerHTML = ''; selectDisplay(v); writeConf(); });
   $('#conf').addEventListener('input', onConfEdit);
   $('#conf').addEventListener('blur', writeConf);
   $('#cfgReset').addEventListener('click', () => {
-    const h = halves[cfgSide]; h.reset(); h.art = null; $('#confLog').innerHTML = '';
-    $('#conf').blur(); writeConf(); compileHalves([h], 'reset');
+    const d = displays[cfgSide]; d.reset(); d.art = null; $('#confLog').innerHTML = '';
+    $('#conf').blur(); writeConf(); compileDisplays([d], 'reset');
   });
 
   // export
@@ -1078,17 +1273,20 @@ async function boot() {
   bindControls();
   labelKeys();
   if (!SIM || !SIM.meta) { showError('lvgl-sim.js is missing. Run python3 oled-emulator/lvgl-sim/build.py to build the simulator.'); return; }
-  if (typeof WebAssembly !== 'object') { showError('This browser cannot run WebAssembly, which the simulator needs.'); return; }
   META = SIM.meta;
-  FIRMWARE_VARIANT = META.variants.find((v) => v.firmware).id;
-  $('#buildName').textContent = `LVGL ${META.lvgl.version} · nice!oled ${META.niceOled.sha.slice(0, 7)}`;
-  $('#footer').innerHTML = `Real LVGL ${META.lvgl.version} (zephyrproject-rtos/lvgl@${META.lvgl.sha.slice(0, 7)}), ZMK ${META.zmk}'s display loop and zmk-nice-oled@${META.niceOled.sha.slice(0, 7)}, compiled to WebAssembly from ${META.sources} source files on ${META.built} by <code>oled-emulator/lvgl-sim/build.py</code>. Panel: ${META.panel.width}×${META.panel.height} SSD1306${META.panel.inversionOn ? ', inversion-on' : ''}.`;
-  halves.left = new Half('left');
-  halves.right = new Half('right');
-  selectSide('left');
+  try { engine = await chooseEngine(); } catch (err) { showError(err.message); return; }
+  if (engine === 'js') {
+    const n = $('#engineNote');
+    n.textContent = 'This viewer blocks WebAssembly, so the displays run the same compiled firmware converted to JavaScript (wasm2js). Everything works except the IDE tab.';
+    n.classList.remove('hidden');
+  }
+  $('#buildName').textContent = `LVGL ${META.lvgl.version} · nice!oled ${META.niceOled.sha.slice(0, 7)} · dongle-display ${META.dongleDisplay.rev}`;
+  $('#footer').innerHTML = `Real LVGL ${META.lvgl.version} (zephyrproject-rtos/lvgl@${META.lvgl.sha.slice(0, 7)}), ZMK ${META.zmk}'s display loop, zmk-nice-oled@${META.niceOled.sha.slice(0, 7)} and zmk-dongle-display@${META.dongleDisplay.sha.slice(0, 7)}, compiled to WebAssembly on ${META.built} by <code>oled-emulator/lvgl-sim/build.py</code>${engine === 'js' ? ' and converted to JavaScript' : ''}.`;
+  for (const id of DISPLAY_IDS) displays[id] = new Display(id);
+  selectDisplay('left');
   writeConf();
   renderThumbs();
-  await compileHalves([halves.left, halves.right], 'boot');
+  if (await compileDisplays(DISPLAY_IDS.map((id) => displays[id]), 'boot')) booted = true;
   requestAnimationFrame(tick);
 }
 boot();

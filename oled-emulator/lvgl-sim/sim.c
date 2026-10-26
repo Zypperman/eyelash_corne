@@ -1,137 +1,204 @@
 /*
- * One Eyelash Corne half's OLED, running real LVGL and nice!oled code, driven
- * from the page through the exported sim_* functions.
+ * One simulated display (a keyboard half or the dongle), running real LVGL and the
+ * firmware's display module, driven from the page through the exported sim_* functions.
  *
  * The display path is a port of what the firmware runs:
  *  - zephyr/modules/lvgl/lvgl.c and lvgl_display_mono.c (Zephyr v3.5.0+zmk-fixes):
- *    render buffer sizing and the mono set_px/rounder/flush callbacks, for the
- *    SSD1306's capabilities (PIXEL_FORMAT_MONO10, SCREEN_INFO_MONO_VTILED)
- *  - zephyr/drivers/display/ssd1306.c: horizontal-addressing writes into GDDRAM
- *  - zmk/app/src/display/main.c (ZMK v0.3.0): theme, status screen, and
- *    lv_task_handler() every CONFIG_ZMK_DISPLAY_TICK_PERIOD_MS
- * The page reads GDDRAM and applies the panel's devicetree settings
- * (inversion-on, segment-remap, com-invdir) itself.
+ *    render buffer sizing and the mono set_px/rounder/flush callbacks for the driver's
+ *    capabilities: ls0xx (PIXEL_FORMAT_MONO01, SCREEN_INFO_X_ALIGNMENT_WIDTH) or
+ *    SSD1306/SH1106 (PIXEL_FORMAT_MONO10, SCREEN_INFO_MONO_VTILED)
+ *  - zephyr/drivers/display/ls0xx.c: whole-line writes into the Sharp memory LCD;
+ *    ssd1306.c: its default (SSD1306) and SH1106 write paths into controller RAM
+ *  - zmk/app/src/display/main.c (ZMK v0.3.0): theme, status screen, the display work
+ *    queue, and lv_task_handler() every CONFIG_ZMK_DISPLAY_TICK_PERIOD_MS
+ * The page reads the visible panel and applies the devicetree's inversion-on (OLEDs) and
+ * the mounting itself. The ZMK side (events, activity, WPM) is in zmk_core.c.
  */
 #include <lvgl.h>
 #include <zephyr/kernel.h>
-#include <zmk/sim_zmk.h>
+#include <zmk/activity.h>
+#include <zmk/endpoints.h>
+#include <zmk/event_manager.h>
+#include <zmk/wpm.h>
+#include <zmk/events/battery_state_changed.h>
+#include <zmk/events/ble_active_profile_changed.h>
+#include <zmk/events/endpoint_changed.h>
+#include <zmk/events/hid_indicators_changed.h>
+#include <zmk/events/keycode_state_changed.h>
+#include <zmk/events/position_state_changed.h>
+#include <zmk/events/split_peripheral_status_changed.h>
+#include <zmk/events/usb_conn_state_changed.h>
 
 #include "sim_kcfg.h"
+#include "sim_target.h"
+#include "zmk_core.h"
 
 #define EXPORT(name) __attribute__((export_name(#name)))
 
-#define PANEL_W 128
-#define PANEL_H 32
+#define PANEL_W SIM_PANEL_W
+#define PANEL_H SIM_PANEL_H
+#define PAGES (PANEL_H / 8)
+#define LINE_BYTES (PANEL_W / 8) /* ls0xx: one memory line */
+/* SH1106 RAM is 132 columns; 128-column panels are wired to columns 2..129. */
+#define RAM_W (SIM_PANEL_SH1106 ? 132 : PANEL_W)
+#define RAM_VISIBLE_OFFSET (SIM_PANEL_SH1106 ? 2 : 0)
 
 uint32_t sim_uptime_ms;
 int sim_kcfg[SIM_KCFG_COUNT] = SIM_KCFG_DEFAULTS;
 
 EXPORT(sim_kcfg_ptr) int *sim_kcfg_ptr(void) { return sim_kcfg; }
 
-/* ---------- ZMK state the widgets read ---------- */
-
-static struct {
-    uint8_t battery;
-    bool usb;
-    bool connected;
-} state = {.battery = 80, .usb = false, .connected = true};
-
 static bool initialized;
+bool zmk_display_is_initialized() { return initialized; }
 
-uint8_t zmk_battery_state_of_charge(void) { return state.battery; }
-bool zmk_usb_is_powered(void) { return state.usb; }
-bool zmk_split_bt_peripheral_is_connected(void) { return state.connected; }
-int zmk_display_is_initialized(void) { return initialized; }
+/* ---------------- page controls: state changes raise the events ZMK would ---------------- */
 
-#define MAX_LISTENERS 16
-static void (*listeners[MAX_LISTENERS])(void);
-static int listener_count;
+EXPORT(sim_set_battery) void sim_set_battery(int level) {
+    sim_zmk.battery = level;
+    if (initialized) raise_zmk_battery_state_changed((struct zmk_battery_state_changed){.state_of_charge = level});
+}
 
-void sim_register_listener(void (*refresh)(void)) {
-    if (listener_count < MAX_LISTENERS) {
-        listeners[listener_count++] = refresh;
+EXPORT(sim_set_usb) void sim_set_usb(int conn_state) {
+    sim_zmk.usb = conn_state;
+    if (initialized) raise_zmk_usb_conn_state_changed((struct zmk_usb_conn_state_changed){.conn_state = conn_state});
+}
+
+EXPORT(sim_set_split_connected) void sim_set_split_connected(int connected) {
+    sim_zmk.split_connected = connected;
+    if (initialized) {
+        raise_zmk_split_peripheral_status_changed(
+            (struct zmk_split_peripheral_status_changed){.connected = connected});
     }
 }
 
-/* Same effect as ZMK raising battery/USB/split events: every widget listener re-reads state. */
-EXPORT(sim_set_state) void sim_set_state(int battery, int usb, int connected) {
-    state.battery = battery;
-    state.usb = usb;
-    state.connected = connected;
-    if (!initialized) {
-        return;
-    }
-    for (int i = 0; i < listener_count; i++) {
-        listeners[i]();
+EXPORT(sim_set_peripheral_battery) void sim_set_peripheral_battery(int source, int level) {
+    if (source < 0 || source >= SIM_MAX_PERIPHERALS) return;
+    sim_zmk.peripheral_battery[source] = level;
+    if (initialized) {
+        raise_zmk_peripheral_battery_state_changed(
+            (struct zmk_peripheral_battery_state_changed){.source = source, .state_of_charge = level});
     }
 }
 
-/* ---------- zmk/app/src/activity.c, and display/main.c's blank-on-idle ---------- */
-
-enum activity_state { ACTIVITY_ACTIVE, ACTIVITY_IDLE, ACTIVITY_SLEEP };
-
-static enum activity_state activity_state;
-static uint32_t activity_last_uptime;
-static uint32_t activity_next_check = 1000; /* k_timer_start(&activity_timer, K_SECONDS(1), K_SECONDS(1)) */
-static bool display_blanked;
-
-static void set_activity(enum activity_state next) {
-    if (activity_state == next) {
-        return;
+EXPORT(sim_set_output) void sim_set_output(int transport, int profile, int connected, int open) {
+    sim_zmk.transport = transport;
+    sim_zmk.ble_profile = profile;
+    sim_zmk.ble_connected = connected;
+    sim_zmk.ble_open = open;
+    if (initialized) {
+        raise_zmk_ble_active_profile_changed((struct zmk_ble_active_profile_changed){.index = profile});
+        raise_zmk_endpoint_changed((struct zmk_endpoint_changed){.endpoint = zmk_endpoints_selected()});
     }
-    activity_state = next;
-#if IS_ENABLED(CONFIG_ZMK_DISPLAY_BLANK_ON_IDLE)
-    /* start_display_updates() / stop_display_updates(): the panel is switched off and
-     * lv_task_handler() stops running until the next activity */
-    display_blanked = next != ACTIVITY_ACTIVE;
+}
+
+EXPORT(sim_set_hid_indicators) void sim_set_hid_indicators(int indicators) {
+    if (initialized) {
+        raise_zmk_hid_indicators_changed((struct zmk_hid_indicators_changed){.indicators = indicators});
+    }
+}
+
+/* A key went down or up. `source` is the split peripheral it came from on a central
+ * (UINT8_MAX for a local key); on a central, `keycode` is what the keymap sent (HID usage). */
+EXPORT(sim_key) void sim_key(int source, int position, int pressed, int keycode) {
+    if (zmk_activity_get_state() == ZMK_ACTIVITY_SLEEP) {
+        return; /* sys_poweroff() happened; the page reboots this device */
+    }
+    raise_zmk_position_state_changed((struct zmk_position_state_changed){
+        .source = source, .position = position, .state = pressed, .timestamp = k_uptime_get()});
+#if SIM_ROLE_CENTRAL
+    if (keycode >= 0xe0 && keycode <= 0xe7) {
+        uint8_t bit = BIT(keycode - 0xe0);
+        sim_zmk.mods = pressed ? (sim_zmk.mods | bit) : (sim_zmk.mods & ~bit);
+    }
+    if (keycode) {
+        raise_zmk_keycode_state_changed((struct zmk_keycode_state_changed){
+            .usage_page = 0x07, .keycode = keycode, .state = pressed, .timestamp = k_uptime_get()});
+    }
 #endif
 }
 
-/* A key on this half went down or up (zmk_position_state_changed): note_activity(). */
-EXPORT(sim_key) void sim_key(int pressed) {
-    if (activity_state == ACTIVITY_SLEEP) {
-        return; /* sys_poweroff() happened; the page reboots the half */
-    }
-    activity_last_uptime = k_uptime_get_32();
-    set_activity(ACTIVITY_ACTIVE);
-}
+/* ---------------- controller RAM ---------------- */
 
-static void activity_work_handler(void) {
-    int32_t inactive_time = sim_uptime_ms - activity_last_uptime;
-#if IS_ENABLED(CONFIG_ZMK_SLEEP)
-    if (inactive_time > CONFIG_ZMK_IDLE_SLEEP_TIMEOUT && !state.usb) {
-        set_activity(ACTIVITY_SLEEP); /* followed by sys_poweroff() */
-        return;
-    }
-#endif
-    if (inactive_time > CONFIG_ZMK_IDLE_TIMEOUT) {
-        set_activity(ACTIVITY_IDLE);
-    }
-}
-
-/* ---------- SSD1306 GDDRAM: 4 pages x 128 columns, bit 0 = top row of the page ---------- */
-
-static uint8_t gddram[PANEL_H / 8 * PANEL_W];
 static uint32_t flush_count, flush_rejects;
 
-EXPORT(sim_gddram) uint8_t *sim_gddram(void) { return gddram; }
+#if SIM_PANEL_LS0XX
 
-static void ssd1306_write(uint16_t x, uint16_t y, uint16_t w, uint16_t h, const uint8_t *buf,
-                          size_t buf_size) {
+/* The Sharp memory LCD's lines, as ls0xx.c sends them: PANEL_W / 8 bytes each, shifted out
+ * LSB first, so bit 0 is the leftmost pixel; 1 is white. */
+static uint8_t ram[PANEL_H * LINE_BYTES];
+static uint8_t visible[PANEL_H * LINE_BYTES];
+
+static void controller_init(void) {
+    memset(ram, 0xff, sizeof(ram)); /* ls0xx_init(): ls0xx_clear(), all white */
+}
+
+/* The visible panel, in line format: byte (y * width / 8 + x / 8), bit x % 8. */
+EXPORT(sim_panel) uint8_t *sim_panel(void) {
+    memcpy(visible, ram, sizeof(ram));
+    return visible;
+}
+
+static void controller_write(uint16_t x, uint16_t y, uint16_t w, uint16_t h, const uint8_t *buf,
+                             size_t buf_size) {
+    /* ls0xx_write(): whole lines only (LOG_ERR + -EINVAL); the lines keep their old contents */
+    if (buf == NULL || w != PANEL_W || x != 0 || y + h > PANEL_H || buf_size < (size_t)h * LINE_BYTES) {
+        flush_rejects++;
+        return;
+    }
+    /* ls0xx_update_display(): each line is its number, PANEL_W / 8 data bytes, a dummy byte */
+    for (uint16_t line = 0; line < h; line++) {
+        memcpy(ram + (y + line) * LINE_BYTES, buf + line * LINE_BYTES, LINE_BYTES);
+    }
+}
+
+#else
+
+static uint8_t ram[PAGES * RAM_W];
+static uint8_t visible[PAGES * PANEL_W];
+
+static void controller_init(void) {}
+
+/* The visible panel, in page format: byte (page * width + x), bit 0 = top row of the page. */
+EXPORT(sim_panel) uint8_t *sim_panel(void) {
+    for (int p = 0; p < PAGES; p++) {
+        memcpy(visible + p * PANEL_W, ram + p * RAM_W + RAM_VISIBLE_OFFSET, PANEL_W);
+    }
+    return visible;
+}
+
+static void controller_write(uint16_t x, uint16_t y, uint16_t w, uint16_t h, const uint8_t *buf,
+                             size_t buf_size) {
     size_t buf_len = MIN(buf_size, (size_t)h * w / 8);
 
-    /* The driver rejects these (LOG_ERR + return -1); the region keeps its old contents. */
+    /* ssd1306_write(): the driver rejects these (LOG_ERR + return -1); the region keeps its old contents */
     if (buf_len == 0 || (y & 0x7) != 0) {
         flush_rejects++;
         return;
     }
-
-    /* SET_COLUMN_ADDRESS x..x+w-1, SET_PAGE_ADDRESS y/8..(y+h)/8-1, horizontal addressing */
+#if SIM_PANEL_SH1106
+    /* ssd1306_write_sh1106(): page addressing, one page at a time, column + segment-offset */
+    uint16_t x_offset = x + SIM_SEGMENT_OFFSET;
+    const uint8_t *p = buf;
+    for (uint16_t n = 0; n < h / 8; n++) {
+        uint16_t page = n + y / 8;
+        for (uint16_t i = 0; i < w; i++) {
+            if (page < PAGES && x_offset + i < RAM_W) {
+                ram[page * RAM_W + x_offset + i] = p[i];
+            }
+        }
+        p += w;
+        if (p > buf + buf_len) {
+            flush_rejects++; /* "Exceeded buffer length" */
+            return;
+        }
+    }
+#else
+    /* ssd1306_write_default(): SET_COLUMN_ADDRESS x..x+w-1, SET_PAGE_ADDRESS, horizontal addressing */
     uint16_t c0 = x, c1 = x + w - 1, p0 = y / 8, p1 = (y + h) / 8 - 1;
     uint16_t col = c0, page = p0;
     for (size_t i = 0; i < buf_len; i++) {
-        if (page < PANEL_H / 8 && col < PANEL_W) {
-            gddram[page * PANEL_W + col] = buf[i];
+        if (page < PAGES && col < RAM_W) {
+            ram[page * RAM_W + col] = buf[i];
         }
         if (++col > c1) {
             col = c0;
@@ -140,21 +207,36 @@ static void ssd1306_write(uint16_t x, uint16_t y, uint16_t w, uint16_t h, const 
             }
         }
     }
+#endif
 }
 
-/* ---------- lvgl_display_mono.c ---------- */
+#endif /* SIM_PANEL_LS0XX */
+
+/* ---------------- lvgl_display_mono.c ---------------- */
 
 static void flush_cb(lv_disp_drv_t *disp_drv, const lv_area_t *area, lv_color_t *color_p) {
     uint16_t w = area->x2 - area->x1 + 1;
     uint16_t h = area->y2 - area->y1 + 1;
 
-    ssd1306_write(area->x1, area->y1, w, h, (const uint8_t *)color_p, (w * h) / 8U);
+    controller_write(area->x1, area->y1, w, h, (const uint8_t *)color_p, (w * h) / 8U);
     flush_count++;
     lv_disp_flush_ready(disp_drv);
 }
 
 static void set_px_cb(lv_disp_drv_t *disp_drv, uint8_t *buf, lv_coord_t buf_w, lv_coord_t x,
                       lv_coord_t y, lv_color_t color, lv_opa_t opa) {
+#if SIM_PANEL_LS0XX
+    /* horizontal tiling, LSB first; PIXEL_FORMAT_MONO01 */
+    uint8_t *buf_xy = buf + x / 8 + y * buf_w / 8;
+    uint8_t bit = x % 8;
+
+    if (color.full == 0) {
+        *buf_xy |= BIT(bit);
+    } else {
+        *buf_xy &= ~BIT(bit);
+    }
+#else
+    /* SCREEN_INFO_MONO_VTILED, LSB first; PIXEL_FORMAT_MONO10 */
     uint8_t *buf_xy = buf + x + y / 8 * buf_w;
     uint8_t bit = y % 8;
 
@@ -163,14 +245,21 @@ static void set_px_cb(lv_disp_drv_t *disp_drv, uint8_t *buf, lv_coord_t buf_w, l
     } else {
         *buf_xy |= BIT(bit);
     }
+#endif
 }
 
 static void rounder_cb(lv_disp_drv_t *disp_drv, lv_area_t *area) {
+#if SIM_PANEL_LS0XX
+    /* SCREEN_INFO_X_ALIGNMENT_WIDTH */
+    area->x1 = 0;
+    area->x2 = PANEL_W - 1;
+#else
     area->y1 &= ~0x7;
     area->y2 |= 0x7;
+#endif
 }
 
-/* ---------- lvgl.c rendering buffers ---------- */
+/* ---------------- lvgl.c rendering buffers ---------------- */
 
 #define GUARD_SIZE 1024
 #define GUARD_BYTE 0xa5
@@ -243,8 +332,9 @@ static bool guard_intact(void) {
     return true;
 }
 
-/* ---------- animation frame sets ---------- */
+/* ---------------- animation frame sets ---------------- */
 
+#if SIM_ANIMATION_ASSETS
 LV_IMG_DECLARE(crystal_01); LV_IMG_DECLARE(crystal_02); LV_IMG_DECLARE(crystal_03);
 LV_IMG_DECLARE(crystal_04); LV_IMG_DECLARE(crystal_05); LV_IMG_DECLARE(crystal_06);
 LV_IMG_DECLARE(crystal_07); LV_IMG_DECLARE(crystal_08); LV_IMG_DECLARE(crystal_09);
@@ -306,6 +396,7 @@ static const void *set_pokemon[] = {
     P(24), P(25), P(26), P(27), P(28), P(29), P(30), P(31), P(32), P(33), P(34), P(35),
     P(36), P(37), P(38), P(39), P(40), P(41), P(42), P(43), P(44), P(45), P(46), P(47)};
 #undef P
+#endif /* SIM_ANIMATION_ASSETS */
 
 enum frame_set { SET_KCONFIG, SET_CRYSTAL, SET_CAT, SET_HEAD, SET_SPACEMAN, SET_POKEMON, SET_CUSTOM };
 
@@ -326,15 +417,15 @@ static void free_custom(void) {
 }
 
 /*
- * Reserve room for `count` frames of w x h pixels; the page writes the 1-bit
- * pixel rows (MSB first, set bit = lit) into the returned buffer, frame after
- * frame, then calls sim_commit_frames(). The palette follows the build's
+ * Reserve room for `count` frames of w x h pixels; the page writes the 1-bit pixel rows
+ * (MSB first, set bit = foreground) for every frame back to back into the returned
+ * buffer, then calls sim_commit_frames(). The palette follows
  * CONFIG_NICE_OLED_WIDGET_INVERTED, as in nice!oled's own assets.
  */
 EXPORT(sim_alloc_frames) uint8_t *sim_alloc_frames(int count, int w, int h) {
     lv_init(); /* frames are staged before sim_init(); LVGL's heap must exist (repeat calls are no-ops) */
     free_custom();
-    uint32_t stride = (w + 7) / 8, px = stride * h, size = px + 8;
+    uint32_t stride = (w + 7) / 8, size = stride * h + 8;
 
     custom_data = lv_mem_alloc(size * count);
     custom_dsc = lv_mem_alloc(sizeof(lv_img_dsc_t) * count);
@@ -354,7 +445,6 @@ EXPORT(sim_alloc_frames) uint8_t *sim_alloc_frames(int count, int w, int h) {
         };
         custom_src[i] = &custom_dsc[i];
     }
-    /* the page stages the pixel rows back to back from the start; commit spreads them out */
     return custom_data;
 }
 
@@ -378,11 +468,13 @@ EXPORT(sim_commit_frames) void sim_commit_frames(void) {
 
 static int frames_for(int set, const void ***src) {
     switch (set) {
+#if SIM_ANIMATION_ASSETS
     case SET_CRYSTAL: *src = set_crystal; return ARRAY_SIZE(set_crystal);
     case SET_CAT: *src = set_cat; return ARRAY_SIZE(set_cat);
     case SET_HEAD: *src = set_head; return ARRAY_SIZE(set_head);
     case SET_SPACEMAN: *src = set_spaceman; return ARRAY_SIZE(set_spaceman);
     case SET_POKEMON: *src = set_pokemon; return ARRAY_SIZE(set_pokemon);
+#endif
     case SET_CUSTOM: *src = custom_src; return custom_count;
     default: return 0;
     }
@@ -401,7 +493,7 @@ static lv_obj_t *find_animimg(lv_obj_t *obj) {
     return NULL;
 }
 
-/* Swap the frames nice!oled's lv_animimg plays, the way a fork with different assets would. */
+/* Swap the frames an lv_animimg plays, the way a fork with different assets would. */
 static void play_set(lv_obj_t *art, int set, int duration_ms) {
     const void **src;
     int n = frames_for(set, &src);
@@ -417,20 +509,27 @@ static void play_set(lv_obj_t *art, int set, int duration_ms) {
     lv_animimg_start(art);
 }
 
-/* ---------- boot ---------- */
+/* ---------------- boot ---------------- */
 
 lv_obj_t *zmk_display_status_screen(void);
+void __wasm_call_ctors(void);
 
-enum screen_mode { MODE_NICE_OLED, MODE_ART_ONLY };
+enum screen_mode { MODE_STATUS_SCREEN, MODE_ART_ONLY };
 
 /*
- * mode MODE_NICE_OLED: nice!oled's status screen as built from your Kconfig,
- *   with `set` (unless SET_KCONFIG) swapped into its animation slot.
- * mode MODE_ART_ONLY: a bare screen holding one lv_animimg at (x, y), what a
- *   minimal custom status screen showing only your art would draw.
+ * MODE_STATUS_SCREEN: the firmware's status screen as built from its Kconfig, with
+ *   `set` (unless SET_KCONFIG) swapped into its lv_animimg.
+ * MODE_ART_ONLY: a bare screen holding one lv_animimg at (x, y), what a minimal custom
+ *   status screen showing only your art would draw.
  */
 EXPORT(sim_init) int sim_init(int mode, int set, int x, int y, int duration_ms) {
+    static bool ctors_done;
+    if (!ctors_done) {
+        __wasm_call_ctors(); /* ZMK_SUBSCRIPTION registrations */
+        ctors_done = true;
+    }
     lv_init();
+    controller_init();
 
     lv_disp_drv_init(&disp_drv);
 #ifdef CONFIG_LV_Z_FULL_REFRESH
@@ -445,15 +544,14 @@ EXPORT(sim_init) int sim_init(int mode, int set, int x, int y, int duration_ms) 
     if (lv_disp_drv_register(&disp_drv) == NULL) {
         return -2;
     }
+    sim_wpm_init();
 
+    /* initialize_display() */
     initialized = true;
-
 #if IS_ENABLED(CONFIG_LV_USE_THEME_MONO)
     lv_disp_t *disp = lv_disp_get_default();
-    lv_theme_t *theme = lv_theme_mono_init(disp, IS_ENABLED(CONFIG_ZMK_DISPLAY_INVERT), LV_FONT_DEFAULT);
-    disp->theme = theme;
+    disp->theme = lv_theme_mono_init(disp, IS_ENABLED(CONFIG_ZMK_DISPLAY_INVERT), LV_FONT_DEFAULT);
 #endif
-
     lv_obj_t *screen;
     if (mode == MODE_ART_ONLY) {
         screen = lv_obj_create(NULL);
@@ -470,26 +568,32 @@ EXPORT(sim_init) int sim_init(int mode, int set, int x, int y, int duration_ms) 
     return 0;
 }
 
-/* ZMK's display timer (lv_task_handler() every CONFIG_ZMK_DISPLAY_TICK_PERIOD_MS, stopped while
- * blanked) and the 1 s activity timer. */
+/* ZMK's timers: the display tick (work queue + lv_task_handler(), stopped while blanked)
+ * every CONFIG_ZMK_DISPLAY_TICK_PERIOD_MS, and the 1 s activity and WPM timers. */
 EXPORT(sim_step) void sim_step(uint32_t ms) {
-    static uint32_t pending;
+    static uint32_t pending, next_second = 1000;
     pending += ms;
     while (pending >= CONFIG_ZMK_DISPLAY_TICK_PERIOD_MS) {
         pending -= CONFIG_ZMK_DISPLAY_TICK_PERIOD_MS;
         sim_uptime_ms += CONFIG_ZMK_DISPLAY_TICK_PERIOD_MS;
-        while (sim_uptime_ms >= activity_next_check) {
-            activity_next_check += 1000;
-            activity_work_handler();
+        while (sim_uptime_ms >= next_second) {
+            next_second += 1000;
+            sim_activity_work();
+            sim_wpm_work();
         }
-        if (!display_blanked && activity_state != ACTIVITY_SLEEP) {
+        if (zmk_activity_get_state() == ZMK_ACTIVITY_SLEEP) {
+            continue; /* powered off */
+        }
+        sim_run_display_work();
+        if (!sim_display_blanked) {
             lv_task_handler();
         }
     }
 }
 
 /* 0 flushes, 1 rejected flushes, 2 render buffer overrun (0/1), 3 LVGL heap bytes used,
- * 4 frames in animation, 5 panel off (0/1), 6 activity state, 7 ms since last activity */
+ * 4 frames in animation, 5 panel off (0/1), 6 activity state, 7 ms since last activity,
+ * 8 WPM */
 EXPORT(sim_stat) int sim_stat(int which) {
     switch (which) {
     case 0: return flush_count;
@@ -504,10 +608,11 @@ EXPORT(sim_stat) int sim_stat(int which) {
         lv_obj_t *art = find_animimg(lv_scr_act());
         return art ? ((lv_animimg_t *)art)->pic_count : 0;
     }
-    case 5: return display_blanked || activity_state == ACTIVITY_SLEEP;
-    case 6: return activity_state;
-    case 7: return sim_uptime_ms - activity_last_uptime;
+    /* ls0xx has no blanking without disp-en-gpios (-ENOTSUP): blanked, it keeps the last image */
+    case 5: return (sim_display_blanked && !SIM_PANEL_LS0XX) || zmk_activity_get_state() == ZMK_ACTIVITY_SLEEP;
+    case 6: return zmk_activity_get_state();
+    case 7: return sim_ms_since_activity();
+    case 8: return zmk_wpm_get_state();
     default: return 0;
     }
 }
-

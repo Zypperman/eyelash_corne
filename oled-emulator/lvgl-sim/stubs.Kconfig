@@ -1,61 +1,74 @@
-# Types (and firmware-like defaults) for symbols that the sourced Kconfig
-# files reference but that live in parts of ZMK/Zephyr the simulator does not
-# load. Defaults follow an eyelash_nano (nRF52840) split half.
+# Types and firmware-like defaults for symbols the sourced Kconfig files reference
+# but that live in parts of ZMK/Zephyr the simulator does not load. Each mirrors
+# its definition in ZMK v0.3.0 / Zephyr 3.5 (file named alongside).
 
+# zmk/app/src/split/Kconfig, split/bluetooth/Kconfig
 config ZMK_SPLIT
-	bool
+	bool "Split keyboard support"
 
 config ZMK_SPLIT_ROLE_CENTRAL
-	bool "Split central"
+	bool "Split central device"
+	depends on ZMK_SPLIT
 
 config ZMK_SPLIT_BLE
-	def_bool ZMK_SPLIT
+	bool "BLE Split"
+	default y
+	depends on ZMK_SPLIT && ZMK_BLE
 
 config ZMK_SPLIT_BLE_CENTRAL_PERIPHERALS
-	int
+	int "Number of peripherals that will connect to the central."
 	default 1
 
+config ZMK_SPLIT_BLE_CENTRAL_BATTERY_LEVEL_FETCHING
+	bool "Fetch Peripheral Battery Level Info"
+
+config ZMK_SPLIT_BLE_CENTRAL_BATTERY_LEVEL_PROXY
+	bool "Proxy Peripheral Battery Level Info"
+
+# zmk/app/Kconfig
 config ZMK_KEYBOARD_NAME
-	string
-
-config ZMK_BLE
-	def_bool y
-
-config BT
-	def_bool y
-
-config BT_MAX_CONN
-	int
-
-config BT_MAX_PAIRED
-	int
+	string "Keyboard Name"
 
 config ZMK_USB
-	def_bool y
+	bool "USB"
+	depends on !ZMK_SPLIT || ZMK_SPLIT_ROLE_CENTRAL
 
-config USB_DEVICE_STACK
-	def_bool ZMK_USB
+config ZMK_BLE
+	bool "BLE (HID over GATT)"
+	select BT
 
-config ZMK_BATTERY_REPORTING
-	def_bool y
+config BT
+	bool "Bluetooth"
 
-config ZMK_WPM
-	bool
+config BT_MAX_CONN
+	int "Maximum number of simultaneous connections"
+	default 1
+
+config BT_MAX_PAIRED
+	int "Maximum number of paired devices"
+	default 1
+
+config BT_BAS
+	bool "Battery service"
 
 config ZMK_HID_INDICATORS
-	bool
+	bool "HID Indicators"
 
-config ZMK_BACKLIGHT
-	bool "Backlight"
+config ZMK_HID_REPORT_TYPE_NKRO
+	bool "NKRO"
 
-config ZMK_EXT_POWER
-	bool "External power"
+config ZMK_BATTERY_REPORTING
+	bool "Battery level reporting"
+	default y if ZMK_BLE
 
-# zmk/app/Kconfig: activity tracking (the nRF52840 has HAS_POWEROFF, so ZMK_SLEEP is settable)
+config ZMK_WPM
+	bool "Calculate WPM"
+
 config ZMK_IDLE_TIMEOUT
 	int "Milliseconds of inactivity before entering idle state (OLED shutoff, etc)"
 	default 30000
 
+# depends on HAS_POWEROFF, which the nRF52840 has
 config ZMK_SLEEP
 	bool "Enable deep sleep support"
 
@@ -64,8 +77,52 @@ config ZMK_IDLE_SLEEP_TIMEOUT
 	default 900000
 	depends on ZMK_SLEEP
 
+config ZMK_EXT_POWER
+	bool "Enable support to control external power output"
+
+config ZMK_BACKLIGHT
+	bool "LED backlight"
+
 config ZMK_POINTING
-	bool "Pointing"
+	bool "Pointing devices"
+
+config ZMK_STUDIO
+	bool "ZMK Studio"
+
+config ZMK_STUDIO_LOCKING
+	bool "Studio locking"
+	default y
+	depends on ZMK_STUDIO
+
+config ZMK_RGB_UNDERGLOW
+	bool "RGB underglow"
+
+# zmk/app/module/drivers/sensor/battery/Kconfig: enabled by the devicetree's battery node
+DT_COMPAT_ZMK_BATTERY_NRF_VDDH := zmk,battery-nrf-vddh
+DT_COMPAT_ZMK_BATTERY_VOLTAGE_DIVIDER := zmk,battery-voltage-divider
+
+config ZMK_BATTERY
+	bool "ZMK battery monitoring"
+
+config ZMK_BATTERY_NRF_VDDH
+	bool
+	default $(dt_compat_enabled,$(DT_COMPAT_ZMK_BATTERY_NRF_VDDH))
+	select ZMK_BATTERY
+	depends on SENSOR
+
+config ZMK_BATTERY_VOLTAGE_DIVIDER
+	bool
+	default $(dt_compat_enabled,$(DT_COMPAT_ZMK_BATTERY_VOLTAGE_DIVIDER))
+	select ZMK_BATTERY
+	depends on SENSOR
+
+# Zephyr: drivers, subsystems, SoC (nRF52840: HAS_HW_NRF_USBD)
+config SENSOR
+	def_bool y
+
+config USB_DEVICE_STACK
+	bool "USB device stack"
+	default y
 
 config DISPLAY
 	bool
@@ -76,8 +133,30 @@ config I2C
 config SPI
 	bool "SPI"
 
+# drivers/display: each driver is on when the devicetree has an enabled node for it
+DT_COMPAT_SOLOMON_SSD1306FB := solomon,ssd1306fb
+DT_COMPAT_SINOWEALTH_SH1106 := sinowealth,sh1106
+DT_COMPAT_SHARP_LS0XX := sharp,ls0xx
+
+config DT_HAS_SOLOMON_SSD1306FB_ENABLED
+	def_bool $(dt_compat_enabled,$(DT_COMPAT_SOLOMON_SSD1306FB))
+
+config DT_HAS_SINOWEALTH_SH1106_ENABLED
+	def_bool $(dt_compat_enabled,$(DT_COMPAT_SINOWEALTH_SH1106))
+
+config DT_HAS_SHARP_LS0XX_ENABLED
+	def_bool $(dt_compat_enabled,$(DT_COMPAT_SHARP_LS0XX))
+
 config SSD1306
-	bool "SSD1306"
+	bool "SSD1306 display driver"
+	default y
+	depends on DT_HAS_SOLOMON_SSD1306FB_ENABLED || DT_HAS_SINOWEALTH_SH1106_ENABLED
+
+config LS0XX
+	bool "LS0XXx7DH0x display driver"
+	default y
+	depends on DT_HAS_SHARP_LS0XX_ENABLED
+	select SPI
 
 config PWM
 	bool "PWM"
@@ -95,4 +174,27 @@ config INPUT
 	bool "Input"
 
 config USB_HID_DEVICE_COUNT
-	int
+	int "USB HID devices"
+	default 1
+
+config USB_DEVICE_MANUFACTURER
+	string "USB manufacturer"
+
+config EC11
+	bool "EC11 encoder"
+
+config WS2812_STRIP
+	bool "WS2812 LED strip"
+
+config CLOCK_CONTROL_NRF_K32SRC_XTAL
+	bool "32kHz crystal"
+
+config CLOCK_CONTROL_NRF_K32SRC_30PPM
+	bool "30 ppm"
+
+# zmk-board-eyelash: boards/arm/eyelash_nano
+config BOARD_EYELASH_NANO
+	bool "eyelash nano board"
+
+config BOARD
+	string

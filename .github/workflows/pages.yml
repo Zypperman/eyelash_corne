@@ -1,0 +1,76 @@
+name: Display simulator site
+
+# Builds oled-emulator/ (LVGL + the display modules compiled to WebAssembly, the IDE tab's
+# prebuilt objects and its in-browser compiler) and publishes it with GitHub Pages.
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "oled-emulator/**"
+      - "config/**"
+      - "boards/**"
+      - "build.yaml"
+      - ".github/workflows/pages.yml"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install clang and lld (wasm32)
+        run: sudo apt-get update && sudo apt-get install -y clang lld
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install kconfiglib
+        run: pip install kconfiglib==14.1.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install the IDE's browser toolchain and wasm2js
+        run: |
+          npm install --prefix "$RUNNER_TEMP/tools" --no-save --no-package-lock \
+            @yowasp/clang@22.0.0-git20542-10 pyodide@0.26.4 codemirror@5.65.16 binaryen@123.0.0
+
+      - name: Build the simulator
+        run: |
+          python3 oled-emulator/lvgl-sim/build.py \
+            --wasm2js "$RUNNER_TEMP/tools/node_modules/binaryen/bin/wasm2js" \
+            --ide --vendor "$RUNNER_TEMP/tools/node_modules"
+
+      - name: Assemble the site
+        run: |
+          mkdir _site
+          cd oled-emulator
+          cp -r index.html ide.js ide-worker.js lvgl-sim.js lvgl-sim-js.js ide vendor ../_site/
+          touch ../_site/.nojekyll
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

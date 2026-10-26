@@ -58,6 +58,12 @@ char *strcat(char *dst, const char *src) {
     strcpy(dst + strlen(dst), src);
     return dst;
 }
+char *strncat(char *dst, const char *src, size_t n) {
+    char *d = dst + strlen(dst);
+    while (n-- && *src) *d++ = *src++;
+    *d = 0;
+    return dst;
+}
 char *strchr(const char *s, int c) {
     for (;; s++) {
         if (*s == (char)c) return (char *)s;
