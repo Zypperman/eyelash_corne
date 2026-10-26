@@ -246,6 +246,7 @@
     <div class="knobs">
       <div class="knob-card"><label>Left battery<b id="battLV">80%</b><input type="range" id="battL" min="0" max="100" value="80"></label></div>
       <div class="knob-card"><label>Right battery<b id="battRV">80%</b><input type="range" id="battR" min="0" max="100" value="80"></label></div>
+      <div class="knob-card"><label>Dongle battery<b id="battDV">80%</b><input type="range" id="battD" min="0" max="100" value="80"></label></div>
       <div class="knob-card"><label>Halves on USB<b id="usbV">off</b><input type="checkbox" id="usb"></label></div>
       <div class="knob-card"><label>Left link<b id="linkLV">connected</b><input type="checkbox" id="linkL" checked></label></div>
       <div class="knob-card"><label>Right link<b id="linkRV">connected</b><input type="checkbox" id="linkR" checked></label></div>
@@ -415,7 +416,7 @@ const wasmModules = {};
 const customBuilds = {}; // 'ide:<display>' -> { module: WebAssembly.Module, meta } from the IDE tab
 const view = { color: 'white', glow: 0.35, grid: true, speed: 1, playing: true, scale: 3, dongle: true };
 const world = {
-  battery: { left: 80, right: 80 }, usb: false, link: { left: true, right: true },
+  battery: { left: 80, right: 80, dongle: 80 }, usb: false, link: { left: true, right: true },
   output: 'usb', bleConnected: true, mods: 0, caps: false,
 };
 
@@ -510,6 +511,7 @@ class Display {
       // a tick after each: ZMK's widget listener keeps one pending update, so back-to-back events drop
       // all but the last (the battery widget also takes USB events with ZMK_DONGLE_DISPLAY_DONGLE_BATTERY)
       if (want('battery')) {
+        e.sim_set_battery(world.battery.dongle); e.sim_step(META.tickMs); // its own, with ZMK_DONGLE_DISPLAY_DONGLE_BATTERY
         e.sim_set_peripheral_battery(0, world.battery.left); e.sim_step(META.tickMs);
         e.sim_set_peripheral_battery(1, world.battery.right); e.sim_step(META.tickMs);
       }
@@ -1185,6 +1187,7 @@ function bindControls() {
   const bind = (id, fn) => $(id).addEventListener('input', fn);
   bind('#battL', (e) => { world.battery.left = +e.target.value; $('#battLV').textContent = e.target.value + '%'; live('battery'); });
   bind('#battR', (e) => { world.battery.right = +e.target.value; $('#battRV').textContent = e.target.value + '%'; live('battery'); });
+  bind('#battD', (e) => { world.battery.dongle = +e.target.value; $('#battDV').textContent = e.target.value + '%'; live('battery'); });
   $('#usb').addEventListener('change', (e) => { world.usb = e.target.checked; $('#usbV').textContent = world.usb ? 'on' : 'off'; live('usb'); });
   $('#linkL').addEventListener('change', (e) => { world.link.left = e.target.checked; $('#linkLV').textContent = e.target.checked ? 'connected' : 'lost'; live('link'); });
   $('#linkR').addEventListener('change', (e) => { world.link.right = e.target.checked; $('#linkRV').textContent = e.target.checked ? 'connected' : 'lost'; live('link'); });
