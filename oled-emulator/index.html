@@ -1,0 +1,939 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Corne OLED Art Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Silkscreen&display=swap">
+<style>
+  /* Layout: preview bench on the left (panel + dither comparison), stacked control cards on the right. */
+  :root {
+    color-scheme: dark;
+    --bg: #090b0d;
+    --panel: #12161a;
+    --panel-2: #1a2026;
+    --line: #262e36;
+    --text: #e4e9ee;
+    --muted: #8a96a2;
+    --accent: #7fd6c2;
+    --accent-ink: #062019;
+    --warn: #e7b85c;
+    --glass: #030404;
+    --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --font-pixel: "Silkscreen", "IBM Plex Mono", ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { background: var(--bg); color: var(--text); }
+  body { margin: 0; font: 14px/1.45 var(--font-body); }
+  .wrap {
+    max-width: 1240px; margin: 0 auto;
+    padding-block: 18px 48px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  header { display: grid; gap: 4px; margin-bottom: 16px; }
+  h1 { font: 400 22px/1.2 var(--font-pixel); margin: 0; letter-spacing: .02em; color: var(--accent); text-wrap: balance; }
+  header p { margin: 0; color: var(--muted); max-width: 72ch; }
+  code, .mono { font-family: var(--font-mono); font-size: .92em; }
+
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 18px; align-items: start; }
+  @media (max-width: 900px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+
+  .bench { display: grid; gap: 14px; min-width: 0; }
+  .stage {
+    background: radial-gradient(120% 90% at 50% 0%, #141a1f 0%, var(--bg) 70%);
+    border: 1px solid var(--line); border-radius: 12px; padding: 22px 16px 16px;
+    display: grid; justify-items: center; gap: 14px; position: relative; min-width: 0;
+  }
+  .stage.drag { outline: 2px dashed var(--accent); outline-offset: -8px; }
+  .scroller { max-width: 100%; overflow: auto; padding: 4px; }
+  .bezel {
+    background: linear-gradient(160deg, #1c2329, #0c0f12 60%);
+    padding: 14px; border-radius: 8px; border: 1px solid #2c353e;
+    box-shadow: 0 10px 30px #0008, inset 0 1px 0 #ffffff14;
+    display: inline-block;
+  }
+  canvas#screen { display: block; background: var(--glass); cursor: grab; touch-action: none; border-radius: 2px; }
+  canvas#screen:active { cursor: grabbing; }
+  .stagebar { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: center; color: var(--muted); font-size: 12.5px; }
+  .stagebar b { color: var(--text); font-weight: 500; font-variant-numeric: tabular-nums; }
+  .actual { display: flex; align-items: center; gap: 10px; }
+  canvas#actual { image-rendering: pixelated; background: #000; border: 1px solid #2c353e; }
+
+  section.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; min-width: 0; }
+  section.card h2 { font: 600 12px/1.2 var(--font-body); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 10px; }
+  .controls { display: grid; gap: 12px; min-width: 0; }
+
+  .thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; }
+  .thumbs.wide { grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); }
+  .thumb {
+    display: grid; gap: 6px; justify-items: center; padding: 8px 6px; border-radius: 8px;
+    background: var(--panel-2); border: 1px solid transparent; cursor: pointer; color: var(--muted); font: inherit; font-size: 12px;
+  }
+  .thumb:hover { border-color: var(--line); }
+  .thumb.on { border-color: var(--accent); color: var(--text); }
+  .thumb canvas { image-rendering: pixelated; max-width: 100%; height: auto; background: #000; }
+
+  label.row { display: grid; grid-template-columns: 96px minmax(0, 1fr) 48px; gap: 10px; align-items: center; margin: 6px 0; }
+  label.row .v { text-align: right; font: 12px var(--font-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+  .pair { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 10px; align-items: center; margin: 6px 0; }
+  .nums { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  .nums label { display: grid; gap: 2px; font-size: 11px; color: var(--muted); }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  input[type=number], input[type=text], select, textarea, button {
+    font: inherit; color: var(--text); background: var(--panel-2); border: 1px solid var(--line); border-radius: 7px; padding: 5px 8px; min-width: 0;
+  }
+  input[type=number] { width: 100%; font-family: var(--font-mono); font-size: 12.5px; }
+  button { cursor: pointer; }
+  button:hover { border-color: #3a4652; }
+  button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+  button.on { border-color: var(--accent); color: var(--accent); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+  .seg button { border: 0; border-radius: 0; background: transparent; padding: 5px 10px; }
+  .seg button + button { border-left: 1px solid var(--line); }
+  .seg button.on { background: var(--accent); color: var(--accent-ink); }
+  .check { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+  .note { color: var(--muted); font-size: 12.5px; margin: 6px 0 0; }
+  .note.warn { color: var(--warn); }
+  textarea {
+    width: 100%; min-height: 150px; background: #07090b; color: #cfe8e2; resize: vertical;
+    font: 12px/1.5 var(--font-mono);
+  }
+  .drop {
+    display: grid; place-items: center; text-align: center; gap: 4px; padding: 14px; border: 1px dashed #3a4652;
+    border-radius: 9px; color: var(--muted); cursor: pointer; background: var(--panel-2);
+  }
+  .drop b { color: var(--text); font-weight: 500; }
+  .samples { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .pngs { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin-top: 8px; }
+  .pngs figure { margin: 0; display: grid; gap: 4px; font-size: 11.5px; color: var(--muted); }
+  .pngs img { image-rendering: pixelated; background: #000; border: 1px solid var(--line); max-width: 100%; }
+  details summary { cursor: pointer; color: var(--muted); font-size: 12.5px; }
+  .hidden { display: none !important; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>Corne OLED Art Lab</h1>
+  <p>Preview art on the Eyelash Corne's 128&times;32 SSD1306 panel exactly as the firmware's 1-bit LVGL canvas will show it, then export a <code>lv_img_dsc_t</code> in the same format nice!oled's own animations use.</p>
+</header>
+
+<div class="layout">
+  <div class="bench">
+    <div class="stage" id="stage">
+      <div class="scroller"><div class="bezel"><canvas id="screen" aria-label="OLED preview"></canvas></div></div>
+      <div class="stagebar">
+        <span>Frame <b id="frameLbl">1 / 1</b></span>
+        <span>Lit <b id="litLbl">0%</b></span>
+        <span>Size <b id="bytesLbl">0 B</b></span>
+        <span class="actual">Actual size <canvas id="actual" title="Drawn at the panel's real 22.4 x 5.6 mm active area"></canvas></span>
+      </div>
+      <div class="stagebar" id="animBar">
+        <button id="playBtn" type="button">Pause</button>
+        <input type="range" id="frameSlider" min="0" max="0" value="0" aria-label="Frame" style="width: 180px">
+        <label class="check" style="margin:0">FPS <input type="number" id="fps" min="1" max="60" value="12" style="width: 64px"></label>
+      </div>
+      <p class="note" style="margin:0">Drag the panel to move the art, scroll to zoom. Drop images, a GIF, or a video anywhere here.</p>
+    </div>
+
+    <section class="card">
+      <h2>Dither comparison</h2>
+      <div class="thumbs" id="thumbs"></div>
+      <p class="note">Every method run on the current frame with the same tone settings. Click one to use it. Ordered (Bayer) patterns stay stable between animation frames; error diffusion looks finer on stills but shimmers when animated.</p>
+    </section>
+  </div>
+
+  <div class="controls">
+    <section class="card">
+      <h2>Source</h2>
+      <label class="drop" for="file"><b>Choose images, a GIF, or a video</b><span>Several images play as animation frames in name order.</span></label>
+      <input type="file" id="file" accept="image/*,video/*" multiple hidden>
+      <div class="samples">
+        <button type="button" data-sample="kronii">Kronii (repo sample)</button>
+        <button type="button" data-sample="moon">Moon phases</button>
+        <button type="button" data-sample="ramp">Gradient test</button>
+      </div>
+      <div id="videoBox" class="hidden">
+        <p class="note">Video plays live through the pipeline. Capture it to turn it into exportable frames.</p>
+        <div class="pair">Capture <div class="nums" style="grid-template-columns: 1fr 1fr">
+          <label>max frames<input type="number" id="capMax" value="120" min="1" max="2000"></label>
+          <label>start (s)<input type="number" id="capStart" value="0" min="0" step="0.1"></label>
+        </div></div>
+        <div class="btns"><button type="button" id="vidToggle">Pause video</button><button type="button" class="primary" id="capBtn">Capture frames at FPS</button></div>
+        <p class="note" id="capStatus"></p>
+      </div>
+      <details style="margin-top:10px">
+        <summary>Paste a C array (image2cpp, LVGL, nice!oled assets)</summary>
+        <textarea id="paste" placeholder="0xff, 0xff, 0x0f, ... or a whole .c file with several _map[] arrays" style="margin-top:8px"></textarea>
+        <div class="pair">Size
+          <div class="nums" style="grid-template-columns: 1fr 1fr 2fr">
+            <label>width<input type="number" id="pw" value="32" min="1" max="512"></label>
+            <label>height<input type="number" id="ph" value="128" min="1" max="512"></label>
+            <label>byte layout<select id="playout"><option value="h">Rows, MSB first</option><option value="v">SSD1306 pages</option></select></label>
+          </div>
+        </div>
+        <div class="btns"><button type="button" class="primary" id="pasteBtn">Load bytes</button></div>
+        <p class="note" id="pasteStatus">Width and height are read from comments like <code>32x128px</code> or <code>.header.w</code> when present. Set bit = lit pixel.</p>
+      </details>
+    </section>
+
+    <section class="card">
+      <h2>Screen &amp; framing</h2>
+      <div class="pair">Layout
+        <div class="seg" id="orientSeg">
+          <button type="button" data-v="portrait" class="on">Portrait 32&times;128</button>
+          <button type="button" data-v="landscape">Landscape 128&times;32</button>
+        </div>
+      </div>
+      <div class="pair">Art area
+        <div class="nums">
+          <label>x<input type="number" data-k="rx" value="0"></label>
+          <label>y<input type="number" data-k="ry" value="0"></label>
+          <label>w<input type="number" data-k="rw" value="32" min="1"></label>
+          <label>h<input type="number" data-k="rh" value="128" min="1"></label>
+        </div>
+      </div>
+      <div class="btns"><button type="button" id="areaFull">Full screen</button><button type="button" id="areaWidgets">Leave room for status</button></div>
+      <div class="pair">Fit
+        <select data-k="fit"><option value="cover">Cover (crop)</option><option value="contain">Contain (letterbox)</option><option value="stretch">Stretch</option></select>
+      </div>
+      <label class="row">Zoom <input type="range" data-k="zoom" min="0.25" max="6" step="0.01" value="1"><span class="v" data-v="zoom"></span></label>
+      <label class="row">Shift x <input type="range" data-k="offX" min="-128" max="128" step="1" value="0"><span class="v" data-v="offX"></span></label>
+      <label class="row">Shift y <input type="range" data-k="offY" min="-128" max="128" step="1" value="0"><span class="v" data-v="offY"></span></label>
+      <div class="pair">Rotate
+        <select data-k="rot"><option value="0">0&deg;</option><option value="90">90&deg;</option><option value="180">180&deg;</option><option value="270">270&deg;</option></select>
+      </div>
+      <div class="check"><input type="checkbox" id="flip" data-k="flip"><label for="flip">Mirror horizontally</label></div>
+      <div class="check"><input type="checkbox" id="smooth" data-k="smooth" checked><label for="smooth">Smooth scaling (off keeps pixel art crisp)</label></div>
+      <div class="pair">Letterbox
+        <select data-k="letter"><option value="black">Black (off)</option><option value="white">White (lit)</option></select>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Tone &amp; dither</h2>
+      <div class="pair">Method
+        <select data-k="dither" id="ditherSel"></select>
+      </div>
+      <label class="row">Threshold <input type="range" data-k="thr" min="1" max="254" value="128"><span class="v" data-v="thr"></span></label>
+      <label class="row">Brightness <input type="range" data-k="bright" min="-100" max="100" value="0"><span class="v" data-v="bright"></span></label>
+      <label class="row">Contrast <input type="range" data-k="contrast" min="-100" max="100" value="0"><span class="v" data-v="contrast"></span></label>
+      <label class="row">Gamma <input type="range" data-k="gamma" min="0.3" max="3" step="0.01" value="1"><span class="v" data-v="gamma"></span></label>
+      <label class="row">Sharpen <input type="range" data-k="sharpen" min="0" max="2" step="0.05" value="0"><span class="v" data-v="sharpen"></span></label>
+      <div class="check"><input type="checkbox" id="invert" data-k="invert"><label for="invert">Invert (lit becomes dark)</label></div>
+      <div class="btns"><button type="button" id="toneReset">Reset tone</button></div>
+    </section>
+
+    <section class="card">
+      <h2>Panel look</h2>
+      <div class="pair">Pixel color
+        <div class="seg" id="colorSeg">
+          <button type="button" data-v="white" class="on">White</button>
+          <button type="button" data-v="blue">Blue</button>
+          <button type="button" data-v="amber">Amber</button>
+        </div>
+      </div>
+      <label class="row">Scale <input type="range" data-k="scale" min="2" max="14" step="1" value="5"><span class="v" data-v="scale"></span></label>
+      <label class="row">Pixel gap <input type="range" data-k="gap" min="0" max="0.4" step="0.01" value="0.12"><span class="v" data-v="gap"></span></label>
+      <label class="row">Glow <input type="range" data-k="glow" min="0" max="1" step="0.01" value="0.35"><span class="v" data-v="glow"></span></label>
+      <div class="check"><input type="checkbox" id="grid" data-k="grid" checked><label for="grid">Show unlit pixel grid</label></div>
+    </section>
+
+    <section class="card">
+      <h2>Status widgets</h2>
+      <div class="check"><input type="checkbox" id="widgets" data-k="widgets"><label for="widgets">Overlay a status mock-up</label></div>
+      <div class="check"><input type="checkbox" id="knockout" data-k="knockout" checked><label for="knockout">Clear the art behind widgets</label></div>
+      <div class="pair">Layer <input type="text" data-k="layer" value="BASE" maxlength="10"></div>
+      <div class="pair">Output <input type="text" data-k="out" value="BT1" maxlength="5"></div>
+      <label class="row">Battery <input type="range" data-k="batt" min="0" max="100" value="78"><span class="v" data-v="batt"></span></label>
+      <p class="note">Approximate placement of nice!oled's battery, output and layer readouts, to check how much room your art has. The real positions depend on your <code>CONFIG_NICE_OLED_*</code> options.</p>
+    </section>
+
+    <section class="card">
+      <h2>Export</h2>
+      <div class="pair">Name <input type="text" id="cname" value="kronii" spellcheck="false"></div>
+      <div class="pair">Format
+        <select id="fmt">
+          <option value="lvgl">nice!oled LVGL image (lv_img_dsc_t)</option>
+          <option value="h">Raw bytes, rows MSB first (image2cpp)</option>
+          <option value="v">Raw bytes, SSD1306 pages</option>
+        </select>
+      </div>
+      <div class="check"><input type="checkbox" id="allFrames" checked><label for="allFrames">Every frame</label></div>
+      <div class="btns"><button type="button" class="primary" id="exportBtn">Generate</button><button type="button" id="copyBtn">Copy</button></div>
+      <textarea id="out" readonly spellcheck="false" style="margin-top:8px" placeholder="Click Generate"></textarea>
+      <p class="note" id="outNote">Exports only the art area (not the widget mock-up). Bit 1 is a lit pixel, which matches nice!oled's palette in both normal and <code>CONFIG_NICE_OLED_WIDGET_INVERTED</code> builds.</p>
+      <div class="pngs" id="pngs"></div>
+    </section>
+  </div>
+</div>
+</div>
+
+<script>
+(() => {
+'use strict';
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => [...document.querySelectorAll(s)];
+
+const S = {
+  orient: 'portrait', rx: 0, ry: 0, rw: 32, rh: 128,
+  fit: 'cover', zoom: 1, offX: 0, offY: 0, rot: 0, flip: false, smooth: true, letter: 'black',
+  dither: 'atkinson', thr: 128, bright: 0, contrast: 0, gamma: 1, sharpen: 0, invert: false,
+  color: 'white', scale: 5, gap: 0.12, glow: 0.35, grid: true,
+  widgets: false, knockout: true, layer: 'BASE', out: 'BT1', batt: 78,
+  fps: 12, playing: true,
+};
+const TONE_DEFAULTS = { thr: 128, bright: 0, contrast: 0, gamma: 1, sharpen: 0, invert: false };
+const COLORS = { white: '#eef6ff', blue: '#4cc4ff', amber: '#ffc24a' };
+const DITHERS = [
+  ['threshold', 'Threshold'],
+  ['bayer4', 'Bayer 4×4'],
+  ['bayer8', 'Bayer 8×8'],
+  ['floyd', 'Floyd–Steinberg'],
+  ['atkinson', 'Atkinson'],
+  ['jjn', 'Jarvis'],
+];
+
+// frames: [{src: CanvasImageSource, w, h, crisp}]
+let frames = [];
+let frameIdx = 0;
+let video = null;
+
+const screenW = () => S.orient === 'portrait' ? 32 : 128;
+const screenH = () => S.orient === 'portrait' ? 128 : 32;
+
+/* ---------- sampling: source -> grayscale of the art area ---------- */
+const work = document.createElement('canvas');
+const wctx = work.getContext('2d', { willReadFrequently: true });
+
+function currentSource() {
+  if (video && video.readyState >= 2) return { src: video, w: video.videoWidth, h: video.videoHeight, crisp: false };
+  return frames[frameIdx] || null;
+}
+
+function sampleLum(f, w, h) {
+  work.width = w; work.height = h;
+  wctx.setTransform(1, 0, 0, 1, 0, 0);
+  wctx.fillStyle = S.letter === 'white' ? '#fff' : '#000';
+  wctx.fillRect(0, 0, w, h);
+  if (f) {
+    const swap = S.rot % 180 !== 0;
+    const ew = swap ? f.h : f.w, eh = swap ? f.w : f.h;
+    let sx = w / ew, sy = h / eh;
+    if (S.fit === 'cover') sx = sy = Math.max(sx, sy);
+    else if (S.fit === 'contain') sx = sy = Math.min(sx, sy);
+    sx *= S.zoom; sy *= S.zoom;
+    wctx.imageSmoothingEnabled = S.smooth && !f.crisp;
+    wctx.imageSmoothingQuality = 'high';
+    wctx.translate(w / 2 + S.offX, h / 2 + S.offY);
+    wctx.rotate(S.rot * Math.PI / 180);
+    wctx.scale((swap ? sy : sx) * (S.flip ? -1 : 1), swap ? sx : sy);
+    wctx.drawImage(f.src, -f.w / 2, -f.h / 2, f.w, f.h);
+  }
+  const d = wctx.getImageData(0, 0, w, h).data;
+  const lum = new Float32Array(w * h);
+  for (let i = 0, j = 0; i < lum.length; i++, j += 4) lum[i] = 0.2126 * d[j] + 0.7152 * d[j + 1] + 0.0722 * d[j + 2];
+  return lum;
+}
+
+function tone(lum, w, h) {
+  const cf = Math.pow((S.contrast + 100) / 100, 2), b = S.bright / 100, g = 1 / S.gamma;
+  const o = new Float32Array(lum.length);
+  for (let i = 0; i < lum.length; i++) {
+    let v = Math.pow(lum[i] / 255, g);
+    v = (v - 0.5) * cf + 0.5 + b;
+    o[i] = v * 255;
+  }
+  if (S.sharpen > 0) {
+    const c = o.slice(), s = S.sharpen;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const i = y * w + x;
+      const n = c[y * w + Math.max(0, x - 1)] + c[y * w + Math.min(w - 1, x + 1)] +
+                c[Math.max(0, y - 1) * w + x] + c[Math.min(h - 1, y + 1) * w + x];
+      o[i] = c[i] + s * (4 * c[i] - n);
+    }
+  }
+  return o;
+}
+
+/* ---------- dithering ---------- */
+const B4 = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]];
+const B8 = Array.from({ length: 8 }, (_, y) => Array.from({ length: 8 }, (_, x) =>
+  4 * B4[y % 4][x % 4] + [[0, 2], [3, 1]][y >> 2][x >> 2]));
+const KERNELS = {
+  floyd: [[1, 0, 7], [-1, 1, 3], [0, 1, 5], [1, 1, 1]].map(([dx, dy, w]) => [dx, dy, w / 16]),
+  atkinson: [[1, 0], [2, 0], [-1, 1], [0, 1], [1, 1], [0, 2]].map(([dx, dy]) => [dx, dy, 1 / 8]),
+  jjn: [[1, 0, 7], [2, 0, 5], [-2, 1, 3], [-1, 1, 5], [0, 1, 7], [1, 1, 5], [2, 1, 3],
+        [-2, 2, 1], [-1, 2, 3], [0, 2, 5], [1, 2, 3], [2, 2, 1]].map(([dx, dy, w]) => [dx, dy, w / 48]),
+};
+
+function dither(v, w, h, mode) {
+  const bits = new Uint8Array(w * h), thr = S.thr;
+  if (mode === 'threshold') {
+    for (let i = 0; i < bits.length; i++) bits[i] = v[i] >= thr ? 1 : 0;
+  } else if (mode === 'bayer4' || mode === 'bayer8') {
+    const M = mode === 'bayer4' ? B4 : B8, n = M.length, nn = n * n;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const t = (M[y % n][x % n] + 0.5) / nn * 255 + (thr - 128);
+      bits[y * w + x] = v[y * w + x] >= t ? 1 : 0;
+    }
+  } else {
+    const k = KERNELS[mode], e = Float32Array.from(v);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const i = y * w + x, old = e[i], lit = old >= thr;
+      bits[i] = lit ? 1 : 0;
+      const err = old - (lit ? 255 : 0);
+      for (const [dx, dy, wt] of k) {
+        const xx = x + dx, yy = y + dy;
+        if (xx >= 0 && xx < w && yy < h) e[yy * w + xx] += err * wt;
+      }
+    }
+  }
+  if (S.invert) for (let i = 0; i < bits.length; i++) bits[i] ^= 1;
+  return bits;
+}
+
+function artBits(f, mode = S.dither) {
+  const w = S.rw, h = S.rh;
+  return dither(tone(sampleLum(f, w, h), w, h), w, h, mode);
+}
+
+/* ---------- screen composition + status mock-up ---------- */
+const tcv = document.createElement('canvas');
+const tctx = tcv.getContext('2d', { willReadFrequently: true });
+
+function fillRect(buf, W, H, x, y, w, h, val) {
+  for (let yy = Math.max(0, y); yy < Math.min(H, y + h); yy++)
+    for (let xx = Math.max(0, x); xx < Math.min(W, x + w); xx++) buf[yy * W + xx] = val;
+}
+function strokeRect(buf, W, H, x, y, w, h) {
+  fillRect(buf, W, H, x, y, w, 1, 1); fillRect(buf, W, H, x, y + h - 1, w, 1, 1);
+  fillRect(buf, W, H, x, y, 1, h, 1); fillRect(buf, W, H, x + w - 1, y, 1, h, 1);
+}
+function drawText(buf, W, H, str, x, y) {
+  tcv.width = 140; tcv.height = 12;
+  tctx.fillStyle = '#000'; tctx.fillRect(0, 0, 140, 12);
+  tctx.fillStyle = '#fff'; tctx.font = '8px Silkscreen, monospace'; tctx.textBaseline = 'top';
+  tctx.fillText(str, 0, 0);
+  const d = tctx.getImageData(0, 0, 140, 12).data;
+  for (let py = 0; py < 12; py++) for (let px = 0; px < 140; px++)
+    if (d[(py * 140 + px) * 4] > 120) { const X = x + px, Y = y + py; if (X >= 0 && X < W && Y >= 0 && Y < H) buf[Y * W + X] = 1; }
+}
+function drawBattery(buf, W, H, x, y) {
+  strokeRect(buf, W, H, x, y, 24, 9);
+  fillRect(buf, W, H, x + 24, y + 3, 2, 3, 1);
+  fillRect(buf, W, H, x + 2, y + 2, Math.round(20 * S.batt / 100), 5, 1);
+}
+function drawWidgets(buf, W, H) {
+  const layer = (S.layer || '').toUpperCase(), out = (S.out || '').toUpperCase();
+  if (S.orient === 'portrait') {
+    if (S.knockout) { fillRect(buf, W, H, 0, 0, W, 23, 0); fillRect(buf, W, H, 0, H - 11, W, 11, 0); }
+    drawBattery(buf, W, H, 2, 2);
+    drawText(buf, W, H, out, 2, 13);
+    drawText(buf, W, H, layer.slice(0, 5), 1, H - 9);
+  } else {
+    if (S.knockout) fillRect(buf, W, H, 0, 0, 36, H, 0);
+    drawBattery(buf, W, H, 1, 1);
+    drawText(buf, W, H, out, 1, 12);
+    drawText(buf, W, H, layer.slice(0, 6), 1, 23);
+  }
+}
+
+function compose(bits) {
+  const W = screenW(), H = screenH(), buf = new Uint8Array(W * H);
+  for (let y = 0; y < S.rh; y++) {
+    const Y = S.ry + y; if (Y < 0 || Y >= H) continue;
+    for (let x = 0; x < S.rw; x++) {
+      const X = S.rx + x; if (X < 0 || X >= W) continue;
+      buf[Y * W + X] = bits[y * S.rw + x];
+    }
+  }
+  if (S.widgets) drawWidgets(buf, W, H);
+  return buf;
+}
+
+/* ---------- panel renderer ---------- */
+function drawPanel(cv, buf, W, H, scale, opts) {
+  const cw = W * scale, ch = H * scale;
+  if (cv.width !== cw || cv.height !== ch) { cv.width = cw; cv.height = ch; }
+  const ctx = cv.getContext('2d');
+  ctx.save();
+  ctx.fillStyle = '#030404'; ctx.fillRect(0, 0, cw, ch);
+  const g = scale >= 3 ? Math.max(0, Math.round(opts.gap * scale / 2 * 2) / 2) : 0;
+  const ps = scale - 2 * g;
+  if (opts.grid && scale >= 3) {
+    ctx.fillStyle = '#101416';
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (!buf[y * W + x]) ctx.fillRect(x * scale + g, y * scale + g, ps, ps);
+  }
+  ctx.fillStyle = opts.color;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (buf[y * W + x]) ctx.fillRect(x * scale + g, y * scale + g, ps, ps);
+  if (opts.glow > 0 && 'filter' in ctx) {
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = opts.glow * 0.7;
+    ctx.filter = `blur(${Math.max(1, scale * 0.9)}px)`;
+    ctx.drawImage(cv, 0, 0);
+  }
+  ctx.restore();
+}
+
+/* ---------- main render ---------- */
+const screenCv = $('#screen'), actualCv = $('#actual');
+const thumbs = {};
+let lastBits = null;
+
+function render() {
+  const W = screenW(), H = screenH();
+  const f = currentSource();
+  const bits = artBits(f);
+  lastBits = bits;
+  const buf = compose(bits);
+  const color = COLORS[S.color];
+  drawPanel(screenCv, buf, W, H, S.scale, { gap: S.gap, glow: S.glow, grid: S.grid, color });
+  drawPanel(actualCv, buf, W, H, 3, { gap: 0, glow: 0, grid: false, color });
+
+  // dither comparison, art area only
+  for (const [mode] of DITHERS) {
+    const t = thumbs[mode];
+    const tb = mode === S.dither ? bits : artBits(f, mode);
+    const sc = Math.max(1, Math.min(3, Math.floor(260 / Math.max(S.rw, S.rh / 1.2))));
+    drawPanel(t.cv, tb, S.rw, S.rh, sc, { gap: 0, glow: 0, grid: false, color });
+    t.btn.classList.toggle('on', mode === S.dither);
+  }
+
+  let lit = 0; for (const b of buf) lit += b;
+  $('#litLbl').textContent = Math.round(lit / buf.length * 100) + '%';
+  const per = Math.ceil(S.rw / 8) * S.rh + 8, n = Math.max(1, frames.length);
+  $('#bytesLbl').textContent = n > 1 ? `${fmtBytes(per)} × ${n} = ${fmtBytes(per * n)}` : fmtBytes(per);
+  $('#frameLbl').textContent = video ? 'live video' : `${frameIdx + 1} / ${Math.max(1, frames.length)}`;
+}
+const fmtBytes = (b) => b < 1024 ? b + ' B' : (b / 1024).toFixed(b < 10240 ? 1 : 0) + ' KB';
+
+function sizeActual() {
+  // 0.91" 128x32 SSD1306: 22.384 x 5.584 mm active area
+  const portrait = S.orient === 'portrait';
+  actualCv.style.width = portrait ? '5.584mm' : '22.384mm';
+  actualCv.style.height = portrait ? '22.384mm' : '5.584mm';
+}
+
+/* ---------- animation loop ---------- */
+let last = performance.now(), acc = 0;
+function tick(t) {
+  requestAnimationFrame(tick);
+  const dt = t - last; last = t;
+  if (video) { if (!video.paused) render(); return; }
+  if (!S.playing || frames.length < 2) return;
+  acc += dt;
+  const step = 1000 / S.fps;
+  if (acc >= step) {
+    acc = acc % step;
+    frameIdx = (frameIdx + 1) % frames.length;
+    $('#frameSlider').value = frameIdx;
+    render();
+  }
+}
+
+function setFrames(list, name, opts = {}) {
+  stopVideo();
+  frames = list; frameIdx = 0;
+  if (opts.fps) { S.fps = Math.max(1, Math.min(60, Math.round(opts.fps))); $('#fps').value = S.fps; }
+  if (opts.crisp !== undefined) { S.smooth = !opts.crisp; $('#smooth').checked = S.smooth; }
+  $('#frameSlider').max = Math.max(0, frames.length - 1);
+  $('#frameSlider').value = 0;
+  $('#animBar').classList.toggle('hidden', frames.length < 2);
+  if (name) $('#cname').value = cIdent(name);
+  render();
+}
+
+/* ---------- loading ---------- */
+async function loadFiles(list) {
+  const files = [...list].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+  if (!files.length) return;
+  const vid = files.find((f) => f.type.startsWith('video/'));
+  if (vid) return loadVideo(vid);
+  const out = []; let fps;
+  for (const f of files) {
+    if (f.type === 'image/gif' && 'ImageDecoder' in window) {
+      try {
+        const dec = new ImageDecoder({ data: await f.arrayBuffer(), type: f.type });
+        await dec.tracks.ready;
+        const n = Math.min(dec.tracks.selectedTrack.frameCount, 1000);
+        for (let i = 0; i < n; i++) {
+          const { image } = await dec.decode({ frameIndex: i });
+          const c = document.createElement('canvas');
+          c.width = image.displayWidth; c.height = image.displayHeight;
+          c.getContext('2d').drawImage(image, 0, 0);
+          if (i === 0 && image.duration) fps = 1e6 / image.duration;
+          image.close();
+          out.push({ src: c, w: c.width, h: c.height });
+        }
+        continue;
+      } catch (e) { /* fall through to a single still frame */ }
+    }
+    try {
+      const bmp = await createImageBitmap(f);
+      out.push({ src: bmp, w: bmp.width, h: bmp.height });
+    } catch (e) { /* not a decodable image */ }
+  }
+  if (out.length) setFrames(out, files[0].name.replace(/\.[^.]+$/, ''), { fps, crisp: false });
+}
+
+function stopVideo() {
+  if (!video) return;
+  video.pause(); URL.revokeObjectURL(video.src); video = null;
+  $('#videoBox').classList.add('hidden');
+}
+
+async function loadVideo(file) {
+  stopVideo();
+  frames = []; frameIdx = 0;
+  video = document.createElement('video');
+  video.muted = true; video.loop = true; video.playsInline = true;
+  video.src = URL.createObjectURL(file);
+  $('#videoBox').classList.remove('hidden');
+  $('#animBar').classList.add('hidden');
+  $('#capStatus').textContent = '';
+  $('#vidToggle').textContent = 'Pause video';
+  $('#cname').value = cIdent(file.name.replace(/\.[^.]+$/, ''));
+  video.addEventListener('loadeddata', render, { once: true });
+  try { await video.play(); } catch (e) { $('#capStatus').textContent = 'Press "Play video" to start.'; $('#vidToggle').textContent = 'Play video'; }
+}
+
+async function captureVideo() {
+  if (!video) return;
+  const v = video, max = +$('#capMax').value || 120, start = +$('#capStart').value || 0;
+  v.pause();
+  const out = [], step = 1 / S.fps;
+  for (let t = start; t < v.duration && out.length < max; t += step) {
+    await new Promise((res) => { v.addEventListener('seeked', res, { once: true }); v.currentTime = t; });
+    const c = document.createElement('canvas');
+    c.width = v.videoWidth; c.height = v.videoHeight;
+    c.getContext('2d').drawImage(v, 0, 0);
+    out.push({ src: c, w: c.width, h: c.height });
+    $('#capStatus').textContent = `Captured ${out.length} frames…`;
+  }
+  const name = $('#cname').value;
+  setFrames(out, name);
+  $('#capStatus').textContent = '';
+}
+
+/* ---------- paste import ---------- */
+function bitsToFrame(bytes, w, h, layout) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const ctx = c.getContext('2d'), img = ctx.createImageData(w, h), stride = Math.ceil(w / 8);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const on = layout === 'v'
+      ? (bytes[(y >> 3) * w + x] >> (y & 7)) & 1
+      : (bytes[y * stride + (x >> 3)] >> (7 - (x & 7))) & 1;
+    const j = (y * w + x) * 4, v = on ? 255 : 0;
+    img.data[j] = img.data[j + 1] = img.data[j + 2] = v; img.data[j + 3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+  return { src: c, w, h, crisp: true };
+}
+const hexBytes = (s) => (s.match(/0x[0-9a-fA-F]{1,2}\b/g) || []).map((x) => parseInt(x, 16));
+
+function importPaste() {
+  const text = $('#paste').value, status = $('#pasteStatus');
+  let w = +$('#pw').value, h = +$('#ph').value;
+  const layout = $('#playout').value;
+  const ws = [...text.matchAll(/header\.w\s*=\s*(\d+)/g)].map((m) => +m[1]);
+  const hs = [...text.matchAll(/header\.h\s*=\s*(\d+)/g)].map((m) => +m[1]);
+  const dim = text.match(/(\d+)\s*x\s*(\d+)\s*px/i);
+  if (!ws.length && dim) { w = +dim[1]; h = +dim[2]; }
+  const parts = text.split(/\[\s*\]\s*=\s*\{/);
+  const chunks = parts.length > 1 ? parts.slice(1).map((p) => p.split('};')[0]) : [text];
+  const out = [];
+  chunks.forEach((chunk, i) => {
+    let bytes = hexBytes(chunk);
+    const fw = ws[i] || w, fh = hs[i] || h;
+    const need = layout === 'v' ? fw * Math.ceil(fh / 8) : Math.ceil(fw / 8) * fh;
+    if (bytes.length < need) return;
+    const extra = bytes.length - need;
+    if (extra === 8 || extra === 16) bytes = bytes.slice(extra); // LVGL palette (one or both #if branches)
+    out.push(bitsToFrame(bytes, fw, fh, layout));
+  });
+  if (!out.length) {
+    const n = hexBytes(text).length;
+    status.textContent = `Found ${n} bytes, but ${w}×${h} needs ${layout === 'v' ? w * Math.ceil(h / 8) : Math.ceil(w / 8) * h}. Check the width, height and byte layout.`;
+    status.classList.add('warn');
+    return;
+  }
+  status.classList.remove('warn');
+  status.textContent = `Loaded ${out.length} frame${out.length > 1 ? 's' : ''} at ${out[0].w}×${out[0].h}.`;
+  $('#pw').value = out[0].w; $('#ph').value = out[0].h;
+  setFrames(out, (text.match(/uint8_t\s+(\w+?)(?:_\d+)?_map/) || [])[1] || 'pasted', { crisp: true });
+}
+
+/* ---------- samples ---------- */
+const KRONII = '/////////////////////////////////////////////////7/////P////4/////P//v/5//3//H/3//4/z///A7///wB///8Af///AD///wA///8AD///gHn/eQD//7AD///QAf//4AH//+AA///gAH3/4AA7/+AAD//AAA//xGAD/8CAAf/F6AP/w+gH/5PwR/8Z4Mf/O4fD/yADw/4wA8MAcIDHAHRAHwBkAF8AQAD/AFQJ/wC8EYMB+DGPH3g1Hx9wPB8ffGQfDz/8Dw4B+A8GAHAHAAAAAwAAAAMABgADAA+AHwAPwD8wDuAfTw5gHzwEQB9wgAAfwMAADwNgAA8B4AAHAgAAAwOAAIMAAAGHAAAXBwAAOAMAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAA4AAAAPwAAAD/AAAA/+AAAP/gH/7/4A///+AP///gD///4A///+Af///gH///4B///+Af///gH///4Av///AH///wB///8A////gf///4H///wA///wAf//+AH///wD////A////wH///+B////gf///8H////Q////kf///wH///4B////AP///+D////gf///4D////n/8=';
+
+function sampleKronii() {
+  const bytes = Uint8Array.from(atob(KRONII), (c) => c.charCodeAt(0));
+  return [bitsToFrame(bytes, 32, 128, 'h')];
+}
+function sampleMoon() {
+  const out = [], N = 24, R = 60, size = 128;
+  for (let k = 0; k < N; k++) {
+    const c = document.createElement('canvas'); c.width = c.height = size;
+    const ctx = c.getContext('2d'), img = ctx.createImageData(size, size);
+    const a = k / N * Math.PI * 2, L = [Math.sin(a), -0.15, -Math.cos(a)];
+    for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+      const nx = (x - size / 2 + 0.5) / R, ny = (y - size / 2 + 0.5) / R, r2 = nx * nx + ny * ny;
+      let v = 0;
+      if (r2 <= 1) {
+        const nz = -Math.sqrt(1 - r2);
+        const crater = 0.85 + 0.15 * Math.sin(nx * 9) * Math.cos(ny * 7 + nx * 3);
+        v = Math.max(0, -(nx * L[0] + ny * L[1] + nz * L[2])) * crater;
+      } else {
+        const h = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
+        if (h - Math.floor(h) > 0.995) v = 1;
+      }
+      const j = (y * size + x) * 4;
+      img.data[j] = img.data[j + 1] = img.data[j + 2] = Math.round(Math.pow(v, 0.8) * 255); img.data[j + 3] = 255;
+    }
+    ctx.putImageData(img, 0, 0);
+    out.push({ src: c, w: size, h: size });
+  }
+  return out;
+}
+function sampleRamp() {
+  const c = document.createElement('canvas'); c.width = 256; c.height = 1024;
+  const ctx = c.getContext('2d');
+  const lg = ctx.createLinearGradient(0, 0, 0, 1024);
+  lg.addColorStop(0, '#000'); lg.addColorStop(1, '#fff');
+  ctx.fillStyle = lg; ctx.fillRect(0, 0, 256, 1024);
+  const rg = ctx.createRadialGradient(100, 360, 10, 128, 400, 120);
+  rg.addColorStop(0, '#fff'); rg.addColorStop(1, '#000');
+  ctx.fillStyle = rg; ctx.beginPath(); ctx.arc(128, 400, 110, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.font = 'bold 120px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('ZMK', 128, 760);
+  return [{ src: c, w: 256, h: 1024 }];
+}
+const SAMPLES = {
+  kronii: () => setFrames(sampleKronii(), 'kronii', { crisp: true }),
+  moon: () => setFrames(sampleMoon(), 'moon', { fps: 12, crisp: false }),
+  ramp: () => setFrames(sampleRamp(), 'gradient', { crisp: false }),
+};
+
+/* ---------- export ---------- */
+const cIdent = (s) => (s.toLowerCase().replace(/[^a-z0-9_]+/g, '_').replace(/^_+|_+$/g, '').replace(/^(\d)/, '_$1') || 'art');
+
+function packH(bits, w, h) {
+  const stride = Math.ceil(w / 8), out = new Uint8Array(stride * h);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++)
+    if (bits[y * w + x]) out[y * stride + (x >> 3)] |= 0x80 >> (x & 7);
+  return out;
+}
+function packV(bits, w, h) {
+  const pages = Math.ceil(h / 8), out = new Uint8Array(w * pages);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++)
+    if (bits[y * w + x]) out[(y >> 3) * w + x] |= 1 << (y & 7);
+  return out;
+}
+function hexLines(bytes, per = 16, indent = '  ') {
+  const lines = [];
+  for (let i = 0; i < bytes.length; i += per)
+    lines.push(indent + [...bytes.slice(i, i + per)].map((b) => '0x' + b.toString(16).padStart(2, '0')).join(', ') + ',');
+  return lines.join('\n');
+}
+
+function generate() {
+  const name = cIdent($('#cname').value), fmt = $('#fmt').value, w = S.rw, h = S.rh;
+  const list = $('#allFrames').checked && frames.length > 1 && !video ? frames : [currentSource()];
+  const mode = DITHERS.find((d) => d[0] === S.dither)[1];
+  const multi = list.length > 1;
+  const id = (i) => multi ? `${name}_${String(i).padStart(2, '0')}` : name;
+  let s = `/* ${name}: ${w}x${h}, 1 bit per pixel, ${list.length} frame${multi ? 's' : ''}, dither: ${mode}.\n * Generated by oled-emulator/index.html. Set bit = lit pixel. */\n`;
+  let total = 0;
+  if (fmt === 'lvgl') {
+    s += '#include <lvgl.h>\n\n#ifndef LV_ATTRIBUTE_MEM_ALIGN\n#define LV_ATTRIBUTE_MEM_ALIGN\n#endif\n';
+    list.forEach((f, i) => {
+      const data = packH(artBits(f), w, h);
+      total += data.length + 8;
+      s += `\nstatic const LV_ATTRIBUTE_MEM_ALIGN uint8_t ${id(i)}_map[] = {\n` +
+        '#if CONFIG_NICE_OLED_WIDGET_INVERTED\n  0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, /* idx 0 black, idx 1 white */\n' +
+        '#else\n  0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0xff, /* idx 0 white, idx 1 black */\n#endif\n' +
+        hexLines(data) + '\n};\n\n' +
+        `const lv_img_dsc_t ${id(i)} = {\n  .header.cf = LV_IMG_CF_INDEXED_1BIT,\n  .header.always_zero = 0,\n  .header.reserved = 0,\n` +
+        `  .header.w = ${w},\n  .header.h = ${h},\n  .data_size = ${data.length + 8},\n  .data = ${id(i)}_map,\n};\n`;
+    });
+    if (multi) s += `\nconst lv_img_dsc_t *${name}_imgs[] = {\n` + list.map((_, i) => `  &${id(i)},`).join('\n') + '\n};\n';
+    $('#outNote').innerHTML = multi
+      ? `Use with <code>lv_animimg_set_src(art, (const void **)${name}_imgs, ${list.length});</code> and a duration of about ${Math.round(list.length * 1000 / S.fps)} ms for ${S.fps} FPS.`
+      : `Use with <code>lv_img_set_src(img, &amp;${name});</code> or <code>lv_canvas_draw_img(canvas, x, y, &amp;${name}, &amp;dsc);</code>.`;
+  } else {
+    list.forEach((f, i) => {
+      const bits = artBits(f);
+      const data = fmt === 'v' ? packV(bits, w, h) : packH(bits, w, h);
+      total += data.length;
+      s += `\n// '${id(i)}', ${w}x${h}px\nconst unsigned char ${id(i)}_bits[] = {\n${hexLines(data)}\n};\n`;
+    });
+    $('#outNote').innerHTML = fmt === 'v'
+      ? 'SSD1306 page order: each byte is 8 vertical pixels, LSB on top, pages of 8 rows.'
+      : 'Same layout as image2cpp\'s default "horizontal, 1 bit per pixel" output.';
+  }
+  s += `\n/* ${fmtBytes(total)} of flash */\n`;
+  $('#out').value = s;
+  makePngs();
+}
+
+function makePngs() {
+  const W = screenW(), H = screenH(), buf = compose(lastBits || artBits(currentSource()));
+  const raw = document.createElement('canvas'); raw.width = S.rw; raw.height = S.rh;
+  const rctx = raw.getContext('2d'), img = rctx.createImageData(S.rw, S.rh);
+  lastBits.forEach((b, i) => { const v = b ? 255 : 0; img.data.set([v, v, v, 255], i * 4); });
+  rctx.putImageData(img, 0, 0);
+  const shot = document.createElement('canvas');
+  drawPanel(shot, buf, W, H, 8, { gap: S.gap, glow: S.glow, grid: S.grid, color: COLORS[S.color] });
+  $('#pngs').innerHTML = '';
+  const add = (cv, label, style) => {
+    const fig = document.createElement('figure');
+    const im = new Image(); im.src = cv.toDataURL('image/png'); im.alt = label; Object.assign(im.style, style);
+    fig.append(im, Object.assign(document.createElement('figcaption'), { textContent: label }));
+    $('#pngs').append(fig);
+  };
+  add(raw, `1-bit PNG, ${S.rw}×${S.rh}`, { width: S.rw * 2 + 'px' });
+  add(shot, 'Panel screenshot', { width: Math.min(260, W * 2) + 'px' });
+  $('#pngs').append(Object.assign(document.createElement('p'), { className: 'note', textContent: 'Right-click or long-press an image to save it. The 1-bit PNG loads straight into image2cpp or LVGL\'s image converter.' }));
+}
+
+/* ---------- controls ---------- */
+function syncControls() {
+  for (const el of $$('[data-k]')) {
+    const k = el.dataset.k;
+    if (el.type === 'checkbox') el.checked = !!S[k];
+    else el.value = S[k];
+  }
+  for (const v of $$('[data-v]')) if (v.classList.contains('v')) v.textContent = fmtVal(v.dataset.v);
+}
+const fmtVal = (k) => {
+  const x = S[k];
+  if (k === 'zoom') return x.toFixed(2) + '×';
+  if (k === 'gap' || k === 'glow' || k === 'gamma' || k === 'sharpen') return (+x).toFixed(2);
+  if (k === 'scale') return x + '×';
+  if (k === 'batt') return x + '%';
+  return String(x);
+};
+
+function bind() {
+  const sel = $('#ditherSel');
+  for (const [v, l] of DITHERS) sel.append(new Option(l, v));
+  const tw = $('#thumbs');
+  for (const [mode, label] of DITHERS) {
+    const btn = document.createElement('button');
+    btn.type = 'button'; btn.className = 'thumb';
+    const cv = document.createElement('canvas');
+    btn.append(cv, label);
+    btn.addEventListener('click', () => { S.dither = mode; syncControls(); render(); });
+    tw.append(btn);
+    thumbs[mode] = { btn, cv };
+  }
+
+  for (const el of $$('[data-k]')) {
+    el.addEventListener('input', () => {
+      const k = el.dataset.k;
+      if (el.type === 'checkbox') S[k] = el.checked;
+      else if (el.type === 'range' || el.type === 'number') S[k] = +el.value;
+      else if (k === 'rot') S[k] = +el.value;
+      else S[k] = el.value;
+      if (['rw', 'rh'].includes(k)) S[k] = Math.max(1, Math.min(512, S[k] || 1));
+      for (const v of $$(`.v[data-v="${k}"]`)) v.textContent = fmtVal(k);
+      render();
+    });
+  }
+
+  $('#orientSeg').addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    S.orient = b.dataset.v;
+    $$('#orientSeg button').forEach((x) => x.classList.toggle('on', x === b));
+    $('#thumbs').classList.toggle('wide', S.orient === 'landscape');
+    setArea(0, 0, screenW(), screenH());
+    sizeActual();
+  });
+  $('#colorSeg').addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    S.color = b.dataset.v;
+    $$('#colorSeg button').forEach((x) => x.classList.toggle('on', x === b));
+    render();
+  });
+  $('#areaFull').addEventListener('click', () => setArea(0, 0, screenW(), screenH()));
+  $('#areaWidgets').addEventListener('click', () => {
+    S.widgets = true;
+    if (S.orient === 'portrait') setArea(0, 23, 32, 94); else setArea(36, 0, 92, 32);
+  });
+  $('#toneReset').addEventListener('click', () => { Object.assign(S, TONE_DEFAULTS); syncControls(); render(); });
+
+  $('#playBtn').addEventListener('click', () => { S.playing = !S.playing; $('#playBtn').textContent = S.playing ? 'Pause' : 'Play'; });
+  $('#frameSlider').addEventListener('input', (e) => { frameIdx = +e.target.value; render(); });
+  $('#fps').addEventListener('input', (e) => { S.fps = Math.max(1, Math.min(60, +e.target.value || 1)); });
+
+  $('#file').addEventListener('change', (e) => { loadFiles(e.target.files); e.target.value = ''; });
+  const stage = $('#stage');
+  stage.addEventListener('dragover', (e) => { e.preventDefault(); stage.classList.add('drag'); });
+  stage.addEventListener('dragleave', () => stage.classList.remove('drag'));
+  stage.addEventListener('drop', (e) => { e.preventDefault(); stage.classList.remove('drag'); loadFiles(e.dataTransfer.files); });
+  document.addEventListener('paste', (e) => {
+    if (e.target.closest && e.target.closest('textarea, input')) return;
+    const files = [...(e.clipboardData?.files || [])];
+    if (files.length) loadFiles(files);
+  });
+
+  for (const b of $$('[data-sample]')) b.addEventListener('click', () => { resetFraming(); SAMPLES[b.dataset.sample](); });
+  $('#pasteBtn').addEventListener('click', importPaste);
+  $('#vidToggle').addEventListener('click', () => {
+    if (!video) return;
+    if (video.paused) { video.play(); $('#vidToggle').textContent = 'Pause video'; }
+    else { video.pause(); $('#vidToggle').textContent = 'Play video'; }
+  });
+  $('#capBtn').addEventListener('click', captureVideo);
+
+  $('#exportBtn').addEventListener('click', generate);
+  $('#copyBtn').addEventListener('click', async () => {
+    if (!$('#out').value) generate();
+    const btn = $('#copyBtn');
+    try { await navigator.clipboard.writeText($('#out').value); btn.textContent = 'Copied'; }
+    catch (e) { $('#out').select(); btn.textContent = 'Press Ctrl+C'; }
+    setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+  });
+
+  // drag to pan, wheel to zoom
+  let drag = null;
+  screenCv.addEventListener('pointerdown', (e) => { drag = { x: e.clientX, y: e.clientY, ox: S.offX, oy: S.offY }; screenCv.setPointerCapture(e.pointerId); });
+  screenCv.addEventListener('pointermove', (e) => {
+    if (!drag) return;
+    const k = screenCv.width / screenCv.getBoundingClientRect().width / S.scale;
+    S.offX = Math.round(drag.ox + (e.clientX - drag.x) * k);
+    S.offY = Math.round(drag.oy + (e.clientY - drag.y) * k);
+    syncControls(); render();
+  });
+  const end = () => { drag = null; };
+  screenCv.addEventListener('pointerup', end);
+  screenCv.addEventListener('pointercancel', end);
+  screenCv.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    S.zoom = Math.max(0.25, Math.min(6, S.zoom * Math.exp(-e.deltaY * 0.0015)));
+    syncControls(); render();
+  }, { passive: false });
+}
+
+function setArea(x, y, w, h) { Object.assign(S, { rx: x, ry: y, rw: w, rh: h }); syncControls(); render(); }
+function resetFraming() { Object.assign(S, { zoom: 1, offX: 0, offY: 0, rot: 0, flip: false }); syncControls(); }
+
+bind();
+syncControls();
+sizeActual();
+SAMPLES.kronii();
+if (document.fonts) document.fonts.load('8px Silkscreen').then(render).catch(() => {});
+requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>

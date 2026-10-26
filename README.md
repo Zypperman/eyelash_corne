@@ -189,6 +189,19 @@ download the generated `layer_rgb.dtsi` into `config/`. The key legends are
 baked into the page, so if you change `eyelash_corne.keymap` they won't
 update. The colors and export still work.
 
+### OLED Art Preview
+
+Open [`oled-emulator/index.html`](oled-emulator/index.html) in a browser to see
+how an image, GIF or video will look on the 128x32 OLED before flashing it.
+It converts the picture to 1-bit the way the firmware's LVGL canvas draws it,
+in nice!oled's portrait (32x128) or landscape layout, with side-by-side
+dithering methods, tone controls, optional status-widget overlay, and the
+panel's actual physical size. Export a `lv_img_dsc_t` (same format as
+nice!oled's built-in animations, including the `CONFIG_NICE_OLED_WIDGET_INVERTED`
+palette switch), raw image2cpp-style bytes, or a 1-bit PNG. You can also paste
+an existing C array (such as `Devlogs/OLED Graphics/image_assets/kronii_1.bin`)
+to preview it.
+
 ### Encoder Functions
 
 - **Default layer**: Volume up/down
