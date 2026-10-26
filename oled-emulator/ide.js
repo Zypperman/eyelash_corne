@@ -28,8 +28,11 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // ide/ and vendor/ are generated (build.py --ide --vendor), so a site without them answers with its
 // HTML 404 or fallback page; say so instead of JSON.parse's "Unexpected token '<'"
-const BUNDLE_HINT = 'This site was published without the IDE bundle: build it with ' +
-  '`python3 oled-emulator/lvgl-sim/build.py --ide --vendor <node_modules>` (see .github/workflows/pages.yml) or use the GitHub Pages site.';
+const PAGES_URL = 'https://zypperman.github.io/eyelash_corne/'; // .github/workflows/pages.yml
+const BUNDLE_HINT = `This copy of the page has no IDE bundle (ide/ and vendor/ are generated, not in git). ` +
+  `Use ${PAGES_URL}, which the Pages workflow builds with them, or build them locally: ` +
+  '`npm install --prefix /tmp/t @yowasp/clang@22.0.0-git20542-10 pyodide@0.26.4 codemirror@5.65.16` then ' +
+  '`python3 oled-emulator/lvgl-sim/build.py --ide --vendor /tmp/t/node_modules` and serve oled-emulator/.';
 async function fetchJson(path) {
   let r;
   try { r = await fetch(BASE + path); } catch (err) { throw new Error(`${path}: ${err.message}. ${BUNDLE_HINT}`); }
