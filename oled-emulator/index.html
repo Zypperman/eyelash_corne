@@ -3,478 +3,490 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Corne OLED Art Lab</title>
+<title>Eyelash OLED Simulator</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Silkscreen&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
-  /* Layout: preview bench on the left (panel + dither comparison), stacked control cards on the right. */
+  /* Layout: keymap-editor style top bar + tab row, the split keyboard (with both OLEDs) always on stage,
+     then the active tab's controls beside a sticky pair of magnified panels. */
   :root {
-    color-scheme: dark;
-    --bg: #090b0d;
-    --panel: #12161a;
-    --panel-2: #1a2026;
-    --line: #262e36;
-    --text: #e4e9ee;
-    --muted: #8a96a2;
-    --accent: #7fd6c2;
-    --accent-ink: #062019;
-    --warn: #e7b85c;
-    --glass: #030404;
-    --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-    --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-    --font-pixel: "Silkscreen", "IBM Plex Mono", ui-monospace, monospace;
+    --bg: #ffffff;
+    --fg: #2b3036;
+    --muted: #8a9199;
+    --key: #f2f2f2;
+    --key-fg: #6b7177;
+    --key-hover: rgba(60, 179, 113, 0.85);
+    --panel: #f5f6f7;
+    --line: #e2e4e7;
+    --field: #ffffff;
+    --accent: rgb(60, 179, 113);
+    --accent-ink: #ffffff;
+    --blue: #3f6fe0;
+    --blue-ink: #ffffff;
+    --warn: #b7791f;
+    --bad: #c0392b;
+    --pcb: #1d3557;
+    --font-ui: Quicksand, Avenir, "Segoe UI", sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1b2530; --fg: #e9eef2; --muted: #8c9aa7; --key: #2c3a46; --key-fg: #e9eef2;
+      --panel: #222e3a; --line: #33414e; --field: #1a232d; --blue: #3b6fd8; --warn: #e0b45a; --bad: #ef6f5e;
+      --pcb: #142338; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #1b2530; --fg: #e9eef2; --muted: #8c9aa7; --key: #2c3a46; --key-fg: #e9eef2;
+    --panel: #222e3a; --line: #33414e; --field: #1a232d; --blue: #3b6fd8; --warn: #e0b45a; --bad: #ef6f5e;
+    --pcb: #142338; color-scheme: dark;
   }
   * { box-sizing: border-box; }
-  html, body { background: var(--bg); color: var(--text); }
-  body { margin: 0; font: 14px/1.45 var(--font-body); }
+  html, body { background: var(--bg); color: var(--fg); }
+  body { margin: 0; font: 500 15px/1.45 var(--font-ui); }
   .wrap {
-    max-width: 1240px; margin: 0 auto;
-    padding-block: 18px 48px;
+    padding-block: 14px 40px;
     padding-left: max(16px, env(safe-area-inset-left, 0px));
     padding-right: max(16px, env(safe-area-inset-right, 0px));
   }
-  header { display: grid; gap: 4px; margin-bottom: 16px; }
-  h1 { font: 400 22px/1.2 var(--font-pixel); margin: 0; letter-spacing: .02em; color: var(--accent); text-wrap: balance; }
-  header p { margin: 0; color: var(--muted); max-width: 72ch; }
-  code, .mono { font-family: var(--font-mono); font-size: .92em; }
-
-  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 18px; align-items: start; }
-  @media (max-width: 900px) { .layout { grid-template-columns: minmax(0, 1fr); } }
-
-  .bench { display: grid; gap: 14px; min-width: 0; }
-  .stage {
-    background: radial-gradient(120% 90% at 50% 0%, #141a1f 0%, var(--bg) 70%);
-    border: 1px solid var(--line); border-radius: 12px; padding: 22px 16px 16px;
-    display: grid; justify-items: center; gap: 14px; position: relative; min-width: 0;
-  }
-  .stage.drag { outline: 2px dashed var(--accent); outline-offset: -8px; }
-  .scroller { max-width: 100%; overflow: auto; padding: 4px; }
-  .bezel {
-    background: linear-gradient(160deg, #1c2329, #0c0f12 60%);
-    padding: 14px; border-radius: 8px; border: 1px solid #2c353e;
-    box-shadow: 0 10px 30px #0008, inset 0 1px 0 #ffffff14;
-    display: inline-block;
-  }
-  canvas#screen { display: block; background: var(--glass); cursor: grab; touch-action: none; border-radius: 2px; }
-  canvas#screen:active { cursor: grabbing; }
-  .stagebar { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: center; color: var(--muted); font-size: 12.5px; }
-  .stagebar b { color: var(--text); font-weight: 500; font-variant-numeric: tabular-nums; }
-  .actual { display: flex; align-items: center; gap: 10px; }
-  canvas#actual { image-rendering: pixelated; background: #000; border: 1px solid #2c353e; }
-
-  section.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; min-width: 0; }
-  section.card h2 { font: 600 12px/1.2 var(--font-body); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 10px; }
-  .controls { display: grid; gap: 12px; min-width: 0; }
-
-  .thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; }
-  .thumbs.wide { grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); }
-  .thumb {
-    display: grid; gap: 6px; justify-items: center; padding: 8px 6px; border-radius: 8px;
-    background: var(--panel-2); border: 1px solid transparent; cursor: pointer; color: var(--muted); font: inherit; font-size: 12px;
-  }
-  .thumb:hover { border-color: var(--line); }
-  .thumb.on { border-color: var(--accent); color: var(--text); }
-  .thumb canvas { image-rendering: pixelated; max-width: 100%; height: auto; background: #000; }
-
-  label.row { display: grid; grid-template-columns: 96px minmax(0, 1fr) 48px; gap: 10px; align-items: center; margin: 6px 0; }
-  label.row .v { text-align: right; font: 12px var(--font-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
-  .pair { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 10px; align-items: center; margin: 6px 0; }
-  .nums { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
-  .nums label { display: grid; gap: 2px; font-size: 11px; color: var(--muted); }
-  input[type=range] { width: 100%; accent-color: var(--accent); }
-  input[type=number], input[type=text], select, textarea, button {
-    font: inherit; color: var(--text); background: var(--panel-2); border: 1px solid var(--line); border-radius: 7px; padding: 5px 8px; min-width: 0;
-  }
-  input[type=number] { width: 100%; font-family: var(--font-mono); font-size: 12.5px; }
-  button { cursor: pointer; }
-  button:hover { border-color: #3a4652; }
-  button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
-  button.on { border-color: var(--accent); color: var(--accent); }
+  button, input, select, textarea { font: inherit; color: inherit; }
   :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  .btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
-  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
-  .seg button { border: 0; border-radius: 0; background: transparent; padding: 5px 10px; }
+  code, .mono { font-family: var(--font-mono); font-size: .86em; }
+
+  /* top bar */
+  .topbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; }
+  .repo { display: grid; line-height: 1.1; }
+  .repo b { font-size: 21px; font-weight: 600; }
+  .repo b span { font-weight: 500; color: var(--muted); }
+  .repo small { color: var(--muted); font-size: 13px; padding-left: 14px; }
+  .icon-btn {
+    width: 38px; height: 38px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel);
+    cursor: pointer; font-size: 18px; display: grid; place-items: center;
+  }
+  .icon-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .build-pill {
+    display: grid; background: var(--blue); color: var(--blue-ink); border-radius: 6px; padding: 4px 10px;
+    line-height: 1.2; min-width: 0;
+  }
+  .build-pill span { font-size: 14px; }
+  .build-pill small { font-size: 12.5px; opacity: .85; font-variant-numeric: tabular-nums; }
+  .build-pill.flash { animation: flash .5s ease-out; }
+  @keyframes flash { from { box-shadow: 0 0 0 4px rgba(60, 179, 113, .65); } to { box-shadow: 0 0 0 0 transparent; } }
+  .spacer { flex: 1; }
+
+  /* tabs */
+  .tabs { display: flex; flex-wrap: wrap; gap: 4px 6px; margin: 16px 0 6px; }
+  .tabs button {
+    border: 0; background: none; padding: 5px 9px; border-radius: 5px; cursor: pointer;
+    font-size: 16px; letter-spacing: .02em; text-transform: uppercase;
+  }
+  .tabs button:hover { color: var(--accent); }
+  .tabs button.on { background: var(--accent); color: var(--accent-ink); }
+
+  /* stage: layer selector + keyboard */
+  .stage { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 10px; align-items: start; }
+  .layer-selector { display: flex; flex-direction: column; gap: 2px; background: var(--panel); border-radius: 6px; overflow: hidden; }
+  .layer-selector button {
+    border: 0; background: none; height: 44px; cursor: pointer; font-size: 19px; color: var(--muted);
+  }
+  .layer-selector button:hover { color: var(--accent); }
+  .layer-selector button.on { background: var(--accent); color: var(--accent-ink); }
+  .layer-title { font-size: 24px; font-weight: 600; margin: 4px 0 8px; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+  .layer-title small { font-size: 14px; color: var(--muted); font-weight: 500; }
+  .kb-scroll { overflow-x: auto; padding-bottom: 6px; }
+  .keyboard { position: relative; margin: 6px auto 0; }
+  .key {
+    position: absolute; display: flex; align-items: center; justify-content: center; text-align: center;
+    background: var(--key); color: var(--key-fg); border-radius: 5px; transition: background .2s;
+    font-size: calc(var(--u) * 0.32); line-height: 1.05; user-select: none;
+  }
+  .key:hover { background: var(--key-hover); color: #fff; }
+  .key .h { position: absolute; top: 2px; left: 4px; font-size: calc(var(--u) * 0.16); opacity: .6; }
+  .key .s { position: absolute; top: 2px; right: 5px; font-size: calc(var(--u) * 0.18); opacity: .6; }
+  .key.long { font-size: calc(var(--u) * 0.2); }
+  .key.trans { opacity: .45; }
+  .key.knob { border-radius: 50%; }
+  .oled-mod {
+    position: absolute; background: var(--pcb); border-radius: 4px; padding: calc(var(--u) * 0.06);
+    display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 3px; cursor: pointer; border: 2px solid transparent;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, .25);
+  }
+  .oled-mod:hover, .oled-mod.sel { border-color: var(--accent); }
+  .oled-mod canvas { height: 100%; width: auto; max-width: 100%; min-height: 0; justify-self: center; image-rendering: pixelated; background: #000; border-radius: 1px; }
+  .oled-mod span { font-size: clamp(7px, calc(var(--u) * 0.15), 10px); color: #b9c7d8; text-align: center; letter-spacing: .06em; line-height: 1; }
+
+  /* below the keyboard */
+  .work { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 22px; margin-top: 18px; align-items: start; }
+  @media (max-width: 860px) {
+    .work { grid-template-columns: minmax(0, 1fr); }
+    .inspect { order: -1; position: static; }
+  }
+  .inspect {
+    position: sticky; top: calc(env(safe-area-inset-top, 0px) + 10px); display: flex; gap: 14px;
+    background: var(--panel); border-radius: 10px; padding: 12px; justify-content: center;
+  }
+  .inspect figure { margin: 0; display: grid; gap: 6px; justify-items: center; }
+  .inspect canvas { display: block; background: #000; border-radius: 3px; image-rendering: pixelated; cursor: pointer; }
+  .inspect figure.sel canvas { outline: 2px solid var(--accent); outline-offset: 3px; }
+  .inspect figcaption { font-size: 13px; color: var(--muted); text-align: center; max-width: 140px; }
+  .inspect figcaption b { color: var(--fg); font-weight: 600; display: block; }
+  .tab { display: none; min-width: 0; }
+  .tab.on { display: grid; gap: 20px; }
+  h2 { font-size: 22px; font-weight: 600; margin: 0 0 8px; }
+  h3 { font-size: 15px; font-weight: 700; margin: 0 0 6px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .row { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: var(--panel);
+    border: 1px solid var(--line); cursor: pointer;
+  }
+  .chip.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .knobs { display: flex; flex-wrap: wrap; gap: 18px; }
+  .knob-card { width: 128px; height: 128px; border-radius: 50%; background: var(--key); display: grid; place-items: center; text-align: center; padding: 14px; }
+  .knob-card label { display: grid; gap: 4px; font-size: 13px; color: var(--key-fg); justify-items: center; }
+  .knob-card b { font-size: 22px; font-variant-numeric: tabular-nums; }
+  .knob-card input[type=range] { width: 92px; }
+  label.f { display: grid; grid-template-columns: 110px minmax(0, 1fr) 54px; gap: 10px; align-items: center; margin: 6px 0; }
+  label.f .v { text-align: right; font: 12.5px var(--font-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+  .pair { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 10px; align-items: center; margin: 6px 0; }
+  .nums { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  .nums label { display: grid; gap: 2px; font-size: 12px; color: var(--muted); }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  input[type=number], input[type=text], select, textarea {
+    background: var(--field); border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; min-width: 0; width: 100%;
+  }
+  input[type=number] { font-family: var(--font-mono); font-size: 13px; }
+  input[type=checkbox] { accent-color: var(--accent); width: 16px; height: 16px; }
+  .check { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+  .btn { border: 1px solid var(--line); background: var(--panel); border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+  .btn:hover { border-color: var(--accent); }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .seg button { border: 0; background: var(--field); padding: 6px 12px; cursor: pointer; }
   .seg button + button { border-left: 1px solid var(--line); }
   .seg button.on { background: var(--accent); color: var(--accent-ink); }
-  .check { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
-  .note { color: var(--muted); font-size: 12.5px; margin: 6px 0 0; }
+  .card { background: var(--panel); border-radius: 10px; padding: 14px; min-width: 0; }
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+  .note { color: var(--muted); font-size: 13.5px; margin: 6px 0 0; max-width: 75ch; }
   .note.warn { color: var(--warn); }
-  textarea {
-    width: 100%; min-height: 150px; background: #07090b; color: #cfe8e2; resize: vertical;
-    font: 12px/1.5 var(--font-mono);
-  }
-  .drop {
-    display: grid; place-items: center; text-align: center; gap: 4px; padding: 14px; border: 1px dashed #3a4652;
-    border-radius: 9px; color: var(--muted); cursor: pointer; background: var(--panel-2);
-  }
-  .drop b { color: var(--text); font-weight: 500; }
-  .samples { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-  .pngs { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin-top: 8px; }
-  .pngs figure { margin: 0; display: grid; gap: 4px; font-size: 11.5px; color: var(--muted); }
-  .pngs img { image-rendering: pixelated; background: #000; border: 1px solid var(--line); max-width: 100%; }
-  details summary { cursor: pointer; color: var(--muted); font-size: 12.5px; }
+  .drop { display: grid; place-items: center; gap: 2px; text-align: center; padding: 16px; border: 2px dashed var(--line); border-radius: 10px; cursor: pointer; background: var(--field); }
+  .drop.drag, .drop:hover { border-color: var(--accent); }
+  .thumbs { display: flex; flex-wrap: wrap; gap: 8px; }
+  .thumb { display: grid; gap: 4px; justify-items: center; padding: 6px; border-radius: 8px; border: 2px solid transparent; background: var(--field); cursor: pointer; font-size: 12px; color: var(--muted); }
+  .thumb.on { border-color: var(--accent); color: var(--fg); }
+  .thumb canvas { image-rendering: pixelated; background: #000; }
+  textarea { font: 13px/1.6 var(--font-mono); resize: vertical; }
+  textarea.conf { min-height: 230px; }
+  .log { list-style: none; margin: 8px 0 0; padding: 0; font: 12.5px/1.6 var(--font-mono); }
+  .log li::before { display: inline-block; width: 1.4em; }
+  .log .ok::before { content: "✓"; color: var(--accent); }
+  .log .skip::before { content: "✗"; color: var(--bad); }
+  .log .info::before { content: "·"; color: var(--muted); }
+  details summary { cursor: pointer; color: var(--muted); }
+  .table-scroll { overflow-x: auto; max-height: 320px; overflow-y: auto; margin-top: 8px; }
+  table { border-collapse: collapse; font: 12.5px var(--font-mono); }
+  td { padding: 2px 10px 2px 0; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  .pngs { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; }
+  .pngs figure { margin: 0; display: grid; gap: 4px; font-size: 12.5px; color: var(--muted); }
+  .pngs img { image-rendering: pixelated; background: #000; border-radius: 3px; }
+  .error { background: var(--bad); color: #fff; padding: 10px 14px; border-radius: 8px; margin-top: 12px; }
+  .footer { margin-top: 28px; font-size: 13px; color: var(--muted); font-style: italic; }
+  .footer a { color: var(--blue); }
   .hidden { display: none !important; }
-  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
 </head>
 <body>
 <div class="wrap">
-<header>
-  <h1>Corne OLED Art Lab</h1>
-  <p>Preview art on the Eyelash Corne's 128&times;32 SSD1306 panel exactly as the firmware's 1-bit LVGL canvas will show it, then export a <code>lv_img_dsc_t</code> in the same format nice!oled's own animations use.</p>
-</header>
+  <header class="topbar">
+    <div class="repo"><b>eyelash_corne <span>/ nice!oled</span></b><small>⎇ main · peripheral screens</small></div>
+    <button class="icon-btn" id="rebuildBtn" type="button" title="Recompile both halves (reboots the simulated displays)" aria-label="Recompile">⟳</button>
+    <div class="build-pill" id="buildPill"><span id="buildName">LVGL</span><small id="buildStatus">loading…</small></div>
+    <span class="spacer"></span>
+    <button class="icon-btn" id="playBtn" type="button" title="Pause animations" aria-label="Pause">❚❚</button>
+    <button class="icon-btn" id="themeBtn" type="button" title="Switch light and dark" aria-label="Theme">◐</button>
+  </header>
 
-<div class="layout">
-  <div class="bench">
-    <div class="stage" id="stage">
-      <div class="scroller"><div class="bezel"><canvas id="screen" aria-label="OLED preview"></canvas></div></div>
-      <div class="stagebar">
-        <span>Frame <b id="frameLbl">1 / 1</b></span>
-        <span>Lit <b id="litLbl">0%</b></span>
-        <span>Size <b id="bytesLbl">0 B</b></span>
-        <span class="actual">Actual size <canvas id="actual" title="Drawn at the panel's real 22.4 x 5.6 mm active area"></canvas></span>
-      </div>
-      <div class="stagebar" id="animBar">
-        <button id="playBtn" type="button">Pause</button>
-        <input type="range" id="frameSlider" min="0" max="0" value="0" aria-label="Frame" style="width: 180px">
-        <label class="check" style="margin:0">FPS <input type="number" id="fps" min="1" max="60" value="12" style="width: 64px"></label>
-      </div>
-      <p class="note" style="margin:0">Drag the panel to move the art, scroll to zoom. Drop images, a GIF, or a video anywhere here.</p>
+  <nav class="tabs" id="tabs">
+    <button type="button" data-tab="displays" class="on">Displays</button>
+    <button type="button" data-tab="art">Art</button>
+    <button type="button" data-tab="config">Config</button>
+    <button type="button" data-tab="export">Export</button>
+  </nav>
+
+  <div id="loadError" class="error hidden"></div>
+
+  <div class="stage">
+    <div class="layer-selector" id="layers" aria-label="Keymap layers"></div>
+    <div style="min-width:0">
+      <div class="layer-title"><span id="layerName">main</span><small id="stageNote">Both halves run as split peripherals of the jerry dongle, so each shows nice!oled's peripheral screen.</small></div>
+      <div class="kb-scroll"><div class="keyboard" id="keyboard"></div></div>
     </div>
-
-    <section class="card">
-      <h2>Dither comparison</h2>
-      <div class="thumbs" id="thumbs"></div>
-      <p class="note">Every method run on the current frame with the same tone settings. Click one to use it. Ordered (Bayer) patterns stay stable between animation frames; error diffusion looks finer on stills but shimmers when animated.</p>
-    </section>
   </div>
 
-  <div class="controls">
-    <section class="card">
-      <h2>Source</h2>
-      <label class="drop" for="file"><b>Choose images, a GIF, or a video</b><span>Several images play as animation frames in name order.</span></label>
-      <input type="file" id="file" accept="image/*,video/*" multiple hidden>
-      <div class="samples">
-        <button type="button" data-sample="kronii">Kronii (repo sample)</button>
-        <button type="button" data-sample="moon">Moon phases</button>
-        <button type="button" data-sample="ramp">Gradient test</button>
-      </div>
-      <div id="videoBox" class="hidden">
-        <p class="note">Video plays live through the pipeline. Capture it to turn it into exportable frames.</p>
-        <div class="pair">Capture <div class="nums" style="grid-template-columns: 1fr 1fr">
-          <label>max frames<input type="number" id="capMax" value="120" min="1" max="2000"></label>
-          <label>start (s)<input type="number" id="capStart" value="0" min="0" step="0.1"></label>
-        </div></div>
-        <div class="btns"><button type="button" id="vidToggle">Pause video</button><button type="button" class="primary" id="capBtn">Capture frames at FPS</button></div>
-        <p class="note" id="capStatus"></p>
-      </div>
-      <details style="margin-top:10px">
-        <summary>Paste a C array (image2cpp, LVGL, nice!oled assets)</summary>
-        <textarea id="paste" placeholder="0xff, 0xff, 0x0f, ... or a whole .c file with several _map[] arrays" style="margin-top:8px"></textarea>
-        <div class="pair">Size
-          <div class="nums" style="grid-template-columns: 1fr 1fr 2fr">
-            <label>width<input type="number" id="pw" value="32" min="1" max="512"></label>
-            <label>height<input type="number" id="ph" value="128" min="1" max="512"></label>
-            <label>byte layout<select id="playout"><option value="h">Rows, MSB first</option><option value="v">SSD1306 pages</option></select></label>
+  <div class="work">
+    <div style="min-width:0">
+      <section class="tab on" id="tab-displays">
+        <div>
+          <h2>Display state</h2>
+          <p class="note" style="margin-top:0">These change what nice!oled's widgets read from ZMK, live, without a reboot. Battery and USB go to both halves; each half reports its own split link.</p>
+        </div>
+        <div class="knobs">
+          <div class="knob-card"><label>Battery<b id="battV">80%</b><input type="range" id="batt" min="0" max="100" value="80" aria-label="Battery percent"></label></div>
+          <div class="knob-card"><label>USB power<b id="usbV">off</b><input type="checkbox" id="usb"></label></div>
+          <div class="knob-card"><label>Left link<b id="linkLV">connected</b><input type="checkbox" id="linkL" checked></label></div>
+          <div class="knob-card"><label>Right link<b id="linkRV">connected</b><input type="checkbox" id="linkR" checked></label></div>
+        </div>
+        <div class="card">
+          <h3>Playback &amp; panel</h3>
+          <label class="f">Speed <input type="range" id="speed" min="0.1" max="4" step="0.1" value="1"><span class="v" id="speedV">1.0×</span></label>
+          <div class="pair">Pixel color
+            <div class="seg" id="colorSeg"><button type="button" data-v="white" class="on">White</button><button type="button" data-v="blue">Blue</button><button type="button" data-v="amber">Amber</button></div>
+          </div>
+          <label class="f">Glow <input type="range" id="glow" min="0" max="1" step="0.05" value="0.35"><span class="v" id="glowV">0.35</span></label>
+          <div class="check"><input type="checkbox" id="grid" checked><label for="grid">Show unlit pixel grid in the magnified view</label></div>
+          <p class="note" id="statsNote"></p>
+        </div>
+      </section>
+
+      <section class="tab" id="tab-art">
+        <div class="grid2">
+          <div class="card">
+            <h3>Source</h3>
+            <label class="drop" id="drop" for="file"><b>Drop a GIF, images or a video</b><span class="note" style="margin:0">Several images play as frames in name order.</span></label>
+            <input type="file" id="file" accept="image/*,video/*" multiple hidden>
+            <div class="row" style="margin-top:10px">
+              <button class="btn" type="button" data-sample="kronii">Kronii (repo sample)</button>
+              <button class="btn" type="button" data-sample="moon">Moon phases</button>
+              <button class="btn" type="button" data-sample="none">Back to nice!oled art</button>
+            </div>
+            <div id="videoBox" class="hidden">
+              <p class="note">Video plays live. Capture it to turn it into frames the displays can loop.</p>
+              <div class="row"><button class="btn" type="button" id="vidToggle">Pause video</button><button class="btn primary" type="button" id="capBtn">Capture frames</button><span class="note" id="capStatus" style="margin:0"></span></div>
+            </div>
+            <p class="note" id="srcNote"></p>
+          </div>
+          <div class="card">
+            <h3>Where it goes</h3>
+            <div class="pair">Halves
+              <div class="seg" id="targetSeg"><button type="button" data-v="left">Left</button><button type="button" data-v="right">Right</button><button type="button" data-v="both" class="on">Both</button></div>
+            </div>
+            <div class="pair">Screen
+              <div class="seg" id="modeSeg"><button type="button" data-v="nice" class="on">nice!oled + art</button><button type="button" data-v="art">Art only</button></div>
+            </div>
+            <div class="pair">Box (board px)
+              <div class="nums">
+                <label>x<input type="number" id="bx" value="0"></label>
+                <label>y<input type="number" id="by" value="32"></label>
+                <label>w<input type="number" id="bw" value="32" min="1" max="128"></label>
+                <label>h<input type="number" id="bh" value="96" min="1" max="128"></label>
+              </div>
+            </div>
+            <div class="row"><button class="btn" type="button" id="boxBelow">Below status 32×96</button><button class="btn" type="button" id="boxFull">Full 32×128</button></div>
+            <label class="f">FPS <input type="range" id="fps" min="1" max="30" step="1" value="12"><span class="v" id="fpsV">12</span></label>
+            <p class="note" id="artNote">In nice!oled + art, your frames play in nice!oled's own animation object, moved with <code>ANIMATION_PERIPHERAL_CUSTOM_X/Y</code>. Art only boots a bare screen holding just your animation.</p>
           </div>
         </div>
-        <div class="btns"><button type="button" class="primary" id="pasteBtn">Load bytes</button></div>
-        <p class="note" id="pasteStatus">Width and height are read from comments like <code>32x128px</code> or <code>.header.w</code> when present. Set bit = lit pixel.</p>
-      </details>
-    </section>
-
-    <section class="card">
-      <h2>Screen &amp; framing</h2>
-      <div class="pair">Layout
-        <div class="seg" id="orientSeg">
-          <button type="button" data-v="portrait" class="on">Portrait 32&times;128</button>
-          <button type="button" data-v="landscape">Landscape 128&times;32</button>
+        <div class="grid2">
+          <div class="card">
+            <h3>Framing</h3>
+            <div class="pair">Fit
+              <select id="fit"><option value="cover">Cover (crop)</option><option value="contain">Contain</option><option value="stretch">Stretch</option></select>
+            </div>
+            <label class="f">Zoom <input type="range" id="zoom" min="0.25" max="6" step="0.01" value="1"><span class="v" id="zoomV">1.00×</span></label>
+            <label class="f">Shift x <input type="range" id="offX" min="-128" max="128" value="0"><span class="v" id="offXV">0</span></label>
+            <label class="f">Shift y <input type="range" id="offY" min="-128" max="128" value="0"><span class="v" id="offYV">0</span></label>
+            <div class="pair">Rotate
+              <select id="rot"><option value="0">0°</option><option value="90">90°</option><option value="180">180°</option><option value="270">270°</option></select>
+            </div>
+            <div class="check"><input type="checkbox" id="flip"><label for="flip">Mirror</label></div>
+            <div class="check"><input type="checkbox" id="smooth" checked><label for="smooth">Smooth scaling (turn off for pixel art)</label></div>
+          </div>
+          <div class="card">
+            <h3>Tone &amp; dither</h3>
+            <div class="pair">Method <select id="dither"></select></div>
+            <label class="f">Threshold <input type="range" id="thr" min="1" max="254" value="128"><span class="v" id="thrV">128</span></label>
+            <label class="f">Brightness <input type="range" id="bright" min="-100" max="100" value="0"><span class="v" id="brightV">0</span></label>
+            <label class="f">Contrast <input type="range" id="contrast" min="-100" max="100" value="0"><span class="v" id="contrastV">0</span></label>
+            <label class="f">Gamma <input type="range" id="gamma" min="0.3" max="3" step="0.01" value="1"><span class="v" id="gammaV">1.00</span></label>
+            <div class="check"><input type="checkbox" id="invert"><label for="invert">Invert</label></div>
+          </div>
         </div>
-      </div>
-      <div class="pair">Art area
-        <div class="nums">
-          <label>x<input type="number" data-k="rx" value="0"></label>
-          <label>y<input type="number" data-k="ry" value="0"></label>
-          <label>w<input type="number" data-k="rw" value="32" min="1"></label>
-          <label>h<input type="number" data-k="rh" value="128" min="1"></label>
+        <div class="card">
+          <h3>Dither comparison</h3>
+          <div class="thumbs" id="thumbs"></div>
+          <p class="note">The first frame through each method. Ordered (Bayer) dithers stay still between frames; error diffusion looks finer on stills but crawls when animated.</p>
         </div>
-      </div>
-      <div class="btns"><button type="button" id="areaFull">Full screen</button><button type="button" id="areaWidgets">Leave room for status</button></div>
-      <div class="pair">Fit
-        <select data-k="fit"><option value="cover">Cover (crop)</option><option value="contain">Contain (letterbox)</option><option value="stretch">Stretch</option></select>
-      </div>
-      <label class="row">Zoom <input type="range" data-k="zoom" min="0.25" max="6" step="0.01" value="1"><span class="v" data-v="zoom"></span></label>
-      <label class="row">Shift x <input type="range" data-k="offX" min="-128" max="128" step="1" value="0"><span class="v" data-v="offX"></span></label>
-      <label class="row">Shift y <input type="range" data-k="offY" min="-128" max="128" step="1" value="0"><span class="v" data-v="offY"></span></label>
-      <div class="pair">Rotate
-        <select data-k="rot"><option value="0">0&deg;</option><option value="90">90&deg;</option><option value="180">180&deg;</option><option value="270">270&deg;</option></select>
-      </div>
-      <div class="check"><input type="checkbox" id="flip" data-k="flip"><label for="flip">Mirror horizontally</label></div>
-      <div class="check"><input type="checkbox" id="smooth" data-k="smooth" checked><label for="smooth">Smooth scaling (off keeps pixel art crisp)</label></div>
-      <div class="pair">Letterbox
-        <select data-k="letter"><option value="black">Black (off)</option><option value="white">White (lit)</option></select>
-      </div>
-    </section>
+      </section>
 
-    <section class="card">
-      <h2>Tone &amp; dither</h2>
-      <div class="pair">Method
-        <select data-k="dither" id="ditherSel"></select>
-      </div>
-      <label class="row">Threshold <input type="range" data-k="thr" min="1" max="254" value="128"><span class="v" data-v="thr"></span></label>
-      <label class="row">Brightness <input type="range" data-k="bright" min="-100" max="100" value="0"><span class="v" data-v="bright"></span></label>
-      <label class="row">Contrast <input type="range" data-k="contrast" min="-100" max="100" value="0"><span class="v" data-v="contrast"></span></label>
-      <label class="row">Gamma <input type="range" data-k="gamma" min="0.3" max="3" step="0.01" value="1"><span class="v" data-v="gamma"></span></label>
-      <label class="row">Sharpen <input type="range" data-k="sharpen" min="0" max="2" step="0.05" value="0"><span class="v" data-v="sharpen"></span></label>
-      <div class="check"><input type="checkbox" id="invert" data-k="invert"><label for="invert">Invert (lit becomes dark)</label></div>
-      <div class="btns"><button type="button" id="toneReset">Reset tone</button></div>
-    </section>
-
-    <section class="card">
-      <h2>Panel look</h2>
-      <div class="pair">Pixel color
-        <div class="seg" id="colorSeg">
-          <button type="button" data-v="white" class="on">White</button>
-          <button type="button" data-v="blue">Blue</button>
-          <button type="button" data-v="amber">Amber</button>
+      <section class="tab" id="tab-config">
+        <div class="card">
+          <div class="row" style="justify-content:space-between">
+            <div class="seg" id="cfgSide"><button type="button" data-v="left" class="on">Left half</button><button type="button" data-v="right">Right half</button></div>
+            <button class="btn" type="button" id="cfgReset">Reset to firmware</button>
+          </div>
+          <p class="note">Edit like a <code>.conf</code> file. Each change recompiles that half's display: positions and timing go straight into the build, the animation choice swaps frame sets, and <code>CONFIG_NICE_OLED_WIDGET_INVERTED</code> loads the other prebuilt module.</p>
+          <textarea class="conf" id="conf" spellcheck="false" aria-label="Kconfig options"></textarea>
+          <ul class="log" id="confLog"></ul>
         </div>
-      </div>
-      <label class="row">Scale <input type="range" data-k="scale" min="2" max="14" step="1" value="5"><span class="v" data-v="scale"></span></label>
-      <label class="row">Pixel gap <input type="range" data-k="gap" min="0" max="0.4" step="0.01" value="0.12"><span class="v" data-v="gap"></span></label>
-      <label class="row">Glow <input type="range" data-k="glow" min="0" max="1" step="0.01" value="0.35"><span class="v" data-v="glow"></span></label>
-      <div class="check"><input type="checkbox" id="grid" data-k="grid" checked><label for="grid">Show unlit pixel grid</label></div>
-    </section>
+        <details class="card">
+          <summary>Resolved configuration from the firmware build (<span id="cfgCount">0</span> symbols)</summary>
+          <div class="table-scroll"><table id="cfgTable"></table></div>
+          <p class="note">Evaluated by <code>oled-emulator/lvgl-sim/build.py</code> from the real Kconfig files and this repo's <code>.conf</code> files. To change any other option, edit the <code>.conf</code> and rerun the build.</p>
+        </details>
+      </section>
 
-    <section class="card">
-      <h2>Status widgets</h2>
-      <div class="check"><input type="checkbox" id="widgets" data-k="widgets"><label for="widgets">Overlay a status mock-up</label></div>
-      <div class="check"><input type="checkbox" id="knockout" data-k="knockout" checked><label for="knockout">Clear the art behind widgets</label></div>
-      <div class="pair">Layer <input type="text" data-k="layer" value="BASE" maxlength="10"></div>
-      <div class="pair">Output <input type="text" data-k="out" value="BT1" maxlength="5"></div>
-      <label class="row">Battery <input type="range" data-k="batt" min="0" max="100" value="78"><span class="v" data-v="batt"></span></label>
-      <p class="note">Approximate placement of nice!oled's battery, output and layer readouts, to check how much room your art has. The real positions depend on your <code>CONFIG_NICE_OLED_*</code> options.</p>
-    </section>
+      <section class="tab" id="tab-export">
+        <div class="card">
+          <h3>Your art as nice!oled frames</h3>
+          <div class="pair">Name <input type="text" id="cname" value="kronii" spellcheck="false"></div>
+          <div class="row"><button class="btn primary" type="button" id="genBtn">Generate</button><button class="btn" type="button" id="copyBtn">Copy</button><span class="note" id="genNote" style="margin:0"></span></div>
+          <textarea id="out" readonly spellcheck="false" style="min-height:200px;margin-top:10px" placeholder="Load art in the Art tab, then Generate."></textarea>
+          <p class="note">Frames are stored in panel orientation (rotated from what you see on the board), with nice!oled's palette block, so they drop in for an existing animation's frames, for example in place of <code>pokemon_imgs</code> in a fork of zmk-nice-oled.</p>
+        </div>
+        <div class="card">
+          <h3>Config changes</h3>
+          <textarea id="confOut" readonly spellcheck="false" style="min-height:120px"></textarea>
+        </div>
+        <div class="card">
+          <h3>Snapshots</h3>
+          <div class="pngs" id="pngs"></div>
+          <p class="note">Right-click or long-press to save. 1-bit PNGs, as the panel shows them on the board.</p>
+        </div>
+      </section>
+    </div>
 
-    <section class="card">
-      <h2>Export</h2>
-      <div class="pair">Name <input type="text" id="cname" value="kronii" spellcheck="false"></div>
-      <div class="pair">Format
-        <select id="fmt">
-          <option value="lvgl">nice!oled LVGL image (lv_img_dsc_t)</option>
-          <option value="h">Raw bytes, rows MSB first (image2cpp)</option>
-          <option value="v">Raw bytes, SSD1306 pages</option>
-        </select>
-      </div>
-      <div class="check"><input type="checkbox" id="allFrames" checked><label for="allFrames">Every frame</label></div>
-      <div class="btns"><button type="button" class="primary" id="exportBtn">Generate</button><button type="button" id="copyBtn">Copy</button></div>
-      <textarea id="out" readonly spellcheck="false" style="margin-top:8px" placeholder="Click Generate"></textarea>
-      <p class="note" id="outNote">Exports only the art area (not the widget mock-up). Bit 1 is a lit pixel, which matches nice!oled's palette in both normal and <code>CONFIG_NICE_OLED_WIDGET_INVERTED</code> builds.</p>
-      <div class="pngs" id="pngs"></div>
-    </section>
+    <aside class="inspect" id="inspect" aria-label="Magnified displays">
+      <figure id="figL"><canvas id="bigL"></canvas><figcaption id="capL"></figcaption></figure>
+      <figure id="figR"><canvas id="bigR"></canvas><figcaption id="capR"></figcaption></figure>
+    </aside>
   </div>
-</div>
+
+  <p class="footer" id="footer"></p>
 </div>
 
+<script src="lvgl-sim.js"></script>
 <script>
 (() => {
 'use strict';
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => [...document.querySelectorAll(s)];
 
-const S = {
-  orient: 'portrait', rx: 0, ry: 0, rw: 32, rh: 128,
-  fit: 'cover', zoom: 1, offX: 0, offY: 0, rot: 0, flip: false, smooth: true, letter: 'black',
-  dither: 'atkinson', thr: 128, bright: 0, contrast: 0, gamma: 1, sharpen: 0, invert: false,
-  color: 'white', scale: 5, gap: 0.12, glow: 0.35, grid: true,
-  widgets: false, knockout: true, layer: 'BASE', out: 'BT1', batt: 78,
-  fps: 12, playing: true,
-};
-const TONE_DEFAULTS = { thr: 128, bright: 0, contrast: 0, gamma: 1, sharpen: 0, invert: false };
+/* ---------------- data ---------------- */
+const KB = {"layout":[{"row":0,"col":0,"x":0,"y":0.37},{"row":0,"col":1,"x":1,"y":0.37},{"row":0,"col":2,"x":2,"y":0.12},{"row":0,"col":3,"x":3,"y":0},{"row":0,"col":4,"x":4,"y":0.12},{"row":0,"col":5,"x":5,"y":0.24},{"row":0,"col":9,"x":9.25,"y":0.24},{"row":0,"col":11,"x":11.5,"y":0.24},{"row":0,"col":12,"x":12.5,"y":0.12},{"row":0,"col":13,"x":13.5,"y":0},{"row":0,"col":14,"x":14.5,"y":0.12},{"row":0,"col":15,"x":15.5,"y":0.37},{"row":0,"col":16,"x":16.5,"y":0.37},{"row":1,"col":0,"x":0,"y":1.37},{"row":1,"col":1,"x":1,"y":1.37},{"row":1,"col":2,"x":2,"y":1.12},{"row":1,"col":3,"x":3,"y":1},{"row":1,"col":4,"x":4,"y":1.12},{"row":1,"col":5,"x":5,"y":1.24},{"row":1,"col":8,"x":8.25,"y":1.24},{"row":1,"col":9,"x":9.25,"y":1.24},{"row":1,"col":10,"x":10.25,"y":1.24},{"row":1,"col":11,"x":11.5,"y":1.24},{"row":1,"col":12,"x":12.5,"y":1.12},{"row":1,"col":13,"x":13.5,"y":1},{"row":1,"col":14,"x":14.5,"y":1.12},{"row":1,"col":15,"x":15.5,"y":1.37},{"row":1,"col":16,"x":16.5,"y":1.37},{"row":2,"col":0,"x":0,"y":2.37},{"row":2,"col":1,"x":1,"y":2.37},{"row":2,"col":2,"x":2,"y":2.12},{"row":2,"col":3,"x":3,"y":2},{"row":2,"col":4,"x":4,"y":2.12},{"row":2,"col":5,"x":5,"y":2.24},{"row":2,"col":6,"x":6.25,"y":2.24},{"row":2,"col":9,"x":9.25,"y":2.24},{"row":2,"col":11,"x":11.5,"y":2.24},{"row":2,"col":12,"x":12.5,"y":2.12},{"row":2,"col":13,"x":13.5,"y":2},{"row":2,"col":14,"x":14.5,"y":2.12},{"row":2,"col":15,"x":15.5,"y":2.37},{"row":2,"col":16,"x":16.5,"y":2.37},{"row":3,"col":3,"x":3.5,"y":3.12},{"row":3,"col":4,"x":4.5,"y":3.12,"r":12,"rx":4.5,"ry":4.12},{"row":3,"col":5,"x":5.5,"y":3.12,"r":24,"rx":5.15,"ry":4.33},{"row":3,"col":11,"x":11,"y":3.12,"r":-24,"rx":12.3,"ry":4.33},{"row":3,"col":12,"x":12,"y":3.12,"r":-12,"rx":13,"ry":4.12},{"row":3,"col":13,"x":13,"y":3.12}],"layers":[{"name":"main","keys":[{"t":"⇥"},{"t":"Q"},{"t":"W"},{"t":"E"},{"t":"R"},{"t":"T"},{"t":"▲"},{"t":"Y"},{"t":"U"},{"t":"I"},{"t":"O"},{"t":"P"},{"t":"-","s":"_"},{"t":"Esc","h":"konbini"},{"t":"A"},{"t":"S"},{"t":"D"},{"t":"F"},{"t":"G"},{"t":"◀"},{"t":"APP"},{"t":"▶"},{"t":"H"},{"t":"J"},{"t":"K"},{"t":"L"},{"t":";","s":":"},{"t":"'","s":"\""},{"t":"⇧"},{"t":"Z"},{"t":"X"},{"t":"C"},{"t":"V"},{"t":"B","h":"⌥"},{"t":"konbini","h":"toggle"},{"t":"▼"},{"t":"N"},{"t":"M"},{"t":",","s":"<"},{"t":".","s":">"},{"t":"/","h":"konbini","s":"?"},{"t":"\\","s":"|"},{"t":"⌫","h":"utility"},{"t":"⏎","h":"⌃"},{"t":"␣"},{"t":"⌫","k":"backspace"},{"t":"⏎","h":"⌥"},{"t":"␣","h":"number"}]},{"name":"colemak","keys":[{"t":"▽","k":"trans"},{"t":"Q"},{"t":"W"},{"t":"F"},{"t":"P"},{"t":"G"},{"t":"▽","k":"trans"},{"t":"J"},{"t":"L"},{"t":"U"},{"t":"Y"},{"t":";","s":":"},{"t":"▽","k":"trans"},{"t":"▽","k":"trans"},{"t":"A"},{"t":"R"},{"t":"S"},{"t":"T"},{"t":"D"},{"t":"▽","k":"trans"},{"t":"▽","k":"trans"},{"t":"▽","k":"trans"},{"t":"H"},{"t":"N"},{"t":"E"},{"t":"I"},{"t":"O"},{"t":"'","s":"\""},{"t":"▽","k":"trans"},{"t":"Z"},{"t":"X"},{"t":"C"},{"t":"V"},{"t":"B","h":"⌥"},{"t":"▽","k":"trans"},{"t":"▽","k":"trans"},{"t":"K"},{"t":"M"},{"t":",","s":"<"},{"t":".","s":">"},{"t":"/","h":"konbini","s":"?"},{"t":"▽","k":"trans"},{"t":"▽","k":"trans"},{"t":"▽","k":"trans"},{"t":"▽","k":"trans"},{"t":"▽","k":"trans"},{"t":"▽","k":"trans"},{"t":"▽","k":"trans"}]},{"name":"number","keys":[{"t":"F1"},{"t":"F2"},{"t":"F3"},{"t":"F4"},{"t":"F5"},{"t":"F6"},{"t":"↑"},{"t":"F7"},{"t":"F8"},{"t":"F9"},{"t":"F10"},{"t":"F11"},{"t":"=","s":"+"},{"t":"Esc","s":"`"},{"t":"1","h":"⌥"},{"t":"2","s":"@"},{"t":"3","s":"#"},{"t":"4","s":"$"},{"t":"5","s":"%"},{"t":"←"},{"t":"CMENU"},{"t":"→"},{"t":"6","s":"^"},{"t":"7","s":"&"},{"t":"8","s":"*"},{"t":"9","h":"HOME","s":"("},{"t":"0","h":"END","s":")"},{"t":"↑"},{"t":"⇧"},{"t":"`","s":"~"},{"t":"[","s":"{"},{"t":"]","s":"}"},{"t":"PG UP"},{"t":"PG DN"},{"t":"Mute"},{"t":"↓"},{"t":"$"},{"t":"Win"},{"t":"F12"},{"t":"←"},{"t":"→"},{"t":"↓"},{"t":"▽","k":"trans"},{"t":"⏎","h":"⌃"},{"t":"␣","h":"LGUI"},{"t":"⌫","k":"backspace"},{"t":"⏎","h":"⌥"},{"t":"","k":"held"}]},{"name":"utility","keys":[{"t":"⇥"},{"t":"⌥","h":"hold"},{"t":"LGUI","h":"hold"},{"t":"HOME"},{"t":"END"},{"t":"PG UP"},{"t":"▴","s":"Mouse"},{"t":"&mkp MB4"},{"t":"&mkp MB5"},{"t":"KP 7"},{"t":"KP 8"},{"t":"KP 9"},{"t":"KP PLUS","h":"KP ASTERISK"},{"t":"⌃","h":"hold"},{"t":"◀"},{"t":"⌦"},{"t":"▶"},{"t":"↑"},{"t":"PG DN"},{"t":"◂","s":"Mouse"},{"t":"colemak","h":"toggle"},{"t":"▸","s":"Mouse"},{"t":"&mkp MB1"},{"t":"&mkp MB2"},{"t":"KP 4"},{"t":"KP 5"},{"t":"KP 6"},{"t":"KP MINUS","h":"KP DIVIDE"},{"t":"▽","k":"trans"},{"t":"▼"},{"t":"▲"},{"t":"←"},{"t":"↓"},{"t":"→"},{"t":"&lockPC"},{"t":"▾","s":"Mouse"},{"t":"&mkp MB3"},{"t":"KP NUMLOCK","h":"⇧"},{"t":"KP 1","h":"KP 0"},{"t":"KP 2","h":"KP DOT"},{"t":"KP 3"},{"t":"KP EQUAL","h":"KP ENTER"},{"t":"","k":"held"},{"t":"&copy"},{"t":"&paste"},{"t":"⌃"},{"t":"⏎","h":"⌥"},{"t":"▽","k":"trans"}]},{"name":"config","keys":[{"t":"&studio_unlock"},{"t":"RGB OFF"},{"t":"RGB ON"},{"t":"RGB HUI"},{"t":"RGB SAI"},{"t":"RGB BRI"},{"t":"⇧","h":"hold"},{"t":"Prev"},{"t":"Next"},{"t":"PG UP"},{"t":"Vol+"},{"t":"Bri−"},{"t":"Mute"},{"t":"Boot"},{"t":"BT CLR ALL"},{"t":"Tog","h":"BT","s":"USB"},{"t":"RGB HUD"},{"t":"RGB SAD"},{"t":"RGB BRD"},{"t":"⌃","h":"hold"},{"t":"⏎","k":"enter"},{"t":"⌥","h":"hold"},{"t":"STOP"},{"t":"LMB"},{"t":"PG DN"},{"t":"Vol−"},{"t":"Bri+"},{"t":"CLCK"},{"t":"⇧"},{"t":"Reset","k":"bootloader"},{"t":"EP TOG"},{"t":"&key_repeat"},{"t":"RGB EFF"},{"t":"RGB EFR"},{"t":"Mute"},{"t":"⌘","h":"hold"},{"t":"RW"},{"t":"FF"},{"t":"SHUFFLE"},{"t":"Play"},{"t":"SCROLLLOCK"},{"t":"PAUSE BREAK"},{"t":"⊖","k":"held"},{"t":"⌃"},{"t":"␣"},{"t":"⌫","k":"backspace"},{"t":"⏎","h":"⌥"},{"t":"⊖","k":"held"}]},{"name":"konbini","keys":[{"t":"▽","k":"trans"},{"t":"/","s":"?"},{"t":"-","s":"_"},{"t":"+"},{"t":"*"},{"t":"=","s":"+"},{"t":"▽","k":"trans"},{"t":"▽","k":"trans"},{"t":"⌦"},{"t":"▽","k":"trans"},{"t":"▽","k":"trans"},{"t":"▽","k":"trans"},{"t":"▽","k":"trans"},{"t":"","k":"held"},{"t":"1","s":"!"},{"t":"2","s":"@"},{"t":"3","s":"#"},{"t":"4","s":"$"},{"t":"5","s":"%"},{"t":"▽","k":"trans"},{"t":"colemak","h":"toggle"},{"t":"▽","k":"trans"},{"t":"PG UP"},{"t":"HOME"},{"t":"↑"},{"t":"END"},{"t":"▽","k":"trans"},{"t":"▽","k":"trans"},{"t":"▽","k":"trans"},{"t":"6","s":"^"},{"t":"7","s":"&"},{"t":"8","h":",","s":"*"},{"t":"9","h":".","s":"("},{"t":"0","s":")"},{"t":"konbini","h":"toggle"},{"t":"▽","k":"trans"},{"t":"PG DN"},{"t":"←"},{"t":"↓"},{"t":"→"},{"t":"","k":"held alternate"},{"t":"▽","k":"trans"},{"t":"▽","k":"trans"},{"t":"▽","k":"trans"},{"t":"▽","k":"trans"},{"t":"▽","k":"trans"},{"t":"▽","k":"trans"},{"t":"▽","k":"trans"}]}]};
+const KRONII = '/////////////////////////////////////////////////7/////P////4/////P//v/5//3//H/3//4/z///A7///wB///8Af///AD///wA///8AD///gHn/eQD//7AD///QAf//4AH//+AA///gAH3/4AA7/+AAD//AAA//xGAD/8CAAf/F6AP/w+gH/5PwR/8Z4Mf/O4fD/yADw/4wA8MAcIDHAHRAHwBkAF8AQAD/AFQJ/wC8EYMB+DGPH3g1Hx9wPB8ffGQfDz/8Dw4B+A8GAHAHAAAAAwAAAAMABgADAA+AHwAPwD8wDuAfTw5gHzwEQB9wgAAfwMAADwNgAA8B4AAHAgAAAwOAAIMAAAGHAAAXBwAAOAMAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAA4AAAAPwAAAD/AAAA/+AAAP/gH/7/4A///+AP///gD///4A///+Af///gH///4B///+Af///gH///4Av///AH///wB///8A////gf///4H///wA///wAf//+AH///wD////A////wH///+B////gf///8H////Q////kf///wH///4B////AP///+D////gf///4D////n/8=';
+const SIM = window.LVGL_SIM;
+const BOARD_W = 32, BOARD_H = 128;
 const COLORS = { white: '#eef6ff', blue: '#4cc4ff', amber: '#ffc24a' };
-const DITHERS = [
-  ['threshold', 'Threshold'],
-  ['bayer4', 'Bayer 4×4'],
-  ['bayer8', 'Bayer 8×8'],
-  ['floyd', 'Floyd–Steinberg'],
-  ['atkinson', 'Atkinson'],
-  ['jjn', 'Jarvis'],
-];
+const ANIM_LABEL = { crystal: 'gem', cat: 'cat', head: 'head', spaceman: 'spaceman', pokemon: 'pokemon', custom: 'your art' };
+const ANIM_SYMBOL = { crystal: 'GEM', cat: 'CAT', head: 'HEAD', spaceman: 'SPACEMAN', pokemon: 'POKEMON' };
 
-// frames: [{src: CanvasImageSource, w, h, crisp}]
-let frames = [];
-let frameIdx = 0;
-let video = null;
+/* ---------------- simulator ---------------- */
+const view = { color: 'white', glow: 0.35, grid: true, speed: 1, playing: true };
+const world = { battery: 80, usb: false, link: { left: true, right: true } };
+let META, FIRMWARE_VARIANT;
+const modules = {};
 
-const screenW = () => S.orient === 'portrait' ? 32 : 128;
-const screenH = () => S.orient === 'portrait' ? 128 : 32;
-
-/* ---------- sampling: source -> grayscale of the art area ---------- */
-const work = document.createElement('canvas');
-const wctx = work.getContext('2d', { willReadFrequently: true });
-
-function currentSource() {
-  if (video && video.readyState >= 2) return { src: video, w: video.videoWidth, h: video.videoHeight, crisp: false };
-  return frames[frameIdx] || null;
+function b64bytes(b64) {
+  const bin = atob(b64), out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
 }
+const moduleFor = (id) => modules[id] || (modules[id] = WebAssembly.compile(b64bytes(SIM.wasm[id])));
 
-function sampleLum(f, w, h) {
-  work.width = w; work.height = h;
-  wctx.setTransform(1, 0, 0, 1, 0, 0);
-  wctx.fillStyle = S.letter === 'white' ? '#fff' : '#000';
-  wctx.fillRect(0, 0, w, h);
-  if (f) {
-    const swap = S.rot % 180 !== 0;
-    const ew = swap ? f.h : f.w, eh = swap ? f.w : f.h;
-    let sx = w / ew, sy = h / eh;
-    if (S.fit === 'cover') sx = sy = Math.max(sx, sy);
-    else if (S.fit === 'contain') sx = sy = Math.min(sx, sy);
-    sx *= S.zoom; sy *= S.zoom;
-    wctx.imageSmoothingEnabled = S.smooth && !f.crisp;
-    wctx.imageSmoothingQuality = 'high';
-    wctx.translate(w / 2 + S.offX, h / 2 + S.offY);
-    wctx.rotate(S.rot * Math.PI / 180);
-    wctx.scale((swap ? sy : sx) * (S.flip ? -1 : 1), swap ? sx : sy);
-    wctx.drawImage(f.src, -f.w / 2, -f.h / 2, f.w, f.h);
+class Half {
+  constructor(side) {
+    this.side = side;
+    this.gddram = new Uint8Array(512);
+    this.board = new Uint8Array(BOARD_W * BOARD_H);
+    this.art = null;
+    this.reset();
   }
-  const d = wctx.getImageData(0, 0, w, h).data;
-  const lum = new Float32Array(w * h);
-  for (let i = 0, j = 0; i < lum.length; i++, j += 4) lum[i] = 0.2126 * d[j] + 0.7152 * d[j + 1] + 0.0722 * d[j + 2];
-  return lum;
-}
-
-function tone(lum, w, h) {
-  const cf = Math.pow((S.contrast + 100) / 100, 2), b = S.bright / 100, g = 1 / S.gamma;
-  const o = new Float32Array(lum.length);
-  for (let i = 0; i < lum.length; i++) {
-    let v = Math.pow(lum[i] / 255, g);
-    v = (v - 0.5) * cf + 0.5 + b;
-    o[i] = v * 255;
+  get firmware() { return META.sides[this.side]; }
+  reset() {
+    this.kcfg = { ...this.firmware.kcfg };
+    this.anim = this.firmware.animation;
+    this.variant = FIRMWARE_VARIANT;
+    this.mode = 'nice';
   }
-  if (S.sharpen > 0) {
-    const c = o.slice(), s = S.sharpen;
-    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-      const i = y * w + x;
-      const n = c[y * w + Math.max(0, x - 1)] + c[y * w + Math.min(w - 1, x + 1)] +
-                c[Math.max(0, y - 1) * w + x] + c[Math.min(h - 1, y + 1) * w + x];
-      o[i] = c[i] + s * (4 * c[i] - n);
+  variantSet() { return META.variants.find((v) => v.id === this.variant).set; }
+  async compile() {
+    const t0 = performance.now();
+    const inst = await WebAssembly.instantiate(await moduleFor(this.variant), {});
+    const e = inst.exports;
+    const k = new Int32Array(e.memory.buffer, e.sim_kcfg_ptr(), META.runtime.length);
+    META.runtime.forEach((n, i) => { k[i] = this.kcfg[n] | 0; });
+    let anim = this.anim, x = 0, y = 0, duration = this.kcfg.NICE_OLED_WIDGET_ANIMATION_PERIPHERAL_MS;
+    if (anim === 'custom') {
+      const a = this.art;
+      const per = Math.ceil(a.wp / 8) * a.hp;
+      const ptr = e.sim_alloc_frames(a.frames.length, a.wp, a.hp);
+      if (!ptr) throw new Error('Not enough LVGL memory for these frames');
+      const mem = new Uint8Array(e.memory.buffer);
+      a.frames.forEach((f, i) => mem.set(f, ptr + i * per));
+      e.sim_commit_frames();
+      x = a.X; y = a.Y; duration = a.duration;
+    }
+    const rc = e.sim_init(this.mode === 'art' ? 1 : 0, META.animations.indexOf(anim), x, y, duration);
+    if (rc !== 0) throw new Error('sim_init failed: ' + rc);
+    this.e = e;
+    this.applyWorld();
+    this.step(0);
+    this.compileMs = performance.now() - t0;
+    return this.compileMs;
+  }
+  applyWorld() { if (this.e) this.e.sim_set_state(world.battery, world.usb ? 1 : 0, world.link[this.side] ? 1 : 0); }
+  step(ms) {
+    if (!this.e) return;
+    if (ms) this.e.sim_step(ms);
+    this.gddram.set(new Uint8Array(this.e.memory.buffer, this.e.sim_gddram(), 512));
+    // board view: panel column 127 at the top, page row 0 on the left (nice!oled's text reads upright)
+    const inv = META.panel.inversionOn, g = this.gddram, b = this.board;
+    for (let r = 0; r < BOARD_H; r++) {
+      const x = 127 - r;
+      for (let c = 0; c < BOARD_W; c++) b[r * BOARD_W + c] = ((g[(c >> 3) * 128 + x] >> (c & 7)) & 1) ^ (inv ? 1 : 0);
     }
   }
-  return o;
-}
-
-/* ---------- dithering ---------- */
-const B4 = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]];
-const B8 = Array.from({ length: 8 }, (_, y) => Array.from({ length: 8 }, (_, x) =>
-  4 * B4[y % 4][x % 4] + [[0, 2], [3, 1]][y >> 2][x >> 2]));
-const KERNELS = {
-  floyd: [[1, 0, 7], [-1, 1, 3], [0, 1, 5], [1, 1, 1]].map(([dx, dy, w]) => [dx, dy, w / 16]),
-  atkinson: [[1, 0], [2, 0], [-1, 1], [0, 1], [1, 1], [0, 2]].map(([dx, dy]) => [dx, dy, 1 / 8]),
-  jjn: [[1, 0, 7], [2, 0, 5], [-2, 1, 3], [-1, 1, 5], [0, 1, 7], [1, 1, 5], [2, 1, 3],
-        [-2, 2, 1], [-1, 2, 3], [0, 2, 5], [1, 2, 3], [2, 2, 1]].map(([dx, dy, w]) => [dx, dy, w / 48]),
-};
-
-function dither(v, w, h, mode) {
-  const bits = new Uint8Array(w * h), thr = S.thr;
-  if (mode === 'threshold') {
-    for (let i = 0; i < bits.length; i++) bits[i] = v[i] >= thr ? 1 : 0;
-  } else if (mode === 'bayer4' || mode === 'bayer8') {
-    const M = mode === 'bayer4' ? B4 : B8, n = M.length, nn = n * n;
-    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-      const t = (M[y % n][x % n] + 0.5) / nn * 255 + (thr - 128);
-      bits[y * w + x] = v[y * w + x] >= t ? 1 : 0;
-    }
-  } else {
-    const k = KERNELS[mode], e = Float32Array.from(v);
-    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-      const i = y * w + x, old = e[i], lit = old >= thr;
-      bits[i] = lit ? 1 : 0;
-      const err = old - (lit ? 255 : 0);
-      for (const [dx, dy, wt] of k) {
-        const xx = x + dx, yy = y + dy;
-        if (xx >= 0 && xx < w && yy < h) e[yy * w + xx] += err * wt;
-      }
-    }
-  }
-  if (S.invert) for (let i = 0; i < bits.length; i++) bits[i] ^= 1;
-  return bits;
-}
-
-function artBits(f, mode = S.dither) {
-  const w = S.rw, h = S.rh;
-  return dither(tone(sampleLum(f, w, h), w, h), w, h, mode);
-}
-
-/* ---------- screen composition + status mock-up ---------- */
-const tcv = document.createElement('canvas');
-const tctx = tcv.getContext('2d', { willReadFrequently: true });
-
-function fillRect(buf, W, H, x, y, w, h, val) {
-  for (let yy = Math.max(0, y); yy < Math.min(H, y + h); yy++)
-    for (let xx = Math.max(0, x); xx < Math.min(W, x + w); xx++) buf[yy * W + xx] = val;
-}
-function strokeRect(buf, W, H, x, y, w, h) {
-  fillRect(buf, W, H, x, y, w, 1, 1); fillRect(buf, W, H, x, y + h - 1, w, 1, 1);
-  fillRect(buf, W, H, x, y, 1, h, 1); fillRect(buf, W, H, x + w - 1, y, 1, h, 1);
-}
-function drawText(buf, W, H, str, x, y) {
-  tcv.width = 140; tcv.height = 12;
-  tctx.fillStyle = '#000'; tctx.fillRect(0, 0, 140, 12);
-  tctx.fillStyle = '#fff'; tctx.font = '8px Silkscreen, monospace'; tctx.textBaseline = 'top';
-  tctx.fillText(str, 0, 0);
-  const d = tctx.getImageData(0, 0, 140, 12).data;
-  for (let py = 0; py < 12; py++) for (let px = 0; px < 140; px++)
-    if (d[(py * 140 + px) * 4] > 120) { const X = x + px, Y = y + py; if (X >= 0 && X < W && Y >= 0 && Y < H) buf[Y * W + X] = 1; }
-}
-function drawBattery(buf, W, H, x, y) {
-  strokeRect(buf, W, H, x, y, 24, 9);
-  fillRect(buf, W, H, x + 24, y + 3, 2, 3, 1);
-  fillRect(buf, W, H, x + 2, y + 2, Math.round(20 * S.batt / 100), 5, 1);
-}
-function drawWidgets(buf, W, H) {
-  const layer = (S.layer || '').toUpperCase(), out = (S.out || '').toUpperCase();
-  if (S.orient === 'portrait') {
-    if (S.knockout) { fillRect(buf, W, H, 0, 0, W, 23, 0); fillRect(buf, W, H, 0, H - 11, W, 11, 0); }
-    drawBattery(buf, W, H, 2, 2);
-    drawText(buf, W, H, out, 2, 13);
-    drawText(buf, W, H, layer.slice(0, 5), 1, H - 9);
-  } else {
-    if (S.knockout) fillRect(buf, W, H, 0, 0, 36, H, 0);
-    drawBattery(buf, W, H, 1, 1);
-    drawText(buf, W, H, out, 1, 12);
-    drawText(buf, W, H, layer.slice(0, 6), 1, 23);
+  stat(i) { return this.e ? this.e.sim_stat(i) : 0; }
+  describe() {
+    const frames = this.stat(4);
+    const what = this.mode === 'art' ? 'art only' : ANIM_LABEL[this.anim];
+    return `${what} · ${frames} frame${frames === 1 ? '' : 's'}`;
   }
 }
+const halves = {};
 
-function compose(bits) {
-  const W = screenW(), H = screenH(), buf = new Uint8Array(W * H);
-  for (let y = 0; y < S.rh; y++) {
-    const Y = S.ry + y; if (Y < 0 || Y >= H) continue;
-    for (let x = 0; x < S.rw; x++) {
-      const X = S.rx + x; if (X < 0 || X >= W) continue;
-      buf[Y * W + X] = bits[y * S.rw + x];
-    }
+async function compileHalves(list, reason) {
+  const times = [];
+  for (const h of list) {
+    try { times.push(await h.compile()); }
+    catch (err) { showError(`${h.side} half: ${err.message}`); return; }
   }
-  if (S.widgets) drawWidgets(buf, W, H);
-  return buf;
+  const ms = times.reduce((a, b) => a + b, 0);
+  const pill = $('#buildPill');
+  $('#buildStatus').textContent = `${reason} · ${list.map((h) => h.side).join(' + ')} recompiled in ${ms.toFixed(1)} ms`;
+  pill.classList.remove('flash'); void pill.offsetWidth; pill.classList.add('flash');
+  refreshCaptions();
+  renderAll();
 }
 
-/* ---------- panel renderer ---------- */
-function drawPanel(cv, buf, W, H, scale, opts) {
+function showError(msg) { const el = $('#loadError'); el.textContent = msg; el.classList.remove('hidden'); }
+
+/* ---------------- panel drawing ---------------- */
+function drawPanel(cv, bits, W, H, scale, opts) {
   const cw = W * scale, ch = H * scale;
   if (cv.width !== cw || cv.height !== ch) { cv.width = cw; cv.height = ch; }
   const ctx = cv.getContext('2d');
   ctx.save();
-  ctx.fillStyle = '#030404'; ctx.fillRect(0, 0, cw, ch);
-  const g = scale >= 3 ? Math.max(0, Math.round(opts.gap * scale / 2 * 2) / 2) : 0;
-  const ps = scale - 2 * g;
+  ctx.fillStyle = '#020303'; ctx.fillRect(0, 0, cw, ch);
+  const g = scale >= 3 ? Math.round(scale * (opts.gap || 0)) / 2 : 0, ps = scale - 2 * g;
   if (opts.grid && scale >= 3) {
-    ctx.fillStyle = '#101416';
-    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (!buf[y * W + x]) ctx.fillRect(x * scale + g, y * scale + g, ps, ps);
+    ctx.fillStyle = '#0f1416';
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (!bits[y * W + x]) ctx.fillRect(x * scale + g, y * scale + g, ps, ps);
   }
-  ctx.fillStyle = opts.color;
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (buf[y * W + x]) ctx.fillRect(x * scale + g, y * scale + g, ps, ps);
+  ctx.fillStyle = COLORS[view.color];
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (bits[y * W + x]) ctx.fillRect(x * scale + g, y * scale + g, ps, ps);
   if (opts.glow > 0 && 'filter' in ctx) {
     ctx.globalCompositeOperation = 'lighter';
     ctx.globalAlpha = opts.glow * 0.7;
@@ -484,81 +496,258 @@ function drawPanel(cv, buf, W, H, scale, opts) {
   ctx.restore();
 }
 
-/* ---------- main render ---------- */
-const screenCv = $('#screen'), actualCv = $('#actual');
-const thumbs = {};
-let lastBits = null;
-
-function render() {
-  const W = screenW(), H = screenH();
-  const f = currentSource();
-  const bits = artBits(f);
-  lastBits = bits;
-  const buf = compose(bits);
-  const color = COLORS[S.color];
-  drawPanel(screenCv, buf, W, H, S.scale, { gap: S.gap, glow: S.glow, grid: S.grid, color });
-  drawPanel(actualCv, buf, W, H, 3, { gap: 0, glow: 0, grid: false, color });
-
-  // dither comparison, art area only
-  for (const [mode] of DITHERS) {
-    const t = thumbs[mode];
-    const tb = mode === S.dither ? bits : artBits(f, mode);
-    const sc = Math.max(1, Math.min(3, Math.floor(260 / Math.max(S.rw, S.rh / 1.2))));
-    drawPanel(t.cv, tb, S.rw, S.rh, sc, { gap: 0, glow: 0, grid: false, color });
-    t.btn.classList.toggle('on', mode === S.dither);
+const smallCv = {}, bigCv = { left: $('#bigL'), right: $('#bigR') };
+function renderAll() {
+  for (const side of ['left', 'right']) {
+    const h = halves[side]; if (!h) continue;
+    if (smallCv[side]) drawPanel(smallCv[side], h.board, BOARD_W, BOARD_H, 1, { glow: 0 });
+    drawPanel(bigCv[side], h.board, BOARD_W, BOARD_H, 3, { gap: 0.14, glow: view.glow, grid: view.grid });
   }
-
-  let lit = 0; for (const b of buf) lit += b;
-  $('#litLbl').textContent = Math.round(lit / buf.length * 100) + '%';
-  const per = Math.ceil(S.rw / 8) * S.rh + 8, n = Math.max(1, frames.length);
-  $('#bytesLbl').textContent = n > 1 ? `${fmtBytes(per)} × ${n} = ${fmtBytes(per * n)}` : fmtBytes(per);
-  $('#frameLbl').textContent = video ? 'live video' : `${frameIdx + 1} / ${Math.max(1, frames.length)}`;
 }
-const fmtBytes = (b) => b < 1024 ? b + ' B' : (b / 1024).toFixed(b < 10240 ? 1 : 0) + ' KB';
-
-function sizeActual() {
-  // 0.91" 128x32 SSD1306: 22.384 x 5.584 mm active area
-  const portrait = S.orient === 'portrait';
-  actualCv.style.width = portrait ? '5.584mm' : '22.384mm';
-  actualCv.style.height = portrait ? '22.384mm' : '5.584mm';
+function refreshCaptions() {
+  for (const [side, id] of [['left', '#capL'], ['right', '#capR']]) {
+    const h = halves[side];
+    $(id).innerHTML = `<b>${side === 'left' ? 'Left' : 'Right'}</b>${h.describe()}`;
+  }
+  const s = ['left', 'right'].map((side) => {
+    const h = halves[side];
+    return `${side}: ${h.stat(0)} flushes, ${(h.stat(3) / 1024).toFixed(1)} KB LVGL heap${h.stat(1) ? `, ${h.stat(1)} rejected` : ''}${h.stat(2) ? ', render buffer overrun!' : ''}`;
+  });
+  $('#statsNote').textContent = s.join(' · ');
 }
 
-/* ---------- animation loop ---------- */
+/* ---------------- clock ---------------- */
 let last = performance.now(), acc = 0;
 function tick(t) {
   requestAnimationFrame(tick);
-  const dt = t - last; last = t;
-  if (video) { if (!video.paused) render(); return; }
-  if (!S.playing || frames.length < 2) return;
-  acc += dt;
-  const step = 1000 / S.fps;
-  if (acc >= step) {
-    acc = acc % step;
-    frameIdx = (frameIdx + 1) % frames.length;
-    $('#frameSlider').value = frameIdx;
-    render();
+  let dt = Math.min(100, t - last); last = t;
+  if (!META || !halves.left || !halves.left.e) return;
+  if (video && !video.paused) liveVideoFrame();
+  if (!view.playing) return;
+  acc += dt * view.speed;
+  const step = Math.floor(acc / META.tickMs) * META.tickMs;
+  if (!step) return;
+  acc -= step;
+  halves.left.step(step); halves.right.step(step);
+  renderAll();
+}
+setInterval(() => { if (halves.left && halves.left.e) refreshCaptions(); }, 1000);
+
+/* ---------------- keyboard ---------------- */
+const RIGHT_SHIFT = 1.25;           // room for the right half's display
+const OLED = { w: 0.72, h: 2.12 };  // module drawn a touch larger than life so the art reads
+const OLED_POS = { left: { x: 6.74, y: 0.0 }, right: { x: 11.64, y: 0.0 } };
+let layerIdx = 0, selectedSide = 'left';
+
+function buildKeyboard() {
+  const kb = $('#keyboard');
+  kb.innerHTML = '';
+  const keys = KB.layout.map((k) => {
+    const shift = k.x >= 11 ? RIGHT_SHIFT : 0;
+    return { ...k, x: k.x + shift, rx: k.rx !== undefined ? k.rx + shift : undefined };
+  });
+  const maxX = Math.max(...keys.map((k) => k.x + 1)), maxY = 4.75;
+  const fit = () => {
+    const avail = kb.parentElement.clientWidth - 4;
+    const u = Math.max(18, Math.min(66, avail / maxX));
+    kb.style.setProperty('--u', u + 'px');
+    kb.style.width = maxX * u + 'px'; kb.style.height = maxY * u + 'px';
+    for (const el of kb.children) {
+      const d = el._geo;
+      el.style.left = d.x * u + 'px'; el.style.top = d.y * u + 'px';
+      el.style.width = d.w * u - (d.key ? 5 : 0) + 'px'; el.style.height = d.h * u - (d.key ? 5 : 0) + 'px';
+      if (d.r) { el.style.transformOrigin = `${(d.rx - d.x) * u}px ${(d.ry - d.y) * u}px`; el.style.transform = `rotate(${d.r}deg)`; }
+    }
+  };
+  keys.forEach((k, i) => {
+    const el = document.createElement('div');
+    el.className = 'key';
+    if (k.row === 2 && k.col === 6) el.classList.add('knob');
+    el._geo = { x: k.x, y: k.y, w: 1, h: 1, r: k.r, rx: k.rx, ry: k.ry, key: true };
+    el.dataset.i = i;
+    kb.append(el);
+  });
+  for (const side of ['left', 'right']) {
+    const m = document.createElement('div');
+    m.className = 'oled-mod'; m.dataset.side = side; m.tabIndex = 0;
+    m.title = `${side} half display: click to select`;
+    const cv = document.createElement('canvas'); cv.width = BOARD_W; cv.height = BOARD_H;
+    const lbl = document.createElement('span'); lbl.textContent = '128×32';
+    const top = document.createElement('span'); top.textContent = side === 'left' ? 'L' : 'R';
+    m.append(top, cv, lbl);
+    m._geo = { x: OLED_POS[side].x, y: OLED_POS[side].y, w: OLED.w, h: OLED.h };
+    m.addEventListener('click', () => selectSide(side));
+    m.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); selectSide(side); } });
+    smallCv[side] = cv;
+    kb.append(m);
+  }
+  fit();
+  new ResizeObserver(fit).observe(kb.parentElement);
+  renderLegends();
+}
+
+function renderLegends() {
+  const layer = KB.layers[layerIdx];
+  $('#layerName').textContent = layer.name;
+  for (const el of $$('#keyboard .key')) {
+    const k = layer.keys[+el.dataset.i] || { t: '' };
+    el.classList.toggle('trans', k.k === 'trans');
+    el.classList.toggle('long', (k.t || '').length > 3);
+    el.innerHTML = '';
+    if (k.h) el.append(Object.assign(document.createElement('span'), { className: 'h', textContent: k.h }));
+    if (k.s) el.append(Object.assign(document.createElement('span'), { className: 's', textContent: k.s }));
+    el.append(document.createTextNode(k.t || ''));
+  }
+  $$('#layers button').forEach((b, i) => b.classList.toggle('on', i === layerIdx));
+}
+
+function buildLayerSelector() {
+  const box = $('#layers');
+  KB.layers.forEach((l, i) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.textContent = i; b.title = l.name;
+    b.addEventListener('click', () => { layerIdx = i; renderLegends(); });
+    box.append(b);
+  });
+}
+
+function selectSide(side) {
+  selectedSide = side;
+  $$('.oled-mod').forEach((m) => m.classList.toggle('sel', m.dataset.side === side));
+  $('#figL').classList.toggle('sel', side === 'left');
+  $('#figR').classList.toggle('sel', side === 'right');
+  if (cfgSide !== side) { cfgSide = side; segSet('#cfgSide', side); writeConf(); }
+}
+
+/* ---------------- art pipeline ---------------- */
+const A = {
+  target: 'both', mode: 'nice', bx: 0, by: 32, bw: 32, bh: 96, fps: 12,
+  fit: 'cover', zoom: 1, offX: 0, offY: 0, rot: 0, flip: false, smooth: true,
+  dither: 'atkinson', thr: 128, bright: 0, contrast: 0, gamma: 1, invert: false,
+};
+const DITHERS = [['threshold', 'Threshold'], ['bayer4', 'Bayer 4×4'], ['bayer8', 'Bayer 8×8'], ['floyd', 'Floyd–Steinberg'], ['atkinson', 'Atkinson'], ['jjn', 'Jarvis']];
+let frames = []; // {src, w, h, crisp}
+let video = null, sourceName = 'art';
+
+const work = document.createElement('canvas');
+const wctx = work.getContext('2d', { willReadFrequently: true });
+function sampleLum(f, w, h) {
+  work.width = w; work.height = h;
+  wctx.setTransform(1, 0, 0, 1, 0, 0);
+  wctx.fillStyle = '#000'; wctx.fillRect(0, 0, w, h);
+  if (f) {
+    const swap = A.rot % 180 !== 0, ew = swap ? f.h : f.w, eh = swap ? f.w : f.h;
+    let sx = w / ew, sy = h / eh;
+    if (A.fit === 'cover') sx = sy = Math.max(sx, sy); else if (A.fit === 'contain') sx = sy = Math.min(sx, sy);
+    sx *= A.zoom; sy *= A.zoom;
+    wctx.imageSmoothingEnabled = A.smooth && !f.crisp; wctx.imageSmoothingQuality = 'high';
+    wctx.translate(w / 2 + A.offX, h / 2 + A.offY);
+    wctx.rotate(A.rot * Math.PI / 180);
+    wctx.scale((swap ? sy : sx) * (A.flip ? -1 : 1), swap ? sx : sy);
+    wctx.drawImage(f.src, -f.w / 2, -f.h / 2, f.w, f.h);
+  }
+  const d = wctx.getImageData(0, 0, w, h).data, lum = new Float32Array(w * h);
+  for (let i = 0, j = 0; i < lum.length; i++, j += 4) lum[i] = 0.2126 * d[j] + 0.7152 * d[j + 1] + 0.0722 * d[j + 2];
+  return lum;
+}
+function tone(lum) {
+  const cf = Math.pow((A.contrast + 100) / 100, 2), b = A.bright / 100, g = 1 / A.gamma, o = new Float32Array(lum.length);
+  for (let i = 0; i < lum.length; i++) o[i] = ((Math.pow(lum[i] / 255, g) - 0.5) * cf + 0.5 + b) * 255;
+  return o;
+}
+const B4 = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]];
+const B8 = Array.from({ length: 8 }, (_, y) => Array.from({ length: 8 }, (_, x) => 4 * B4[y % 4][x % 4] + [[0, 2], [3, 1]][y >> 2][x >> 2]));
+const KERNELS = {
+  floyd: [[1, 0, 7], [-1, 1, 3], [0, 1, 5], [1, 1, 1]].map(([x, y, w]) => [x, y, w / 16]),
+  atkinson: [[1, 0], [2, 0], [-1, 1], [0, 1], [1, 1], [0, 2]].map(([x, y]) => [x, y, 1 / 8]),
+  jjn: [[1, 0, 7], [2, 0, 5], [-2, 1, 3], [-1, 1, 5], [0, 1, 7], [1, 1, 5], [2, 1, 3], [-2, 2, 1], [-1, 2, 3], [0, 2, 5], [1, 2, 3], [2, 2, 1]].map(([x, y, w]) => [x, y, w / 48]),
+};
+function dither(v, w, h, mode) {
+  const bits = new Uint8Array(w * h), thr = A.thr;
+  if (mode === 'threshold') for (let i = 0; i < bits.length; i++) bits[i] = v[i] >= thr ? 1 : 0;
+  else if (mode === 'bayer4' || mode === 'bayer8') {
+    const M = mode === 'bayer4' ? B4 : B8, n = M.length;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) bits[y * w + x] = v[y * w + x] >= (M[y % n][x % n] + 0.5) / (n * n) * 255 + (thr - 128) ? 1 : 0;
+  } else {
+    const k = KERNELS[mode], e = Float32Array.from(v);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const i = y * w + x, lit = e[i] >= thr, err = e[i] - (lit ? 255 : 0);
+      bits[i] = lit ? 1 : 0;
+      for (const [dx, dy, wt] of k) { const xx = x + dx, yy = y + dy; if (xx >= 0 && xx < w && yy < h) e[yy * w + xx] += err * wt; }
+    }
+  }
+  if (A.invert) for (let i = 0; i < bits.length; i++) bits[i] ^= 1;
+  return bits;
+}
+const artBits = (f, mode = A.dither) => dither(tone(sampleLum(f, A.bw, A.bh)), A.bw, A.bh, mode);
+
+/* Board-space art -> the panel-space frame lv_animimg draws (the panel is mounted rotated). */
+function toPanelFrame(bits, bw, bh) {
+  const wp = bh, hp = bw, stride = Math.ceil(wp / 8), out = new Uint8Array(stride * hp);
+  for (let iy = 0; iy < hp; iy++) for (let ix = 0; ix < wp; ix++)
+    if (bits[(bh - 1 - ix) * bw + iy]) out[iy * stride + (ix >> 3)] |= 0x80 >> (ix & 7);
+  return out;
+}
+
+let applyTimer = null;
+function scheduleApply() { clearTimeout(applyTimer); applyTimer = setTimeout(applyArt, 160); }
+
+function targets() { return A.target === 'both' ? [halves.left, halves.right] : [halves[A.target]]; }
+
+function applyArt() {
+  renderThumbs();
+  if (!frames.length) return;
+  let list = frames, note = '';
+  if (list.length > 255) { list = list.slice(0, 255); note = `Using the first 255 of ${frames.length} frames: lv_animimg_set_src() takes an 8-bit frame count. `; }
+  const panelFrames = list.map((f) => toPanelFrame(artBits(f), A.bw, A.bh));
+  const art = {
+    frames: panelFrames, wp: A.bh, hp: A.bw,
+    X: BOARD_H - A.by - A.bh, Y: A.bx,
+    duration: Math.max(1, Math.round(list.length * 1000 / A.fps)),
+    bits: list.length, bytes: panelFrames.length * (panelFrames[0].length + 8),
+  };
+  for (const h of targets()) {
+    h.art = art; h.anim = 'custom'; h.mode = A.mode;
+    if (A.mode === 'nice') {
+      h.kcfg.NICE_OLED_WIDGET_ANIMATION_PERIPHERAL_CUSTOM_X = art.X;
+      h.kcfg.NICE_OLED_WIDGET_ANIMATION_PERIPHERAL_CUSTOM_Y = art.Y;
+      h.kcfg.NICE_OLED_WIDGET_ANIMATION_PERIPHERAL_MS = art.duration;
+    }
+  }
+  $('#srcNote').textContent = `${note}${list.length} frame${list.length > 1 ? 's' : ''} of ${A.bw}×${A.bh}, ${fmtBytes(art.bytes)} as nice!oled images.`;
+  writeConf();
+  compileHalves(targets(), 'art');
+}
+const fmtBytes = (b) => b < 1024 ? b + ' B' : (b / 1024).toFixed(1) + ' KB';
+
+const thumbCv = {};
+function renderThumbs() {
+  const box = $('#thumbs');
+  if (!box.children.length) {
+    for (const [mode, label] of DITHERS) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'thumb';
+      const cv = document.createElement('canvas');
+      b.append(cv, label);
+      b.addEventListener('click', () => { A.dither = mode; $('#dither').value = mode; scheduleApply(); });
+      box.append(b); thumbCv[mode] = { b, cv };
+    }
+  }
+  const f = video && video.readyState >= 2 ? { src: video, w: video.videoWidth, h: video.videoHeight } : frames[0];
+  for (const [mode] of DITHERS) {
+    const t = thumbCv[mode];
+    t.b.classList.toggle('on', mode === A.dither);
+    drawPanel(t.cv, f ? artBits(f, mode) : new Uint8Array(A.bw * A.bh), A.bw, A.bh, 2, { glow: 0 });
   }
 }
 
-function setFrames(list, name, opts = {}) {
-  stopVideo();
-  frames = list; frameIdx = 0;
-  if (opts.fps) { S.fps = Math.max(1, Math.min(60, Math.round(opts.fps))); $('#fps').value = S.fps; }
-  if (opts.crisp !== undefined) { S.smooth = !opts.crisp; $('#smooth').checked = S.smooth; }
-  $('#frameSlider').max = Math.max(0, frames.length - 1);
-  $('#frameSlider').value = 0;
-  $('#animBar').classList.toggle('hidden', frames.length < 2);
-  if (name) $('#cname').value = cIdent(name);
-  render();
-}
-
-/* ---------- loading ---------- */
 async function loadFiles(list) {
   const files = [...list].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
   if (!files.length) return;
   const vid = files.find((f) => f.type.startsWith('video/'));
   if (vid) return loadVideo(vid);
-  const out = []; let fps;
+  stopVideo();
+  const out = [];
   for (const f of files) {
     if (f.type === 'image/gif' && 'ImageDecoder' in window) {
       try {
@@ -570,132 +759,79 @@ async function loadFiles(list) {
           const c = document.createElement('canvas');
           c.width = image.displayWidth; c.height = image.displayHeight;
           c.getContext('2d').drawImage(image, 0, 0);
-          if (i === 0 && image.duration) fps = 1e6 / image.duration;
+          if (i === 0 && image.duration) setFps(1e6 / image.duration);
           image.close();
           out.push({ src: c, w: c.width, h: c.height });
         }
         continue;
-      } catch (e) { /* fall through to a single still frame */ }
+      } catch (err) { /* fall back to the first frame */ }
     }
-    try {
-      const bmp = await createImageBitmap(f);
-      out.push({ src: bmp, w: bmp.width, h: bmp.height });
-    } catch (e) { /* not a decodable image */ }
+    try { const bmp = await createImageBitmap(f); out.push({ src: bmp, w: bmp.width, h: bmp.height }); } catch (err) { /* skip */ }
   }
-  if (out.length) setFrames(out, files[0].name.replace(/\.[^.]+$/, ''), { fps, crisp: false });
+  if (!out.length) { $('#srcNote').textContent = 'Those files could not be decoded as images.'; return; }
+  sourceName = files[0].name.replace(/\.[^.]+$/, '');
+  $('#cname').value = cIdent(sourceName);
+  frames = out;
+  applyArt();
 }
+function setFps(f) { A.fps = Math.max(1, Math.min(30, Math.round(f))); $('#fps').value = A.fps; $('#fpsV').textContent = A.fps; }
 
-function stopVideo() {
-  if (!video) return;
-  video.pause(); URL.revokeObjectURL(video.src); video = null;
-  $('#videoBox').classList.add('hidden');
-}
-
+function stopVideo() { if (!video) return; video.pause(); URL.revokeObjectURL(video.src); video = null; $('#videoBox').classList.add('hidden'); }
 async function loadVideo(file) {
   stopVideo();
-  frames = []; frameIdx = 0;
   video = document.createElement('video');
   video.muted = true; video.loop = true; video.playsInline = true;
   video.src = URL.createObjectURL(file);
+  sourceName = file.name.replace(/\.[^.]+$/, '');
   $('#videoBox').classList.remove('hidden');
-  $('#animBar').classList.add('hidden');
   $('#capStatus').textContent = '';
-  $('#vidToggle').textContent = 'Pause video';
-  $('#cname').value = cIdent(file.name.replace(/\.[^.]+$/, ''));
-  video.addEventListener('loadeddata', render, { once: true });
-  try { await video.play(); } catch (e) { $('#capStatus').textContent = 'Press "Play video" to start.'; $('#vidToggle').textContent = 'Play video'; }
+  try { await video.play(); $('#vidToggle').textContent = 'Pause video'; } catch (err) { $('#vidToggle').textContent = 'Play video'; }
 }
-
+let lastVideoT = -1;
+function liveVideoFrame() {
+  if (video.currentTime === lastVideoT || video.readyState < 2) return;
+  lastVideoT = video.currentTime;
+  frames = [{ src: video, w: video.videoWidth, h: video.videoHeight }];
+  renderThumbs();
+}
 async function captureVideo() {
   if (!video) return;
-  const v = video, max = +$('#capMax').value || 120, start = +$('#capStart').value || 0;
+  const v = video, out = [], step = 1 / A.fps;
   v.pause();
-  const out = [], step = 1 / S.fps;
-  for (let t = start; t < v.duration && out.length < max; t += step) {
+  for (let t = 0; t < v.duration && out.length < 255; t += step) {
     await new Promise((res) => { v.addEventListener('seeked', res, { once: true }); v.currentTime = t; });
-    const c = document.createElement('canvas');
-    c.width = v.videoWidth; c.height = v.videoHeight;
+    const c = document.createElement('canvas'); c.width = v.videoWidth; c.height = v.videoHeight;
     c.getContext('2d').drawImage(v, 0, 0);
     out.push({ src: c, w: c.width, h: c.height });
-    $('#capStatus').textContent = `Captured ${out.length} frames…`;
+    $('#capStatus').textContent = `${out.length} frames…`;
   }
-  const name = $('#cname').value;
-  setFrames(out, name);
-  $('#capStatus').textContent = '';
+  stopVideo();
+  frames = out; $('#cname').value = cIdent(sourceName);
+  applyArt();
 }
 
-/* ---------- paste import ---------- */
-function bitsToFrame(bytes, w, h, layout) {
+function bitsToFrame(bytes, w, h) {
   const c = document.createElement('canvas'); c.width = w; c.height = h;
   const ctx = c.getContext('2d'), img = ctx.createImageData(w, h), stride = Math.ceil(w / 8);
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-    const on = layout === 'v'
-      ? (bytes[(y >> 3) * w + x] >> (y & 7)) & 1
-      : (bytes[y * stride + (x >> 3)] >> (7 - (x & 7))) & 1;
-    const j = (y * w + x) * 4, v = on ? 255 : 0;
+    const v = (bytes[y * stride + (x >> 3)] >> (7 - (x & 7))) & 1 ? 255 : 0, j = (y * w + x) * 4;
     img.data[j] = img.data[j + 1] = img.data[j + 2] = v; img.data[j + 3] = 255;
   }
   ctx.putImageData(img, 0, 0);
   return { src: c, w, h, crisp: true };
 }
-const hexBytes = (s) => (s.match(/0x[0-9a-fA-F]{1,2}\b/g) || []).map((x) => parseInt(x, 16));
-
-function importPaste() {
-  const text = $('#paste').value, status = $('#pasteStatus');
-  let w = +$('#pw').value, h = +$('#ph').value;
-  const layout = $('#playout').value;
-  const ws = [...text.matchAll(/header\.w\s*=\s*(\d+)/g)].map((m) => +m[1]);
-  const hs = [...text.matchAll(/header\.h\s*=\s*(\d+)/g)].map((m) => +m[1]);
-  const dim = text.match(/(\d+)\s*x\s*(\d+)\s*px/i);
-  if (!ws.length && dim) { w = +dim[1]; h = +dim[2]; }
-  const parts = text.split(/\[\s*\]\s*=\s*\{/);
-  const chunks = parts.length > 1 ? parts.slice(1).map((p) => p.split('};')[0]) : [text];
-  const out = [];
-  chunks.forEach((chunk, i) => {
-    let bytes = hexBytes(chunk);
-    const fw = ws[i] || w, fh = hs[i] || h;
-    const need = layout === 'v' ? fw * Math.ceil(fh / 8) : Math.ceil(fw / 8) * fh;
-    if (bytes.length < need) return;
-    const extra = bytes.length - need;
-    if (extra === 8 || extra === 16) bytes = bytes.slice(extra); // LVGL palette (one or both #if branches)
-    out.push(bitsToFrame(bytes, fw, fh, layout));
-  });
-  if (!out.length) {
-    const n = hexBytes(text).length;
-    status.textContent = `Found ${n} bytes, but ${w}×${h} needs ${layout === 'v' ? w * Math.ceil(h / 8) : Math.ceil(w / 8) * h}. Check the width, height and byte layout.`;
-    status.classList.add('warn');
-    return;
-  }
-  status.classList.remove('warn');
-  status.textContent = `Loaded ${out.length} frame${out.length > 1 ? 's' : ''} at ${out[0].w}×${out[0].h}.`;
-  $('#pw').value = out[0].w; $('#ph').value = out[0].h;
-  setFrames(out, (text.match(/uint8_t\s+(\w+?)(?:_\d+)?_map/) || [])[1] || 'pasted', { crisp: true });
-}
-
-/* ---------- samples ---------- */
-const KRONII = '/////////////////////////////////////////////////7/////P////4/////P//v/5//3//H/3//4/z///A7///wB///8Af///AD///wA///8AD///gHn/eQD//7AD///QAf//4AH//+AA///gAH3/4AA7/+AAD//AAA//xGAD/8CAAf/F6AP/w+gH/5PwR/8Z4Mf/O4fD/yADw/4wA8MAcIDHAHRAHwBkAF8AQAD/AFQJ/wC8EYMB+DGPH3g1Hx9wPB8ffGQfDz/8Dw4B+A8GAHAHAAAAAwAAAAMABgADAA+AHwAPwD8wDuAfTw5gHzwEQB9wgAAfwMAADwNgAA8B4AAHAgAAAwOAAIMAAAGHAAAXBwAAOAMAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAA4AAAAPwAAAD/AAAA/+AAAP/gH/7/4A///+AP///gD///4A///+Af///gH///4B///+Af///gH///4Av///AH///wB///8A////gf///4H///wA///wAf//+AH///wD////A////wH///+B////gf///8H////Q////kf///wH///4B////AP///+D////gf///4D////n/8=';
-
-function sampleKronii() {
-  const bytes = Uint8Array.from(atob(KRONII), (c) => c.charCodeAt(0));
-  return [bitsToFrame(bytes, 32, 128, 'h')];
-}
-function sampleMoon() {
+function moonFrames() {
   const out = [], N = 24, R = 60, size = 128;
   for (let k = 0; k < N; k++) {
     const c = document.createElement('canvas'); c.width = c.height = size;
-    const ctx = c.getContext('2d'), img = ctx.createImageData(size, size);
-    const a = k / N * Math.PI * 2, L = [Math.sin(a), -0.15, -Math.cos(a)];
+    const ctx = c.getContext('2d'), img = ctx.createImageData(size, size), a = k / N * Math.PI * 2, L = [Math.sin(a), -0.15, -Math.cos(a)];
     for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
       const nx = (x - size / 2 + 0.5) / R, ny = (y - size / 2 + 0.5) / R, r2 = nx * nx + ny * ny;
       let v = 0;
       if (r2 <= 1) {
-        const nz = -Math.sqrt(1 - r2);
-        const crater = 0.85 + 0.15 * Math.sin(nx * 9) * Math.cos(ny * 7 + nx * 3);
+        const nz = -Math.sqrt(1 - r2), crater = 0.85 + 0.15 * Math.sin(nx * 9) * Math.cos(ny * 7 + nx * 3);
         v = Math.max(0, -(nx * L[0] + ny * L[1] + nz * L[2])) * crater;
-      } else {
-        const h = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
-        if (h - Math.floor(h) > 0.995) v = 1;
-      }
+      } else { const hh = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453; if (hh - Math.floor(hh) > 0.995) v = 1; }
       const j = (y * size + x) * 4;
       img.data[j] = img.data[j + 1] = img.data[j + 2] = Math.round(Math.pow(v, 0.8) * 255); img.data[j + 3] = 255;
     }
@@ -704,235 +840,256 @@ function sampleMoon() {
   }
   return out;
 }
-function sampleRamp() {
-  const c = document.createElement('canvas'); c.width = 256; c.height = 1024;
-  const ctx = c.getContext('2d');
-  const lg = ctx.createLinearGradient(0, 0, 0, 1024);
-  lg.addColorStop(0, '#000'); lg.addColorStop(1, '#fff');
-  ctx.fillStyle = lg; ctx.fillRect(0, 0, 256, 1024);
-  const rg = ctx.createRadialGradient(100, 360, 10, 128, 400, 120);
-  rg.addColorStop(0, '#fff'); rg.addColorStop(1, '#000');
-  ctx.fillStyle = rg; ctx.beginPath(); ctx.arc(128, 400, 110, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#fff'; ctx.font = 'bold 120px sans-serif'; ctx.textAlign = 'center';
-  ctx.fillText('ZMK', 128, 760);
-  return [{ src: c, w: 256, h: 1024 }];
-}
-const SAMPLES = {
-  kronii: () => setFrames(sampleKronii(), 'kronii', { crisp: true }),
-  moon: () => setFrames(sampleMoon(), 'moon', { fps: 12, crisp: false }),
-  ramp: () => setFrames(sampleRamp(), 'gradient', { crisp: false }),
-};
-
-/* ---------- export ---------- */
-const cIdent = (s) => (s.toLowerCase().replace(/[^a-z0-9_]+/g, '_').replace(/^_+|_+$/g, '').replace(/^(\d)/, '_$1') || 'art');
-
-function packH(bits, w, h) {
-  const stride = Math.ceil(w / 8), out = new Uint8Array(stride * h);
-  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++)
-    if (bits[y * w + x]) out[y * stride + (x >> 3)] |= 0x80 >> (x & 7);
-  return out;
-}
-function packV(bits, w, h) {
-  const pages = Math.ceil(h / 8), out = new Uint8Array(w * pages);
-  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++)
-    if (bits[y * w + x]) out[(y >> 3) * w + x] |= 1 << (y & 7);
-  return out;
-}
-function hexLines(bytes, per = 16, indent = '  ') {
-  const lines = [];
-  for (let i = 0; i < bytes.length; i += per)
-    lines.push(indent + [...bytes.slice(i, i + per)].map((b) => '0x' + b.toString(16).padStart(2, '0')).join(', ') + ',');
-  return lines.join('\n');
-}
-
-function generate() {
-  const name = cIdent($('#cname').value), fmt = $('#fmt').value, w = S.rw, h = S.rh;
-  const list = $('#allFrames').checked && frames.length > 1 && !video ? frames : [currentSource()];
-  const mode = DITHERS.find((d) => d[0] === S.dither)[1];
-  const multi = list.length > 1;
-  const id = (i) => multi ? `${name}_${String(i).padStart(2, '0')}` : name;
-  let s = `/* ${name}: ${w}x${h}, 1 bit per pixel, ${list.length} frame${multi ? 's' : ''}, dither: ${mode}.\n * Generated by oled-emulator/index.html. Set bit = lit pixel. */\n`;
-  let total = 0;
-  if (fmt === 'lvgl') {
-    s += '#include <lvgl.h>\n\n#ifndef LV_ATTRIBUTE_MEM_ALIGN\n#define LV_ATTRIBUTE_MEM_ALIGN\n#endif\n';
-    list.forEach((f, i) => {
-      const data = packH(artBits(f), w, h);
-      total += data.length + 8;
-      s += `\nstatic const LV_ATTRIBUTE_MEM_ALIGN uint8_t ${id(i)}_map[] = {\n` +
-        '#if CONFIG_NICE_OLED_WIDGET_INVERTED\n  0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, /* idx 0 black, idx 1 white */\n' +
-        '#else\n  0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0xff, /* idx 0 white, idx 1 black */\n#endif\n' +
-        hexLines(data) + '\n};\n\n' +
-        `const lv_img_dsc_t ${id(i)} = {\n  .header.cf = LV_IMG_CF_INDEXED_1BIT,\n  .header.always_zero = 0,\n  .header.reserved = 0,\n` +
-        `  .header.w = ${w},\n  .header.h = ${h},\n  .data_size = ${data.length + 8},\n  .data = ${id(i)}_map,\n};\n`;
-    });
-    if (multi) s += `\nconst lv_img_dsc_t *${name}_imgs[] = {\n` + list.map((_, i) => `  &${id(i)},`).join('\n') + '\n};\n';
-    $('#outNote').innerHTML = multi
-      ? `Use with <code>lv_animimg_set_src(art, (const void **)${name}_imgs, ${list.length});</code> and a duration of about ${Math.round(list.length * 1000 / S.fps)} ms for ${S.fps} FPS.`
-      : `Use with <code>lv_img_set_src(img, &amp;${name});</code> or <code>lv_canvas_draw_img(canvas, x, y, &amp;${name}, &amp;dsc);</code>.`;
+function loadSample(name) {
+  stopVideo();
+  if (name === 'none') {
+    frames = [];
+    for (const h of targets()) { h.reset(); h.art = null; }
+    writeConf(); renderThumbs(); $('#srcNote').textContent = '';
+    compileHalves(targets(), 'reset');
+    return;
+  }
+  if (name === 'kronii') {
+    frames = [bitsToFrame(Uint8Array.from(atob(KRONII), (c) => c.charCodeAt(0)), 32, 128)];
+    Object.assign(A, { smooth: false }); $('#smooth').checked = false;
+    setBox(0, 0, 32, 128); setMode('art');
   } else {
-    list.forEach((f, i) => {
-      const bits = artBits(f);
-      const data = fmt === 'v' ? packV(bits, w, h) : packH(bits, w, h);
-      total += data.length;
-      s += `\n// '${id(i)}', ${w}x${h}px\nconst unsigned char ${id(i)}_bits[] = {\n${hexLines(data)}\n};\n`;
-    });
-    $('#outNote').innerHTML = fmt === 'v'
-      ? 'SSD1306 page order: each byte is 8 vertical pixels, LSB on top, pages of 8 rows.'
-      : 'Same layout as image2cpp\'s default "horizontal, 1 bit per pixel" output.';
+    frames = moonFrames();
+    Object.assign(A, { smooth: true }); $('#smooth').checked = true;
+    setBox(0, 32, 32, 96); setMode('nice'); setFps(12);
   }
-  s += `\n/* ${fmtBytes(total)} of flash */\n`;
+  sourceName = name; $('#cname').value = name;
+  applyArt();
+}
+function setBox(x, y, w, h) {
+  Object.assign(A, { bx: x, by: y, bw: w, bh: h });
+  $('#bx').value = x; $('#by').value = y; $('#bw').value = w; $('#bh').value = h;
+}
+function setMode(m) { A.mode = m; segSet('#modeSeg', m); }
+
+/* ---------------- config tab ---------------- */
+let cfgSide = 'left';
+const CONF_SHOWN = [
+  'NICE_OLED_WIDGET_ANIMATION_PERIPHERAL_MS',
+  'NICE_OLED_WIDGET_ANIMATION_PERIPHERAL_CUSTOM_X', 'NICE_OLED_WIDGET_ANIMATION_PERIPHERAL_CUSTOM_Y',
+  'NICE_OLED_WIDGET_BATTERY_CUSTOM_X', 'NICE_OLED_WIDGET_BATTERY_CUSTOM_Y',
+  'NICE_OLED_WIDGET_OUTPUT_BT_CUSTOM_X', 'NICE_OLED_WIDGET_OUTPUT_BT_CUSTOM_Y',
+];
+function confLines(h, onlyChanged) {
+  const lines = [];
+  const fw = h.firmware, changed = (n) => h.kcfg[n] !== fw.kcfg[n];
+  if (h.anim === 'custom') lines.push('# animation: your art from the Art tab (set one of GEM, CAT, HEAD, SPACEMAN, POKEMON to switch back)');
+  else if (!onlyChanged || h.anim !== fw.animation) lines.push(`CONFIG_NICE_OLED_WIDGET_ANIMATION_PERIPHERAL_${ANIM_SYMBOL[h.anim]}=y`);
+  for (const n of CONF_SHOWN) if (!onlyChanged || changed(n)) lines.push(`CONFIG_${n}=${h.kcfg[n]}`);
+  for (const n of META.runtime) if (!CONF_SHOWN.includes(n) && changed(n)) lines.push(`CONFIG_${n}=${h.kcfg[n]}`);
+  for (const [n, v] of Object.entries(h.variantSet())) {
+    const fwv = META.variants.find((x) => x.firmware).set[n];
+    if (!onlyChanged || v !== fwv) lines.push(`CONFIG_${n}=${v}`);
+  }
+  return lines;
+}
+function writeConf() {
+  const h = halves[cfgSide];
+  if (!h) return;
+  if (document.activeElement !== $('#conf')) $('#conf').value = confLines(h, false).join('\n') + '\n';
+  $('#confOut').value = ['left', 'right'].map((side) => {
+    const lines = confLines(halves[side], true);
+    return `# ${side} half (boards/shields/eyelash_corne/eyelash_corne_${side}.conf)\n${lines.length ? lines.join('\n') : '# no changes from the firmware build'}`;
+  }).join('\n\n');
+  const cfg = h.firmware.config, rows = Object.entries(cfg);
+  $('#cfgCount').textContent = rows.length;
+  $('#cfgTable').innerHTML = rows.map(([k, v]) => `<tr><td>CONFIG_${k}</td><td>${typeof v === 'string' ? JSON.stringify(v) : v === 1 ? 'y' : v}</td></tr>`).join('');
+}
+
+let confTimer = null;
+function onConfEdit() {
+  clearTimeout(confTimer);
+  confTimer = setTimeout(() => {
+    const h = halves[cfgSide], log = [], before = JSON.stringify([h.kcfg, h.anim, h.variant]);
+    const vset = { ...h.variantSet() };
+    for (const raw of $('#conf').value.split('\n')) {
+      const line = raw.trim();
+      if (!line || line.startsWith('#')) continue;
+      const m = line.match(/^CONFIG_(\w+)\s*=\s*(.*)$/);
+      if (!m) { log.push(['skip', `${line}: not a CONFIG_NAME=value line`]); continue; }
+      const [, name, value] = m;
+      const am = name.match(/^NICE_OLED_WIDGET_ANIMATION_PERIPHERAL_(GEM|CAT|HEAD|SPACEMAN|POKEMON)$/);
+      if (META.runtime.includes(name)) {
+        const n = parseInt(value, 0);
+        if (Number.isNaN(n)) { log.push(['skip', `${name}: needs a number`]); continue; }
+        h.kcfg[name] = n; log.push(['ok', `${name}=${n} (live)`]);
+      } else if (am) {
+        if (/^y$/i.test(value)) { h.anim = am[1] === 'GEM' ? 'crystal' : am[1].toLowerCase(); log.push(['ok', `${name}=y (frame set)`]); }
+      } else if (name in vset) {
+        const v = /^y$/i.test(value) ? 'y' : 'n';
+        vset[name] = v; log.push(['ok', `${name}=${v} (prebuilt module)`]);
+      } else {
+        const fw = h.firmware.config[name];
+        const same = fw !== undefined && String(fw === 1 ? 'y' : fw) === value.replace(/^"|"$/g, '');
+        log.push(same ? ['info', `${name}: same as firmware`] : ['skip', `${name}: compile-time, rerun build.py to try it`]);
+      }
+    }
+    const want = META.variants.find((v) => Object.entries(v.set).every(([k, x]) => vset[k] === x));
+    if (want) h.variant = want.id;
+    $('#confLog').innerHTML = log.map(([c, t]) => `<li class="${c}">${escapeHtml(t)}</li>`).join('');
+    if (JSON.stringify([h.kcfg, h.anim, h.variant]) !== before) {
+      if (h.anim !== 'custom') h.mode = 'nice';
+      writeConf();
+      compileHalves([h], 'config');
+    }
+  }, 350);
+}
+const escapeHtml = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+/* ---------------- export ---------------- */
+const cIdent = (s) => (s.toLowerCase().replace(/[^a-z0-9_]+/g, '_').replace(/^_+|_+$/g, '').replace(/^(\d)/, '_$1') || 'art');
+function hexLines(bytes, per = 16) {
+  const out = [];
+  for (let i = 0; i < bytes.length; i += per) out.push('  ' + [...bytes.slice(i, i + per)].map((b) => '0x' + b.toString(16).padStart(2, '0')).join(', ') + ',');
+  return out.join('\n');
+}
+function generate() {
+  const h = [halves.left, halves.right].find((x) => x.anim === 'custom' && x.art);
+  if (!h) { $('#genNote').textContent = 'No art loaded yet: use the Art tab first.'; return; }
+  const a = h.art, name = cIdent($('#cname').value), multi = a.frames.length > 1;
+  const id = (i) => multi ? `${name}_${String(i).padStart(2, '0')}` : name;
+  let s = `/* ${name}: ${a.frames.length} frame${multi ? 's' : ''}, ${a.wp}x${a.hp} in panel orientation (${A.bw}x${A.bh} on the board).\n` +
+    ` * Generated by oled-emulator/index.html. Palette block matches nice!oled's assets. */\n#include <lvgl.h>\n\n#ifndef LV_ATTRIBUTE_MEM_ALIGN\n#define LV_ATTRIBUTE_MEM_ALIGN\n#endif\n`;
+  a.frames.forEach((f, i) => {
+    s += `\nstatic const LV_ATTRIBUTE_MEM_ALIGN uint8_t ${id(i)}_map[] = {\n#if CONFIG_NICE_OLED_WIDGET_INVERTED\n  0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff,\n#else\n  0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0xff,\n#endif\n${hexLines(f)}\n};\n\n` +
+      `const lv_img_dsc_t ${id(i)} = {\n  .header.cf = LV_IMG_CF_INDEXED_1BIT,\n  .header.always_zero = 0,\n  .header.reserved = 0,\n  .header.w = ${a.wp},\n  .header.h = ${a.hp},\n  .data_size = ${f.length + 8},\n  .data = ${id(i)}_map,\n};\n`;
+  });
+  s += `\nconst lv_img_dsc_t *${name}_imgs[] = {\n${a.frames.map((_, i) => `  &${id(i)},`).join('\n')}\n};\n`;
+  s += `\n/* lv_animimg_set_src(art, (const void **)${name}_imgs, ${a.frames.length}); duration ${a.duration} ms. ${fmtBytes(a.bytes)} of flash. */\n`;
   $('#out').value = s;
-  makePngs();
+  $('#genNote').textContent = `${a.frames.length} frames, ${fmtBytes(a.bytes)}`;
 }
-
 function makePngs() {
-  const W = screenW(), H = screenH(), buf = compose(lastBits || artBits(currentSource()));
-  const raw = document.createElement('canvas'); raw.width = S.rw; raw.height = S.rh;
-  const rctx = raw.getContext('2d'), img = rctx.createImageData(S.rw, S.rh);
-  lastBits.forEach((b, i) => { const v = b ? 255 : 0; img.data.set([v, v, v, 255], i * 4); });
-  rctx.putImageData(img, 0, 0);
-  const shot = document.createElement('canvas');
-  drawPanel(shot, buf, W, H, 8, { gap: S.gap, glow: S.glow, grid: S.grid, color: COLORS[S.color] });
-  $('#pngs').innerHTML = '';
-  const add = (cv, label, style) => {
-    const fig = document.createElement('figure');
-    const im = new Image(); im.src = cv.toDataURL('image/png'); im.alt = label; Object.assign(im.style, style);
-    fig.append(im, Object.assign(document.createElement('figcaption'), { textContent: label }));
-    $('#pngs').append(fig);
-  };
-  add(raw, `1-bit PNG, ${S.rw}×${S.rh}`, { width: S.rw * 2 + 'px' });
-  add(shot, 'Panel screenshot', { width: Math.min(260, W * 2) + 'px' });
-  $('#pngs').append(Object.assign(document.createElement('p'), { className: 'note', textContent: 'Right-click or long-press an image to save it. The 1-bit PNG loads straight into image2cpp or LVGL\'s image converter.' }));
-}
-
-/* ---------- controls ---------- */
-function syncControls() {
-  for (const el of $$('[data-k]')) {
-    const k = el.dataset.k;
-    if (el.type === 'checkbox') el.checked = !!S[k];
-    else el.value = S[k];
+  const box = $('#pngs'); box.innerHTML = '';
+  for (const side of ['left', 'right']) {
+    const h = halves[side]; if (!h) continue;
+    const c = document.createElement('canvas');
+    drawPanel(c, h.board, BOARD_W, BOARD_H, 4, { gap: 0, glow: 0 });
+    const fig = document.createElement('figure'), img = new Image();
+    img.src = c.toDataURL('image/png'); img.alt = `${side} display`; img.width = 64; img.height = 256;
+    fig.append(img, Object.assign(document.createElement('figcaption'), { textContent: `${side}, ${h.describe()}` }));
+    box.append(fig);
   }
-  for (const v of $$('[data-v]')) if (v.classList.contains('v')) v.textContent = fmtVal(v.dataset.v);
 }
-const fmtVal = (k) => {
-  const x = S[k];
-  if (k === 'zoom') return x.toFixed(2) + '×';
-  if (k === 'gap' || k === 'glow' || k === 'gamma' || k === 'sharpen') return (+x).toFixed(2);
-  if (k === 'scale') return x + '×';
-  if (k === 'batt') return x + '%';
-  return String(x);
-};
 
-function bind() {
-  const sel = $('#ditherSel');
+/* ---------------- controls ---------------- */
+function segSet(sel, v) { $$(`${sel} button`).forEach((b) => b.classList.toggle('on', b.dataset.v === v)); }
+function onSeg(sel, fn) { $(sel).addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; segSet(sel, b.dataset.v); fn(b.dataset.v); }); }
+
+function bindControls() {
+  $$('#tabs button').forEach((b) => b.addEventListener('click', () => {
+    $$('#tabs button').forEach((x) => x.classList.toggle('on', x === b));
+    $$('.tab').forEach((t) => t.classList.toggle('on', t.id === 'tab-' + b.dataset.tab));
+    if (b.dataset.tab === 'export') { generate(); makePngs(); }
+    if (b.dataset.tab === 'art') renderThumbs();
+  }));
+  $('#themeBtn').addEventListener('click', () => {
+    const root = document.documentElement;
+    const dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    root.dataset.theme = dark ? 'light' : 'dark';
+    try { localStorage.setItem('oledsim-theme', root.dataset.theme); } catch (err) { /* optional */ }
+  });
+  $('#playBtn').addEventListener('click', () => {
+    view.playing = !view.playing;
+    $('#playBtn').textContent = view.playing ? '❚❚' : '▶';
+    $('#playBtn').title = view.playing ? 'Pause animations' : 'Play animations';
+  });
+  $('#rebuildBtn').addEventListener('click', () => compileHalves([halves.left, halves.right], 'manual'));
+
+  const live = () => { for (const h of Object.values(halves)) h.applyWorld(); for (const h of Object.values(halves)) h.step(0); renderAll(); };
+  $('#batt').addEventListener('input', (e) => { world.battery = +e.target.value; $('#battV').textContent = world.battery + '%'; live(); });
+  $('#usb').addEventListener('change', (e) => { world.usb = e.target.checked; $('#usbV').textContent = world.usb ? 'on' : 'off'; live(); });
+  $('#linkL').addEventListener('change', (e) => { world.link.left = e.target.checked; $('#linkLV').textContent = e.target.checked ? 'connected' : 'lost'; live(); });
+  $('#linkR').addEventListener('change', (e) => { world.link.right = e.target.checked; $('#linkRV').textContent = e.target.checked ? 'connected' : 'lost'; live(); });
+  $('#speed').addEventListener('input', (e) => { view.speed = +e.target.value; $('#speedV').textContent = view.speed.toFixed(1) + '×'; });
+  $('#glow').addEventListener('input', (e) => { view.glow = +e.target.value; $('#glowV').textContent = view.glow.toFixed(2); renderAll(); });
+  $('#grid').addEventListener('change', (e) => { view.grid = e.target.checked; renderAll(); });
+  onSeg('#colorSeg', (v) => { view.color = v; renderAll(); });
+  $('#figL').addEventListener('click', () => selectSide('left'));
+  $('#figR').addEventListener('click', () => selectSide('right'));
+
+  // art
+  const sel = $('#dither');
   for (const [v, l] of DITHERS) sel.append(new Option(l, v));
-  const tw = $('#thumbs');
-  for (const [mode, label] of DITHERS) {
-    const btn = document.createElement('button');
-    btn.type = 'button'; btn.className = 'thumb';
-    const cv = document.createElement('canvas');
-    btn.append(cv, label);
-    btn.addEventListener('click', () => { S.dither = mode; syncControls(); render(); });
-    tw.append(btn);
-    thumbs[mode] = { btn, cv };
-  }
-
-  for (const el of $$('[data-k]')) {
-    el.addEventListener('input', () => {
-      const k = el.dataset.k;
-      if (el.type === 'checkbox') S[k] = el.checked;
-      else if (el.type === 'range' || el.type === 'number') S[k] = +el.value;
-      else if (k === 'rot') S[k] = +el.value;
-      else S[k] = el.value;
-      if (['rw', 'rh'].includes(k)) S[k] = Math.max(1, Math.min(512, S[k] || 1));
-      for (const v of $$(`.v[data-v="${k}"]`)) v.textContent = fmtVal(k);
-      render();
-    });
-  }
-
-  $('#orientSeg').addEventListener('click', (e) => {
-    const b = e.target.closest('button'); if (!b) return;
-    S.orient = b.dataset.v;
-    $$('#orientSeg button').forEach((x) => x.classList.toggle('on', x === b));
-    $('#thumbs').classList.toggle('wide', S.orient === 'landscape');
-    setArea(0, 0, screenW(), screenH());
-    sizeActual();
+  sel.value = A.dither;
+  const num = (id, key, fmt) => $(id).addEventListener('input', (e) => {
+    A[key] = e.target.type === 'checkbox' ? e.target.checked : e.target.tagName === 'SELECT' && key !== 'rot' ? e.target.value : +e.target.value;
+    if (fmt) $(id + 'V').textContent = fmt(A[key]);
+    scheduleApply();
   });
-  $('#colorSeg').addEventListener('click', (e) => {
-    const b = e.target.closest('button'); if (!b) return;
-    S.color = b.dataset.v;
-    $$('#colorSeg button').forEach((x) => x.classList.toggle('on', x === b));
-    render();
+  num('#zoom', 'zoom', (v) => v.toFixed(2) + '×'); num('#offX', 'offX', String); num('#offY', 'offY', String);
+  num('#thr', 'thr', String); num('#bright', 'bright', String); num('#contrast', 'contrast', String);
+  num('#gamma', 'gamma', (v) => v.toFixed(2)); num('#fps', 'fps', String);
+  num('#fit', 'fit'); num('#rot', 'rot'); num('#flip', 'flip'); num('#smooth', 'smooth'); num('#invert', 'invert'); num('#dither', 'dither');
+  for (const k of ['bx', 'by', 'bw', 'bh']) $('#' + k).addEventListener('input', (e) => {
+    const lim = k === 'bw' ? [1, 128] : k === 'bh' ? [1, 128] : [-128, 128];
+    A[k] = Math.max(lim[0], Math.min(lim[1], +e.target.value || 0));
+    scheduleApply();
   });
-  $('#areaFull').addEventListener('click', () => setArea(0, 0, screenW(), screenH()));
-  $('#areaWidgets').addEventListener('click', () => {
-    S.widgets = true;
-    if (S.orient === 'portrait') setArea(0, 23, 32, 94); else setArea(36, 0, 92, 32);
-  });
-  $('#toneReset').addEventListener('click', () => { Object.assign(S, TONE_DEFAULTS); syncControls(); render(); });
-
-  $('#playBtn').addEventListener('click', () => { S.playing = !S.playing; $('#playBtn').textContent = S.playing ? 'Pause' : 'Play'; });
-  $('#frameSlider').addEventListener('input', (e) => { frameIdx = +e.target.value; render(); });
-  $('#fps').addEventListener('input', (e) => { S.fps = Math.max(1, Math.min(60, +e.target.value || 1)); });
-
+  $('#boxBelow').addEventListener('click', () => { setBox(0, 32, 32, 96); setMode('nice'); scheduleApply(); });
+  $('#boxFull').addEventListener('click', () => { setBox(0, 0, 32, 128); scheduleApply(); });
+  onSeg('#targetSeg', (v) => { A.target = v; scheduleApply(); });
+  onSeg('#modeSeg', (v) => { A.mode = v; scheduleApply(); });
   $('#file').addEventListener('change', (e) => { loadFiles(e.target.files); e.target.value = ''; });
-  const stage = $('#stage');
-  stage.addEventListener('dragover', (e) => { e.preventDefault(); stage.classList.add('drag'); });
-  stage.addEventListener('dragleave', () => stage.classList.remove('drag'));
-  stage.addEventListener('drop', (e) => { e.preventDefault(); stage.classList.remove('drag'); loadFiles(e.dataTransfer.files); });
-  document.addEventListener('paste', (e) => {
-    if (e.target.closest && e.target.closest('textarea, input')) return;
-    const files = [...(e.clipboardData?.files || [])];
-    if (files.length) loadFiles(files);
-  });
-
-  for (const b of $$('[data-sample]')) b.addEventListener('click', () => { resetFraming(); SAMPLES[b.dataset.sample](); });
-  $('#pasteBtn').addEventListener('click', importPaste);
+  const drop = $('#drop');
+  for (const el of [drop, document.body]) {
+    el.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('drag'); });
+    el.addEventListener('dragleave', () => drop.classList.remove('drag'));
+    el.addEventListener('drop', (e) => { e.preventDefault(); drop.classList.remove('drag'); loadFiles(e.dataTransfer.files); });
+  }
+  $$('[data-sample]').forEach((b) => b.addEventListener('click', () => loadSample(b.dataset.sample)));
   $('#vidToggle').addEventListener('click', () => {
     if (!video) return;
-    if (video.paused) { video.play(); $('#vidToggle').textContent = 'Pause video'; }
-    else { video.pause(); $('#vidToggle').textContent = 'Play video'; }
+    if (video.paused) { video.play(); $('#vidToggle').textContent = 'Pause video'; } else { video.pause(); $('#vidToggle').textContent = 'Play video'; }
   });
   $('#capBtn').addEventListener('click', captureVideo);
 
-  $('#exportBtn').addEventListener('click', generate);
+  // config
+  onSeg('#cfgSide', (v) => { cfgSide = v; $('#confLog').innerHTML = ''; writeConf(); });
+  $('#conf').addEventListener('input', onConfEdit);
+  $('#conf').addEventListener('blur', writeConf);
+  $('#cfgReset').addEventListener('click', () => {
+    const h = halves[cfgSide]; h.reset(); h.art = null; $('#confLog').innerHTML = '';
+    $('#conf').blur(); writeConf(); compileHalves([h], 'reset');
+  });
+
+  // export
+  $('#genBtn').addEventListener('click', generate);
   $('#copyBtn').addEventListener('click', async () => {
     if (!$('#out').value) generate();
-    const btn = $('#copyBtn');
-    try { await navigator.clipboard.writeText($('#out').value); btn.textContent = 'Copied'; }
-    catch (e) { $('#out').select(); btn.textContent = 'Press Ctrl+C'; }
-    setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+    const b = $('#copyBtn');
+    try { await navigator.clipboard.writeText($('#out').value); b.textContent = 'Copied'; }
+    catch (err) { $('#out').select(); b.textContent = 'Press Ctrl+C'; }
+    setTimeout(() => { b.textContent = 'Copy'; }, 1500);
   });
-
-  // drag to pan, wheel to zoom
-  let drag = null;
-  screenCv.addEventListener('pointerdown', (e) => { drag = { x: e.clientX, y: e.clientY, ox: S.offX, oy: S.offY }; screenCv.setPointerCapture(e.pointerId); });
-  screenCv.addEventListener('pointermove', (e) => {
-    if (!drag) return;
-    const k = screenCv.width / screenCv.getBoundingClientRect().width / S.scale;
-    S.offX = Math.round(drag.ox + (e.clientX - drag.x) * k);
-    S.offY = Math.round(drag.oy + (e.clientY - drag.y) * k);
-    syncControls(); render();
-  });
-  const end = () => { drag = null; };
-  screenCv.addEventListener('pointerup', end);
-  screenCv.addEventListener('pointercancel', end);
-  screenCv.addEventListener('wheel', (e) => {
-    e.preventDefault();
-    S.zoom = Math.max(0.25, Math.min(6, S.zoom * Math.exp(-e.deltaY * 0.0015)));
-    syncControls(); render();
-  }, { passive: false });
 }
 
-function setArea(x, y, w, h) { Object.assign(S, { rx: x, ry: y, rw: w, rh: h }); syncControls(); render(); }
-function resetFraming() { Object.assign(S, { zoom: 1, offX: 0, offY: 0, rot: 0, flip: false }); syncControls(); }
-
-bind();
-syncControls();
-sizeActual();
-SAMPLES.kronii();
-if (document.fonts) document.fonts.load('8px Silkscreen').then(render).catch(() => {});
-requestAnimationFrame(tick);
+/* ---------------- boot ---------------- */
+async function boot() {
+  try { const t = localStorage.getItem('oledsim-theme'); if (t) document.documentElement.dataset.theme = t; } catch (err) { /* optional */ }
+  buildLayerSelector();
+  buildKeyboard();
+  bindControls();
+  if (!SIM || !SIM.meta) { showError('lvgl-sim.js is missing. Run python3 oled-emulator/lvgl-sim/build.py to build the simulator.'); return; }
+  if (typeof WebAssembly !== 'object') { showError('This browser cannot run WebAssembly, which the simulator needs.'); return; }
+  META = SIM.meta;
+  FIRMWARE_VARIANT = META.variants.find((v) => v.firmware).id;
+  $('#buildName').textContent = `LVGL ${META.lvgl.version} · nice!oled ${META.niceOled.sha.slice(0, 7)}`;
+  $('#footer').innerHTML = `Real LVGL ${META.lvgl.version} (zephyrproject-rtos/lvgl@${META.lvgl.sha.slice(0, 7)}), ZMK ${META.zmk}'s display loop and zmk-nice-oled@${META.niceOled.sha.slice(0, 7)}, compiled to WebAssembly from ${META.sources} source files on ${META.built} by <code>oled-emulator/lvgl-sim/build.py</code>. Panel: ${META.panel.width}×${META.panel.height} SSD1306${META.panel.inversionOn ? ', inversion-on' : ''}.`;
+  halves.left = new Half('left');
+  halves.right = new Half('right');
+  selectSide('left');
+  writeConf();
+  renderThumbs();
+  await compileHalves([halves.left, halves.right], 'boot');
+  requestAnimationFrame(tick);
+}
+boot();
 })();
 </script>
 </body>

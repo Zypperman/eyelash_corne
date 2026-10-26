@@ -189,18 +189,41 @@ download the generated `layer_rgb.dtsi` into `config/`. The key legends are
 baked into the page, so if you change `eyelash_corne.keymap` they won't
 update. The colors and export still work.
 
-### OLED Art Preview
+### OLED Display Simulator
 
-Open [`oled-emulator/index.html`](oled-emulator/index.html) in a browser to see
-how an image, GIF or video will look on the 128x32 OLED before flashing it.
-It converts the picture to 1-bit the way the firmware's LVGL canvas draws it,
-in nice!oled's portrait (32x128) or landscape layout, with side-by-side
-dithering methods, tone controls, optional status-widget overlay, and the
-panel's actual physical size. Export a `lv_img_dsc_t` (same format as
-nice!oled's built-in animations, including the `CONFIG_NICE_OLED_WIDGET_INVERTED`
-palette switch), raw image2cpp-style bytes, or a 1-bit PNG. You can also paste
-an existing C array (such as `Devlogs/OLED Graphics/image_assets/kronii_1.bin`)
-to preview it.
+Open [`oled-emulator/index.html`](oled-emulator/index.html) in a browser (no
+server needed) to see both halves' OLEDs on a drawing of the keyboard, styled
+after [keymap-editor](https://github.com/nickcoutsos/keymap-editor). The
+displays aren't an imitation: they run **real LVGL 8.3.7** (the revision ZMK
+v0.3.0's Zephyr pins) and **nice!oled's own peripheral-screen code**, compiled
+to WebAssembly, through a port of Zephyr's SSD1306 display glue. Both halves
+show the peripheral screen because the jerry dongle is the split central.
+
+- **Displays**: change battery level, USB power and each half's split link
+  live. Pick pixel color and playback speed. Switch layers to see their legends.
+- **Art**: drop a GIF, images or a video. Dither it (six methods side by side)
+  and play it in nice!oled's animation slot or on a bare screen, on either or
+  both halves.
+- **Config**: edit `CONFIG_NICE_OLED_*` lines like a `.conf` file. Positions,
+  timing and the animation choice recompile the display in a few
+  milliseconds. `CONFIG_NICE_OLED_WIDGET_INVERTED` switches to a second
+  prebuilt module.
+- **Export**: your frames as nice!oled-format `lv_img_dsc_t` arrays, the
+  `.conf` lines you changed, and PNG snapshots.
+
+The compiled module lives in `oled-emulator/lvgl-sim.js`. After changing OLED
+settings in a `.conf` file or `build.yaml`, rebuild it. You need git, clang and
+wasm-ld (stock LLVM, no Emscripten):
+
+```sh
+pip install kconfiglib
+python3 oled-emulator/lvgl-sim/build.py              # pinned zmk-nice-oled
+python3 oled-emulator/lvgl-sim/build.py --nice-oled-rev main
+```
+
+The build evaluates the real Kconfig files (ZMK display, both shields,
+Zephyr's LVGL module, LVGL) against this repo's `.conf` files and
+`build.yaml`. It then compiles the same nice!oled sources its CMakeLists picks.
 
 ### Encoder Functions
 

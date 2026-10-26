@@ -1,0 +1,88 @@
+# Types (and firmware-like defaults) for symbols that the sourced Kconfig
+# files reference but that live in parts of ZMK/Zephyr the simulator does not
+# load. Defaults follow an eyelash_nano (nRF52840) split half.
+
+config ZMK_SPLIT
+	bool
+
+config ZMK_SPLIT_ROLE_CENTRAL
+	bool "Split central"
+
+config ZMK_SPLIT_BLE
+	def_bool ZMK_SPLIT
+
+config ZMK_SPLIT_BLE_CENTRAL_PERIPHERALS
+	int
+	default 1
+
+config ZMK_KEYBOARD_NAME
+	string
+
+config ZMK_BLE
+	def_bool y
+
+config BT
+	def_bool y
+
+config BT_MAX_CONN
+	int
+
+config BT_MAX_PAIRED
+	int
+
+config ZMK_USB
+	def_bool y
+
+config USB_DEVICE_STACK
+	def_bool ZMK_USB
+
+config ZMK_BATTERY_REPORTING
+	def_bool y
+
+config ZMK_WPM
+	bool
+
+config ZMK_HID_INDICATORS
+	bool
+
+config ZMK_BACKLIGHT
+	bool "Backlight"
+
+config ZMK_EXT_POWER
+	bool "External power"
+
+config ZMK_SLEEP
+	bool "Deep sleep"
+
+config ZMK_POINTING
+	bool "Pointing"
+
+config DISPLAY
+	bool
+
+config I2C
+	bool "I2C"
+
+config SPI
+	bool "SPI"
+
+config SSD1306
+	bool "SSD1306"
+
+config PWM
+	bool "PWM"
+
+config LED_PWM
+	bool "LED PWM"
+
+config FILE_SYSTEM
+	bool
+
+config SHELL
+	bool
+
+config INPUT
+	bool "Input"
+
+config USB_HID_DEVICE_COUNT
+	int

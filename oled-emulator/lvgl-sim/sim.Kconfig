@@ -1,0 +1,40 @@
+# Top-level Kconfig for the OLED simulator build (evaluated by build.py with
+# kconfiglib). It sources the same Kconfig files a real ZMK build of one
+# Eyelash Corne half with the nice_oled shield reads, in the same order
+# (ZMK app display Kconfig, then shield defconfigs in shield-list order, then
+# Zephyr's LVGL module and LVGL itself), so first-matching `default`s resolve
+# the way they do in firmware. Symbols owned by parts of ZMK/Zephyr that are
+# not sourced here are declared in stubs.Kconfig.
+
+mainmenu "Eyelash Corne OLED simulator"
+
+config SHIELD_EYELASH_CORNE_LEFT
+	def_bool "$(SIM_SIDE)" = "left"
+
+config SHIELD_EYELASH_CORNE_RIGHT
+	def_bool "$(SIM_SIDE)" = "right"
+
+config SHIELD_JERRY_DONGLE
+	def_bool n
+
+config SHIELD_NICE_OLED
+	def_bool y
+
+config SHIELD_NICE_EPAPER
+	def_bool n
+
+config SHIELD_NICE_CUSTOM
+	def_bool n
+
+# zmk/app/Kconfig: rsource "src/display/Kconfig" (before the shield defconfigs)
+source "$(SIM_ZMK)/app/src/display/Kconfig"
+
+# Kconfig.shield.defconfig, in build.yaml's shield order
+source "$(SIM_REPO)/boards/shields/eyelash_corne/Kconfig.defconfig"
+source "$(SIM_NICE_OLED)/boards/shields/nice_oled/Kconfig.defconfig"
+
+# Kconfig.zephyr -> modules
+source "$(SIM_ZEPHYR)/modules/lvgl/Kconfig"
+source "$(SIM_LVGL)/Kconfig"
+
+source "$(SIM_DIR)/stubs.Kconfig"
