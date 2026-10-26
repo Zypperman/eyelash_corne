@@ -66,6 +66,49 @@ EXPORT(sim_set_state) void sim_set_state(int battery, int usb, int connected) {
     }
 }
 
+/* ---------- zmk/app/src/activity.c, and display/main.c's blank-on-idle ---------- */
+
+enum activity_state { ACTIVITY_ACTIVE, ACTIVITY_IDLE, ACTIVITY_SLEEP };
+
+static enum activity_state activity_state;
+static uint32_t activity_last_uptime;
+static uint32_t activity_next_check = 1000; /* k_timer_start(&activity_timer, K_SECONDS(1), K_SECONDS(1)) */
+static bool display_blanked;
+
+static void set_activity(enum activity_state next) {
+    if (activity_state == next) {
+        return;
+    }
+    activity_state = next;
+#if IS_ENABLED(CONFIG_ZMK_DISPLAY_BLANK_ON_IDLE)
+    /* start_display_updates() / stop_display_updates(): the panel is switched off and
+     * lv_task_handler() stops running until the next activity */
+    display_blanked = next != ACTIVITY_ACTIVE;
+#endif
+}
+
+/* A key on this half went down or up (zmk_position_state_changed): note_activity(). */
+EXPORT(sim_key) void sim_key(int pressed) {
+    if (activity_state == ACTIVITY_SLEEP) {
+        return; /* sys_poweroff() happened; the page reboots the half */
+    }
+    activity_last_uptime = k_uptime_get_32();
+    set_activity(ACTIVITY_ACTIVE);
+}
+
+static void activity_work_handler(void) {
+    int32_t inactive_time = sim_uptime_ms - activity_last_uptime;
+#if IS_ENABLED(CONFIG_ZMK_SLEEP)
+    if (inactive_time > CONFIG_ZMK_IDLE_SLEEP_TIMEOUT && !state.usb) {
+        set_activity(ACTIVITY_SLEEP); /* followed by sys_poweroff() */
+        return;
+    }
+#endif
+    if (inactive_time > CONFIG_ZMK_IDLE_TIMEOUT) {
+        set_activity(ACTIVITY_IDLE);
+    }
+}
+
 /* ---------- SSD1306 GDDRAM: 4 pages x 128 columns, bit 0 = top row of the page ---------- */
 
 static uint8_t gddram[PANEL_H / 8 * PANEL_W];
@@ -427,18 +470,26 @@ EXPORT(sim_init) int sim_init(int mode, int set, int x, int y, int duration_ms) 
     return 0;
 }
 
-/* ZMK's display timer: lv_task_handler() every CONFIG_ZMK_DISPLAY_TICK_PERIOD_MS. */
+/* ZMK's display timer (lv_task_handler() every CONFIG_ZMK_DISPLAY_TICK_PERIOD_MS, stopped while
+ * blanked) and the 1 s activity timer. */
 EXPORT(sim_step) void sim_step(uint32_t ms) {
     static uint32_t pending;
     pending += ms;
     while (pending >= CONFIG_ZMK_DISPLAY_TICK_PERIOD_MS) {
         pending -= CONFIG_ZMK_DISPLAY_TICK_PERIOD_MS;
         sim_uptime_ms += CONFIG_ZMK_DISPLAY_TICK_PERIOD_MS;
-        lv_task_handler();
+        while (sim_uptime_ms >= activity_next_check) {
+            activity_next_check += 1000;
+            activity_work_handler();
+        }
+        if (!display_blanked && activity_state != ACTIVITY_SLEEP) {
+            lv_task_handler();
+        }
     }
 }
 
-/* 0 flushes, 1 rejected flushes, 2 render buffer overrun (0/1), 3 LVGL heap bytes used, 4 frames in animation */
+/* 0 flushes, 1 rejected flushes, 2 render buffer overrun (0/1), 3 LVGL heap bytes used,
+ * 4 frames in animation, 5 panel off (0/1), 6 activity state, 7 ms since last activity */
 EXPORT(sim_stat) int sim_stat(int which) {
     switch (which) {
     case 0: return flush_count;
@@ -453,6 +504,9 @@ EXPORT(sim_stat) int sim_stat(int which) {
         lv_obj_t *art = find_animimg(lv_scr_act());
         return art ? ((lv_animimg_t *)art)->pic_count : 0;
     }
+    case 5: return display_blanked || activity_state == ACTIVITY_SLEEP;
+    case 6: return activity_state;
+    case 7: return sim_uptime_ms - activity_last_uptime;
     default: return 0;
     }
 }

@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
-  /* Layout: keymap-editor style top bar + tab row, the split keyboard (with both OLEDs) always on stage,
+  /* Layout: keymap-editor style top bar + tab row, the typing simulator always on stage,
      then the active tab's controls beside a sticky pair of magnified panels. */
   :root {
     --bg: #ffffff;
@@ -85,39 +85,26 @@
   .tabs button:hover { color: var(--accent); }
   .tabs button.on { background: var(--accent); color: var(--accent-ink); }
 
-  /* stage: layer selector + keyboard */
-  .stage { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 10px; align-items: start; }
-  .layer-selector { display: flex; flex-direction: column; gap: 2px; background: var(--panel); border-radius: 6px; overflow: hidden; }
-  .layer-selector button {
-    border: 0; background: none; height: 44px; cursor: pointer; font-size: 19px; color: var(--muted);
-  }
-  .layer-selector button:hover { color: var(--accent); }
-  .layer-selector button.on { background: var(--accent); color: var(--accent-ink); }
-  .layer-title { font-size: 24px; font-weight: 600; margin: 4px 0 8px; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
-  .layer-title small { font-size: 14px; color: var(--muted); font-weight: 500; }
-  .kb-scroll { overflow-x: auto; padding-bottom: 6px; }
-  .keyboard { position: relative; margin: 6px auto 0; }
+  /* typing simulator */
+  .typing { display: flex; flex-wrap: wrap; gap: 14px 28px; align-items: center; background: var(--panel); border-radius: 10px; padding: 14px 16px; }
+  .keys { display: flex; gap: 8px; }
   .key {
-    position: absolute; display: flex; align-items: center; justify-content: center; text-align: center;
-    background: var(--key); color: var(--key-fg); border-radius: 5px; transition: background .2s;
-    font-size: calc(var(--u) * 0.32); line-height: 1.05; user-select: none;
+    position: relative; width: 64px; height: 64px; display: grid; place-items: center;
+    background: var(--key); color: var(--key-fg); border-radius: 5px; font-size: 26px;
+    border: 1px solid var(--line); transition: background .08s, transform .08s;
   }
-  .key:hover { background: var(--key-hover); color: #fff; }
-  .key .h { position: absolute; top: 2px; left: 4px; font-size: calc(var(--u) * 0.16); opacity: .6; }
-  .key .s { position: absolute; top: 2px; right: 5px; font-size: calc(var(--u) * 0.18); opacity: .6; }
-  .key.long { font-size: calc(var(--u) * 0.2); }
-  .key.trans { opacity: .45; }
-  .key.knob { border-radius: 50%; }
-  .oled-mod {
-    position: absolute; background: var(--pcb); border-radius: 4px; padding: calc(var(--u) * 0.06);
-    display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 3px; cursor: pointer; border: 2px solid transparent;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, .25);
-  }
-  .oled-mod:hover, .oled-mod.sel { border-color: var(--accent); }
-  .oled-mod canvas { height: 100%; width: auto; max-width: 100%; min-height: 0; justify-self: center; image-rendering: pixelated; background: #000; border-radius: 1px; }
-  .oled-mod span { font-size: clamp(7px, calc(var(--u) * 0.15), 10px); color: #b9c7d8; text-align: center; letter-spacing: .06em; line-height: 1; }
+  .key .h { position: absolute; top: 3px; left: 5px; font-size: 11px; opacity: .6; }
+  .key.down { background: var(--accent); color: var(--accent-ink); transform: translateY(2px); }
+  .typing-ctl { display: grid; gap: 6px; min-width: 260px; flex: 1; }
+  .typing-ctl .row { gap: 10px; }
+  .readouts { display: flex; flex-wrap: wrap; gap: 10px 24px; }
+  .readouts div { display: grid; line-height: 1.25; min-width: 120px; }
+  .readouts small { color: var(--muted); font-size: 12.5px; }
+  .readouts b { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .readouts span { font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .readouts b.off { color: var(--muted); }
 
-  /* below the keyboard */
+  /* below the typing bar */
   .work { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 22px; margin-top: 18px; align-items: start; }
   @media (max-width: 860px) {
     .work { grid-template-columns: minmax(0, 1fr); }
@@ -217,20 +204,32 @@
 
   <div id="loadError" class="error hidden"></div>
 
-  <div class="stage">
-    <div class="layer-selector" id="layers" aria-label="Keymap layers"></div>
-    <div style="min-width:0">
-      <div class="layer-title"><span id="layerName">main</span><small id="stageNote">Both halves run as split peripherals of the jerry dongle, so each shows nice!oled's peripheral screen.</small></div>
-      <div class="kb-scroll"><div class="keyboard" id="keyboard"></div></div>
+  <section class="typing" aria-label="Typing simulator">
+    <div class="keys" id="keys">
+      <div class="key"><span class="h"></span>1</div>
+      <div class="key"><span class="h"></span>2</div>
+      <div class="key"><span class="h"></span>3</div>
     </div>
-  </div>
+    <div class="typing-ctl">
+      <div class="row">
+        <button class="btn primary" type="button" id="typeBtn">Stop typing</button>
+        <div class="seg" id="keysSeg" title="Which half the three keys are on"><button type="button" data-v="left">Left</button><button type="button" data-v="right">Right</button><button type="button" data-v="split" class="on">Split</button></div>
+      </div>
+      <label class="f">Typing <input type="range" id="wpm" min="5" max="150" step="5" value="30"><span class="v" id="wpmV">30 WPM</span></label>
+    </div>
+    <div class="readouts">
+      <div title="zmk/app/src/wpm.c: recomputed every second from key releases, over a window that resets every 5 seconds, so a steady 30 WPM reads between 24 and 36"><small>WPM, as the dongle counts it</small><b id="wpmOut">0</b><span>never sent to the halves</span></div>
+      <div><small>Left half</small><b id="actL">active</b><span id="actLsub"></span></div>
+      <div><small>Right half</small><b id="actR">active</b><span id="actRsub"></span></div>
+    </div>
+  </section>
 
   <div class="work">
     <div style="min-width:0">
       <section class="tab on" id="tab-displays">
         <div>
           <h2>Display state</h2>
-          <p class="note" style="margin-top:0">These change what nice!oled's widgets read from ZMK, live, without a reboot. Battery and USB go to both halves; each half reports its own split link.</p>
+          <p class="note" style="margin-top:0">Both halves are split peripherals of the jerry dongle, so each runs nice!oled's peripheral screen. These change what its widgets read from ZMK, live, without a reboot. Battery and USB go to both halves; each half reports its own split link.</p>
         </div>
         <div class="knobs">
           <div class="knob-card"><label>Battery<b id="battV">80%</b><input type="range" id="batt" min="0" max="100" value="80" aria-label="Battery percent"></label></div>
@@ -240,7 +239,8 @@
         </div>
         <div class="card">
           <h3>Playback &amp; panel</h3>
-          <label class="f">Speed <input type="range" id="speed" min="0.1" max="4" step="0.1" value="1"><span class="v" id="speedV">1.0×</span></label>
+          <label class="f">Time speed <input type="range" id="speed" min="0" max="7" step="1" value="2" aria-label="Time speed"><span class="v" id="speedV">1×</span></label>
+          <p class="note" style="margin-top:0">Speeds up everything: animations, typing, and the idle and deep-sleep timers (30 s and 20 min in your config).</p>
           <div class="pair">Pixel color
             <div class="seg" id="colorSeg"><button type="button" data-v="white" class="on">White</button><button type="button" data-v="blue">Blue</button><button type="button" data-v="amber">Amber</button></div>
           </div>
@@ -374,7 +374,6 @@ const $ = (s) => document.querySelector(s);
 const $$ = (s) => [...document.querySelectorAll(s)];
 
 /* ---------------- data ---------------- */
-const KB = {"layout":[{"row":0,"col":0,"x":0,"y":0.37},{"row":0,"col":1,"x":1,"y":0.37},{"row":0,"col":2,"x":2,"y":0.12},{"row":0,"col":3,"x":3,"y":0},{"row":0,"col":4,"x":4,"y":0.12},{"row":0,"col":5,"x":5,"y":0.24},{"row":0,"col":9,"x":9.25,"y":0.24},{"row":0,"col":11,"x":11.5,"y":0.24},{"row":0,"col":12,"x":12.5,"y":0.12},{"row":0,"col":13,"x":13.5,"y":0},{"row":0,"col":14,"x":14.5,"y":0.12},{"row":0,"col":15,"x":15.5,"y":0.37},{"row":0,"col":16,"x":16.5,"y":0.37},{"row":1,"col":0,"x":0,"y":1.37},{"row":1,"col":1,"x":1,"y":1.37},{"row":1,"col":2,"x":2,"y":1.12},{"row":1,"col":3,"x":3,"y":1},{"row":1,"col":4,"x":4,"y":1.12},{"row":1,"col":5,"x":5,"y":1.24},{"row":1,"col":8,"x":8.25,"y":1.24},{"row":1,"col":9,"x":9.25,"y":1.24},{"row":1,"col":10,"x":10.25,"y":1.24},{"row":1,"col":11,"x":11.5,"y":1.24},{"row":1,"col":12,"x":12.5,"y":1.12},{"row":1,"col":13,"x":13.5,"y":1},{"row":1,"col":14,"x":14.5,"y":1.12},{"row":1,"col":15,"x":15.5,"y":1.37},{"row":1,"col":16,"x":16.5,"y":1.37},{"row":2,"col":0,"x":0,"y":2.37},{"row":2,"col":1,"x":1,"y":2.37},{"row":2,"col":2,"x":2,"y":2.12},{"row":2,"col":3,"x":3,"y":2},{"row":2,"col":4,"x":4,"y":2.12},{"row":2,"col":5,"x":5,"y":2.24},{"row":2,"col":6,"x":6.25,"y":2.24},{"row":2,"col":9,"x":9.25,"y":2.24},{"row":2,"col":11,"x":11.5,"y":2.24},{"row":2,"col":12,"x":12.5,"y":2.12},{"row":2,"col":13,"x":13.5,"y":2},{"row":2,"col":14,"x":14.5,"y":2.12},{"row":2,"col":15,"x":15.5,"y":2.37},{"row":2,"col":16,"x":16.5,"y":2.37},{"row":3,"col":3,"x":3.5,"y":3.12},{"row":3,"col":4,"x":4.5,"y":3.12,"r":12,"rx":4.5,"ry":4.12},{"row":3,"col":5,"x":5.5,"y":3.12,"r":24,"rx":5.15,"ry":4.33},{"row":3,"col":11,"x":11,"y":3.12,"r":-24,"rx":12.3,"ry":4.33},{"row":3,"col":12,"x":12,"y":3.12,"r":-12,"rx":13,"ry":4.12},{"row":3,"col":13,"x":13,"y":3.12}],"layers":[{"name":"main","keys":[{"t":"⇥"},{"t":"Q"},{"t":"W"},{"t":"E"},{"t":"R"},{"t":"T"},{"t":"▲"},{"t":"Y"},{"t":"U"},{"t":"I"},{"t":"O"},{"t":"P"},{"t":"-","s":"_"},{"t":"Esc","h":"konbini"},{"t":"A"},{"t":"S"},{"t":"D"},{"t":"F"},{"t":"G"},{"t":"◀"},{"t":"APP"},{"t":"▶"},{"t":"H"},{"t":"J"},{"t":"K"},{"t":"L"},{"t":";","s":":"},{"t":"'","s":"\""},{"t":"⇧"},{"t":"Z"},{"t":"X"},{"t":"C"},{"t":"V"},{"t":"B","h":"⌥"},{"t":"konbini","h":"toggle"},{"t":"▼"},{"t":"N"},{"t":"M"},{"t":",","s":"<"},{"t":".","s":">"},{"t":"/","h":"konbini","s":"?"},{"t":"\\","s":"|"},{"t":"⌫","h":"utility"},{"t":"⏎","h":"⌃"},{"t":"␣"},{"t":"⌫","k":"backspace"},{"t":"⏎","h":"⌥"},{"t":"␣","h":"number"}]},{"name":"colemak","keys":[{"t":"▽","k":"trans"},{"t":"Q"},{"t":"W"},{"t":"F"},{"t":"P"},{"t":"G"},{"t":"▽","k":"trans"},{"t":"J"},{"t":"L"},{"t":"U"},{"t":"Y"},{"t":";","s":":"},{"t":"▽","k":"trans"},{"t":"▽","k":"trans"},{"t":"A"},{"t":"R"},{"t":"S"},{"t":"T"},{"t":"D"},{"t":"▽","k":"trans"},{"t":"▽","k":"trans"},{"t":"▽","k":"trans"},{"t":"H"},{"t":"N"},{"t":"E"},{"t":"I"},{"t":"O"},{"t":"'","s":"\""},{"t":"▽","k":"trans"},{"t":"Z"},{"t":"X"},{"t":"C"},{"t":"V"},{"t":"B","h":"⌥"},{"t":"▽","k":"trans"},{"t":"▽","k":"trans"},{"t":"K"},{"t":"M"},{"t":",","s":"<"},{"t":".","s":">"},{"t":"/","h":"konbini","s":"?"},{"t":"▽","k":"trans"},{"t":"▽","k":"trans"},{"t":"▽","k":"trans"},{"t":"▽","k":"trans"},{"t":"▽","k":"trans"},{"t":"▽","k":"trans"},{"t":"▽","k":"trans"}]},{"name":"number","keys":[{"t":"F1"},{"t":"F2"},{"t":"F3"},{"t":"F4"},{"t":"F5"},{"t":"F6"},{"t":"↑"},{"t":"F7"},{"t":"F8"},{"t":"F9"},{"t":"F10"},{"t":"F11"},{"t":"=","s":"+"},{"t":"Esc","s":"`"},{"t":"1","h":"⌥"},{"t":"2","s":"@"},{"t":"3","s":"#"},{"t":"4","s":"$"},{"t":"5","s":"%"},{"t":"←"},{"t":"CMENU"},{"t":"→"},{"t":"6","s":"^"},{"t":"7","s":"&"},{"t":"8","s":"*"},{"t":"9","h":"HOME","s":"("},{"t":"0","h":"END","s":")"},{"t":"↑"},{"t":"⇧"},{"t":"`","s":"~"},{"t":"[","s":"{"},{"t":"]","s":"}"},{"t":"PG UP"},{"t":"PG DN"},{"t":"Mute"},{"t":"↓"},{"t":"$"},{"t":"Win"},{"t":"F12"},{"t":"←"},{"t":"→"},{"t":"↓"},{"t":"▽","k":"trans"},{"t":"⏎","h":"⌃"},{"t":"␣","h":"LGUI"},{"t":"⌫","k":"backspace"},{"t":"⏎","h":"⌥"},{"t":"","k":"held"}]},{"name":"utility","keys":[{"t":"⇥"},{"t":"⌥","h":"hold"},{"t":"LGUI","h":"hold"},{"t":"HOME"},{"t":"END"},{"t":"PG UP"},{"t":"▴","s":"Mouse"},{"t":"&mkp MB4"},{"t":"&mkp MB5"},{"t":"KP 7"},{"t":"KP 8"},{"t":"KP 9"},{"t":"KP PLUS","h":"KP ASTERISK"},{"t":"⌃","h":"hold"},{"t":"◀"},{"t":"⌦"},{"t":"▶"},{"t":"↑"},{"t":"PG DN"},{"t":"◂","s":"Mouse"},{"t":"colemak","h":"toggle"},{"t":"▸","s":"Mouse"},{"t":"&mkp MB1"},{"t":"&mkp MB2"},{"t":"KP 4"},{"t":"KP 5"},{"t":"KP 6"},{"t":"KP MINUS","h":"KP DIVIDE"},{"t":"▽","k":"trans"},{"t":"▼"},{"t":"▲"},{"t":"←"},{"t":"↓"},{"t":"→"},{"t":"&lockPC"},{"t":"▾","s":"Mouse"},{"t":"&mkp MB3"},{"t":"KP NUMLOCK","h":"⇧"},{"t":"KP 1","h":"KP 0"},{"t":"KP 2","h":"KP DOT"},{"t":"KP 3"},{"t":"KP EQUAL","h":"KP ENTER"},{"t":"","k":"held"},{"t":"&copy"},{"t":"&paste"},{"t":"⌃"},{"t":"⏎","h":"⌥"},{"t":"▽","k":"trans"}]},{"name":"config","keys":[{"t":"&studio_unlock"},{"t":"RGB OFF"},{"t":"RGB ON"},{"t":"RGB HUI"},{"t":"RGB SAI"},{"t":"RGB BRI"},{"t":"⇧","h":"hold"},{"t":"Prev"},{"t":"Next"},{"t":"PG UP"},{"t":"Vol+"},{"t":"Bri−"},{"t":"Mute"},{"t":"Boot"},{"t":"BT CLR ALL"},{"t":"Tog","h":"BT","s":"USB"},{"t":"RGB HUD"},{"t":"RGB SAD"},{"t":"RGB BRD"},{"t":"⌃","h":"hold"},{"t":"⏎","k":"enter"},{"t":"⌥","h":"hold"},{"t":"STOP"},{"t":"LMB"},{"t":"PG DN"},{"t":"Vol−"},{"t":"Bri+"},{"t":"CLCK"},{"t":"⇧"},{"t":"Reset","k":"bootloader"},{"t":"EP TOG"},{"t":"&key_repeat"},{"t":"RGB EFF"},{"t":"RGB EFR"},{"t":"Mute"},{"t":"⌘","h":"hold"},{"t":"RW"},{"t":"FF"},{"t":"SHUFFLE"},{"t":"Play"},{"t":"SCROLLLOCK"},{"t":"PAUSE BREAK"},{"t":"⊖","k":"held"},{"t":"⌃"},{"t":"␣"},{"t":"⌫","k":"backspace"},{"t":"⏎","h":"⌥"},{"t":"⊖","k":"held"}]},{"name":"konbini","keys":[{"t":"▽","k":"trans"},{"t":"/","s":"?"},{"t":"-","s":"_"},{"t":"+"},{"t":"*"},{"t":"=","s":"+"},{"t":"▽","k":"trans"},{"t":"▽","k":"trans"},{"t":"⌦"},{"t":"▽","k":"trans"},{"t":"▽","k":"trans"},{"t":"▽","k":"trans"},{"t":"▽","k":"trans"},{"t":"","k":"held"},{"t":"1","s":"!"},{"t":"2","s":"@"},{"t":"3","s":"#"},{"t":"4","s":"$"},{"t":"5","s":"%"},{"t":"▽","k":"trans"},{"t":"colemak","h":"toggle"},{"t":"▽","k":"trans"},{"t":"PG UP"},{"t":"HOME"},{"t":"↑"},{"t":"END"},{"t":"▽","k":"trans"},{"t":"▽","k":"trans"},{"t":"▽","k":"trans"},{"t":"6","s":"^"},{"t":"7","s":"&"},{"t":"8","h":",","s":"*"},{"t":"9","h":".","s":"("},{"t":"0","s":")"},{"t":"konbini","h":"toggle"},{"t":"▽","k":"trans"},{"t":"PG DN"},{"t":"←"},{"t":"↓"},{"t":"→"},{"t":"","k":"held alternate"},{"t":"▽","k":"trans"},{"t":"▽","k":"trans"},{"t":"▽","k":"trans"},{"t":"▽","k":"trans"},{"t":"▽","k":"trans"},{"t":"▽","k":"trans"},{"t":"▽","k":"trans"}]}]};
 const KRONII = '/////////////////////////////////////////////////7/////P////4/////P//v/5//3//H/3//4/z///A7///wB///8Af///AD///wA///8AD///gHn/eQD//7AD///QAf//4AH//+AA///gAH3/4AA7/+AAD//AAA//xGAD/8CAAf/F6AP/w+gH/5PwR/8Z4Mf/O4fD/yADw/4wA8MAcIDHAHRAHwBkAF8AQAD/AFQJ/wC8EYMB+DGPH3g1Hx9wPB8ffGQfDz/8Dw4B+A8GAHAHAAAAAwAAAAMABgADAA+AHwAPwD8wDuAfTw5gHzwEQB9wgAAfwMAADwNgAA8B4AAHAgAAAwOAAIMAAAGHAAAXBwAAOAMAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAA4AAAAPwAAAD/AAAA/+AAAP/gH/7/4A///+AP///gD///4A///+Af///gH///4B///+Af///gH///4Av///AH///wB///8A////gf///4H///wA///wAf//+AH///wD////A////wH///+B////gf///8H////Q////kf///wH///4B////AP///+D////gf///4D////n/8=';
 const SIM = window.LVGL_SIM;
 const BOARD_W = 32, BOARD_H = 128;
@@ -432,14 +431,14 @@ class Half {
     if (rc !== 0) throw new Error('sim_init failed: ' + rc);
     this.e = e;
     this.applyWorld();
-    this.step(0);
+    this.read();
     this.compileMs = performance.now() - t0;
     return this.compileMs;
   }
   applyWorld() { if (this.e) this.e.sim_set_state(world.battery, world.usb ? 1 : 0, world.link[this.side] ? 1 : 0); }
-  step(ms) {
+  advance(ms) { if (this.e) this.e.sim_step(ms); }
+  read() {
     if (!this.e) return;
-    if (ms) this.e.sim_step(ms);
     this.gddram.set(new Uint8Array(this.e.memory.buffer, this.e.sim_gddram(), 512));
     // board view: panel column 127 at the top, page row 0 on the left (nice!oled's text reads upright)
     const inv = META.panel.inversionOn, g = this.gddram, b = this.board;
@@ -449,6 +448,11 @@ class Half {
     }
   }
   stat(i) { return this.e ? this.e.sim_stat(i) : 0; }
+  key(down) {
+    if (!this.e) return;
+    if (this.stat(6) === 2) { if (down) compileHalves([this], `${this.side} woke from deep sleep`); return; }
+    this.e.sim_key(down ? 1 : 0);
+  }
   describe() {
     const frames = this.stat(4);
     const what = this.mode === 'art' ? 'art only' : ANIM_LABEL[this.anim];
@@ -496,12 +500,12 @@ function drawPanel(cv, bits, W, H, scale, opts) {
   ctx.restore();
 }
 
-const smallCv = {}, bigCv = { left: $('#bigL'), right: $('#bigR') };
+const bigCv = { left: $('#bigL'), right: $('#bigR') };
+const DARK = new Uint8Array(BOARD_W * BOARD_H);
 function renderAll() {
   for (const side of ['left', 'right']) {
     const h = halves[side]; if (!h) continue;
-    if (smallCv[side]) drawPanel(smallCv[side], h.board, BOARD_W, BOARD_H, 1, { glow: 0 });
-    drawPanel(bigCv[side], h.board, BOARD_W, BOARD_H, 3, { gap: 0.14, glow: view.glow, grid: view.grid });
+    drawPanel(bigCv[side], h.stat(5) ? DARK : h.board, BOARD_W, BOARD_H, 3, { gap: 0.14, glow: view.glow, grid: view.grid });
   }
 }
 function refreshCaptions() {
@@ -516,6 +520,69 @@ function refreshCaptions() {
   $('#statsNote').textContent = s.join(' · ');
 }
 
+/* ---------------- typing ---------------- */
+// Three keys pressed in turn. Each press and release is a position event on the half the key is on,
+// which is what ZMK's activity tracking (and so the blank-on-idle timer) listens to.
+const typing = { on: true, wpm: 30, where: 'split', idx: 0, next: 0, down: -1, upAt: 0 };
+const KEY_SIDES = { left: ['left', 'left', 'left'], right: ['right', 'right', 'right'], split: ['left', 'left', 'right'] };
+const keyEls = () => $$('#keys .key');
+let simTime = 0;
+
+function typingStep(now) {
+  const interval = 60000 / (typing.wpm * 5);  // a "word" is five keystrokes
+  if (typing.down >= 0 && now >= typing.upAt) {
+    halves[KEY_SIDES[typing.where][typing.down]].key(false);
+    keyEls()[typing.down].classList.remove('down');
+    wpm.count++;  // ZMK counts key releases
+    typing.down = -1;
+  }
+  if (typing.on && typing.down < 0 && now >= typing.next) {
+    const i = typing.idx;
+    halves[KEY_SIDES[typing.where][i]].key(true);
+    keyEls()[i].classList.add('down');
+    typing.down = i;
+    typing.upAt = now + Math.min(100, interval * 0.4);
+    typing.idx = (i + 1) % 3;
+    typing.next = Math.max(typing.next + interval, now);
+  }
+}
+
+// zmk/app/src/wpm.c as the dongle runs it: every second, WPM = (releases / 5) / minutes elapsed;
+// the count and the window reset every 5 seconds.
+const wpm = { count: 0, counter: 0, state: 0, next: 1000 };
+function wpmStep(now) {
+  while (now >= wpm.next) {
+    wpm.next += 1000;
+    wpm.counter++;
+    wpm.state = Math.min(255, Math.floor((wpm.count / 5) / (wpm.counter / 60)));
+    if (wpm.counter >= 5) { wpm.counter = 0; wpm.count = 0; }
+  }
+}
+
+function labelKeys() {
+  keyEls().forEach((el, i) => { el.querySelector('.h').textContent = KEY_SIDES[typing.where][i] === 'left' ? 'L' : 'R'; });
+}
+
+function renderActivity() {
+  $('#wpmOut').textContent = wpm.state;
+  for (const [side, id] of [['left', 'L'], ['right', 'R']]) {
+    const h = halves[side], act = h.firmware.activity, st = h.stat(6), since = h.stat(7);
+    let main, sub = '';
+    if (st === 2) { main = 'deep sleep'; sub = 'next keypress on this half reboots it'; }
+    else if (st === 1) {
+      main = act.blankOnIdle ? 'idle, display off' : 'idle';
+      if (act.sleepMs) sub = world.usb ? 'no deep sleep on USB power' : `deep sleep in ${fmtSecs(act.sleepMs - since)}`;
+    } else {
+      main = 'active';
+      sub = act.blankOnIdle ? `display blanks in ${fmtSecs(act.idleMs - since)}` : `idle in ${fmtSecs(act.idleMs - since)}`;
+    }
+    $('#act' + id).textContent = main;
+    $('#act' + id).classList.toggle('off', st !== 0);
+    $('#act' + id + 'sub').textContent = sub;
+  }
+}
+const fmtSecs = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return s >= 120 ? `${Math.ceil(s / 60)} min` : `${s} s`; };
+
 /* ---------------- clock ---------------- */
 let last = performance.now(), acc = 0;
 function tick(t) {
@@ -525,95 +592,22 @@ function tick(t) {
   if (video && !video.paused) liveVideoFrame();
   if (!view.playing) return;
   acc += dt * view.speed;
-  const step = Math.floor(acc / META.tickMs) * META.tickMs;
-  if (!step) return;
-  acc -= step;
-  halves.left.step(step); halves.right.step(step);
+  const tickMs = META.tickMs;
+  if (acc < tickMs) return;
+  for (; acc >= tickMs; acc -= tickMs) {
+    simTime += tickMs;
+    typingStep(simTime);
+    wpmStep(simTime);
+    halves.left.advance(tickMs); halves.right.advance(tickMs);
+  }
+  halves.left.read(); halves.right.read();
   renderAll();
+  renderActivity();
 }
 setInterval(() => { if (halves.left && halves.left.e) refreshCaptions(); }, 1000);
 
-/* ---------------- keyboard ---------------- */
-const RIGHT_SHIFT = 1.25;           // room for the right half's display
-const OLED = { w: 0.72, h: 2.12 };  // module drawn a touch larger than life so the art reads
-const OLED_POS = { left: { x: 6.74, y: 0.0 }, right: { x: 11.64, y: 0.0 } };
-let layerIdx = 0, selectedSide = 'left';
-
-function buildKeyboard() {
-  const kb = $('#keyboard');
-  kb.innerHTML = '';
-  const keys = KB.layout.map((k) => {
-    const shift = k.x >= 11 ? RIGHT_SHIFT : 0;
-    return { ...k, x: k.x + shift, rx: k.rx !== undefined ? k.rx + shift : undefined };
-  });
-  const maxX = Math.max(...keys.map((k) => k.x + 1)), maxY = 4.75;
-  const fit = () => {
-    const avail = kb.parentElement.clientWidth - 4;
-    const u = Math.max(18, Math.min(66, avail / maxX));
-    kb.style.setProperty('--u', u + 'px');
-    kb.style.width = maxX * u + 'px'; kb.style.height = maxY * u + 'px';
-    for (const el of kb.children) {
-      const d = el._geo;
-      el.style.left = d.x * u + 'px'; el.style.top = d.y * u + 'px';
-      el.style.width = d.w * u - (d.key ? 5 : 0) + 'px'; el.style.height = d.h * u - (d.key ? 5 : 0) + 'px';
-      if (d.r) { el.style.transformOrigin = `${(d.rx - d.x) * u}px ${(d.ry - d.y) * u}px`; el.style.transform = `rotate(${d.r}deg)`; }
-    }
-  };
-  keys.forEach((k, i) => {
-    const el = document.createElement('div');
-    el.className = 'key';
-    if (k.row === 2 && k.col === 6) el.classList.add('knob');
-    el._geo = { x: k.x, y: k.y, w: 1, h: 1, r: k.r, rx: k.rx, ry: k.ry, key: true };
-    el.dataset.i = i;
-    kb.append(el);
-  });
-  for (const side of ['left', 'right']) {
-    const m = document.createElement('div');
-    m.className = 'oled-mod'; m.dataset.side = side; m.tabIndex = 0;
-    m.title = `${side} half display: click to select`;
-    const cv = document.createElement('canvas'); cv.width = BOARD_W; cv.height = BOARD_H;
-    const lbl = document.createElement('span'); lbl.textContent = '128×32';
-    const top = document.createElement('span'); top.textContent = side === 'left' ? 'L' : 'R';
-    m.append(top, cv, lbl);
-    m._geo = { x: OLED_POS[side].x, y: OLED_POS[side].y, w: OLED.w, h: OLED.h };
-    m.addEventListener('click', () => selectSide(side));
-    m.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); selectSide(side); } });
-    smallCv[side] = cv;
-    kb.append(m);
-  }
-  fit();
-  new ResizeObserver(fit).observe(kb.parentElement);
-  renderLegends();
-}
-
-function renderLegends() {
-  const layer = KB.layers[layerIdx];
-  $('#layerName').textContent = layer.name;
-  for (const el of $$('#keyboard .key')) {
-    const k = layer.keys[+el.dataset.i] || { t: '' };
-    el.classList.toggle('trans', k.k === 'trans');
-    el.classList.toggle('long', (k.t || '').length > 3);
-    el.innerHTML = '';
-    if (k.h) el.append(Object.assign(document.createElement('span'), { className: 'h', textContent: k.h }));
-    if (k.s) el.append(Object.assign(document.createElement('span'), { className: 's', textContent: k.s }));
-    el.append(document.createTextNode(k.t || ''));
-  }
-  $$('#layers button').forEach((b, i) => b.classList.toggle('on', i === layerIdx));
-}
-
-function buildLayerSelector() {
-  const box = $('#layers');
-  KB.layers.forEach((l, i) => {
-    const b = document.createElement('button');
-    b.type = 'button'; b.textContent = i; b.title = l.name;
-    b.addEventListener('click', () => { layerIdx = i; renderLegends(); });
-    box.append(b);
-  });
-}
-
+/* ---------------- half selection ---------------- */
 function selectSide(side) {
-  selectedSide = side;
-  $$('.oled-mod').forEach((m) => m.classList.toggle('sel', m.dataset.side === side));
   $('#figL').classList.toggle('sel', side === 'left');
   $('#figR').classList.toggle('sel', side === 'right');
   if (cfgSide !== side) { cfgSide = side; segSet('#cfgSide', side); writeConf(); }
@@ -1001,15 +995,24 @@ function bindControls() {
   });
   $('#rebuildBtn').addEventListener('click', () => compileHalves([halves.left, halves.right], 'manual'));
 
-  const live = () => { for (const h of Object.values(halves)) h.applyWorld(); for (const h of Object.values(halves)) h.step(0); renderAll(); };
+  const live = () => { for (const h of Object.values(halves)) { h.applyWorld(); h.read(); } renderAll(); renderActivity(); };
   $('#batt').addEventListener('input', (e) => { world.battery = +e.target.value; $('#battV').textContent = world.battery + '%'; live(); });
   $('#usb').addEventListener('change', (e) => { world.usb = e.target.checked; $('#usbV').textContent = world.usb ? 'on' : 'off'; live(); });
   $('#linkL').addEventListener('change', (e) => { world.link.left = e.target.checked; $('#linkLV').textContent = e.target.checked ? 'connected' : 'lost'; live(); });
   $('#linkR').addEventListener('change', (e) => { world.link.right = e.target.checked; $('#linkRV').textContent = e.target.checked ? 'connected' : 'lost'; live(); });
-  $('#speed').addEventListener('input', (e) => { view.speed = +e.target.value; $('#speedV').textContent = view.speed.toFixed(1) + '×'; });
+  const SPEEDS = [0.25, 0.5, 1, 2, 4, 10, 30, 60];
+  $('#speed').addEventListener('input', (e) => { view.speed = SPEEDS[+e.target.value]; $('#speedV').textContent = view.speed + '×'; });
   $('#glow').addEventListener('input', (e) => { view.glow = +e.target.value; $('#glowV').textContent = view.glow.toFixed(2); renderAll(); });
   $('#grid').addEventListener('change', (e) => { view.grid = e.target.checked; renderAll(); });
   onSeg('#colorSeg', (v) => { view.color = v; renderAll(); });
+  $('#typeBtn').addEventListener('click', () => {
+    typing.on = !typing.on;
+    if (typing.on) typing.next = simTime;
+    $('#typeBtn').textContent = typing.on ? 'Stop typing' : 'Start typing';
+    $('#typeBtn').classList.toggle('primary', typing.on);
+  });
+  $('#wpm').addEventListener('input', (e) => { typing.wpm = +e.target.value; $('#wpmV').textContent = typing.wpm + ' WPM'; });
+  onSeg('#keysSeg', (v) => { typing.where = v; labelKeys(); });
   $('#figL').addEventListener('click', () => selectSide('left'));
   $('#figR').addEventListener('click', () => selectSide('right'));
 
@@ -1072,9 +1075,8 @@ function bindControls() {
 /* ---------------- boot ---------------- */
 async function boot() {
   try { const t = localStorage.getItem('oledsim-theme'); if (t) document.documentElement.dataset.theme = t; } catch (err) { /* optional */ }
-  buildLayerSelector();
-  buildKeyboard();
   bindControls();
+  labelKeys();
   if (!SIM || !SIM.meta) { showError('lvgl-sim.js is missing. Run python3 oled-emulator/lvgl-sim/build.py to build the simulator.'); return; }
   if (typeof WebAssembly !== 'object') { showError('This browser cannot run WebAssembly, which the simulator needs.'); return; }
   META = SIM.meta;

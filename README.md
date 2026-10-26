@@ -192,15 +192,22 @@ update. The colors and export still work.
 ### OLED Display Simulator
 
 Open [`oled-emulator/index.html`](oled-emulator/index.html) in a browser (no
-server needed) to see both halves' OLEDs on a drawing of the keyboard, styled
-after [keymap-editor](https://github.com/nickcoutsos/keymap-editor). The
-displays aren't an imitation: they run **real LVGL 8.3.7** (the revision ZMK
-v0.3.0's Zephyr pins) and **nice!oled's own peripheral-screen code**, compiled
-to WebAssembly, through a port of Zephyr's SSD1306 display glue. Both halves
-show the peripheral screen because the jerry dongle is the split central.
+server needed) to see both halves' OLEDs, in a page styled after
+[keymap-editor](https://github.com/nickcoutsos/keymap-editor). The displays
+aren't an imitation: they run **real LVGL 8.3.7** (the revision ZMK v0.3.0's
+Zephyr pins) and **nice!oled's own peripheral-screen code**, compiled to
+WebAssembly, through a port of Zephyr's SSD1306 display glue and ZMK's
+activity tracking. Both halves show the peripheral screen because the jerry
+dongle is the split central.
 
+- **Typing**: three keys pressed in turn at 30 WPM (adjustable), on the left
+  half, the right half, or split across both. Each press counts as activity
+  on that half, so ZMK's blank-on-idle works as on the keyboard: a half's
+  OLED turns off 30 s after its last keypress, and the half deep-sleeps after
+  `ZMK_IDLE_SLEEP_TIMEOUT`. The WPM readout is what the dongle computes; ZMK
+  doesn't send it to the halves.
 - **Displays**: change battery level, USB power and each half's split link
-  live. Pick pixel color and playback speed. Switch layers to see their legends.
+  live. Pick pixel color, and speed time up to 60× to watch the timers run out.
 - **Art**: drop a GIF, images or a video. Dither it (six methods side by side)
   and play it in nice!oled's animation slot or on a bare screen, on either or
   both halves.

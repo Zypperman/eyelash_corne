@@ -51,8 +51,18 @@ config ZMK_BACKLIGHT
 config ZMK_EXT_POWER
 	bool "External power"
 
+# zmk/app/Kconfig: activity tracking (the nRF52840 has HAS_POWEROFF, so ZMK_SLEEP is settable)
+config ZMK_IDLE_TIMEOUT
+	int "Milliseconds of inactivity before entering idle state (OLED shutoff, etc)"
+	default 30000
+
 config ZMK_SLEEP
-	bool "Deep sleep"
+	bool "Enable deep sleep support"
+
+config ZMK_IDLE_SLEEP_TIMEOUT
+	int "Milliseconds of inactivity before entering deep sleep"
+	default 900000
+	depends on ZMK_SLEEP
 
 config ZMK_POINTING
 	bool "Pointing"

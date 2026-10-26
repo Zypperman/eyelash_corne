@@ -215,7 +215,13 @@ def side_meta(values, runtime):
     return {
         "animation": anim.lower(),
         "kcfg": {n: values[n] for n in runtime},
-        "config": {k: v for k, v in sorted(values.items()) if k.startswith(("NICE_OLED", "ZMK_DISPLAY", "LV_"))},
+        "activity": {
+            "idleMs": values.get("ZMK_IDLE_TIMEOUT"),
+            "sleepMs": values.get("ZMK_IDLE_SLEEP_TIMEOUT"),  # absent without CONFIG_ZMK_SLEEP
+            "blankOnIdle": values.get("ZMK_DISPLAY_BLANK_ON_IDLE") == 1,
+        },
+        "config": {k: v for k, v in sorted(values.items())
+                   if k.startswith(("NICE_OLED", "ZMK_DISPLAY", "ZMK_IDLE", "ZMK_SLEEP", "LV_"))},
     }
 
 
