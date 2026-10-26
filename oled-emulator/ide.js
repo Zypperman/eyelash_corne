@@ -26,6 +26,23 @@ function el(tag, { dataset, ...props } = {}, ...children) {
 }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// ide/ and vendor/ are generated (build.py --ide --vendor), so a site without them answers with its
+// HTML 404 or fallback page; say so instead of JSON.parse's "Unexpected token '<'"
+const BUNDLE_HINT = 'This site was published without the IDE bundle: build it with ' +
+  '`python3 oled-emulator/lvgl-sim/build.py --ide --vendor <node_modules>` (see .github/workflows/pages.yml) or use the GitHub Pages site.';
+async function fetchJson(path) {
+  let r;
+  try { r = await fetch(BASE + path); } catch (err) { throw new Error(`${path}: ${err.message}. ${BUNDLE_HINT}`); }
+  if (!r.ok) throw new Error(`${path}: HTTP ${r.status}. ${BUNDLE_HINT}`);
+  const text = (await r.text()).replace(/^\uFEFF/, '');
+  try {
+    return JSON.parse(text);
+  } catch (err) {
+    const start = text.trimStart().slice(0, 24);
+    throw new Error(`${path} is not JSON (it starts ${JSON.stringify(start)}${/^</.test(start) ? ', an HTML page' : ''}). ${BUNDLE_HINT}`);
+  }
+}
+
 /* FNV-1a, enough to tell file versions apart; texts repeat a lot, so remember them */
 const hashes = new Map();
 function hash(str) {
@@ -119,9 +136,10 @@ class Ide {
   async start() {
     this.ui.log.textContent = '';
     this.log('Loading sources…');
+    // vendor/versions.json first: Pyodide and clang load from vendor/ and fail far less clearly
     const [manifest, files] = await Promise.all([
-      fetch(BASE + 'ide/manifest.json').then((r) => { if (!r.ok) throw new Error('ide/ is missing: run build.py --ide'); return r.json(); }),
-      fetch(BASE + 'ide/files.json').then((r) => r.json()),
+      fetchJson('vendor/versions.json').then(() => fetchJson('ide/manifest.json')),
+      fetchJson('ide/files.json'),
     ]);
     this.manifest = manifest;
     this.files = files;

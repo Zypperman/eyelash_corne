@@ -507,12 +507,13 @@ class Display {
     const e = this.e; if (!e) return;
     const want = (what) => !only || only === what;
     if (this.id === 'dongle') {
+      // a tick after each: ZMK's widget listener keeps one pending update, so back-to-back events drop
+      // all but the last (the battery widget also takes USB events with ZMK_DONGLE_DISPLAY_DONGLE_BATTERY)
       if (want('battery')) {
-        // two separate ticks: ZMK's widget listener keeps one pending update, so back-to-back events drop the first
         e.sim_set_peripheral_battery(0, world.battery.left); e.sim_step(META.tickMs);
-        e.sim_set_peripheral_battery(1, world.battery.right);
+        e.sim_set_peripheral_battery(1, world.battery.right); e.sim_step(META.tickMs);
       }
-      if (boot) e.sim_set_usb(2);
+      if (boot) { e.sim_set_usb(2); e.sim_step(META.tickMs); }
     } else {
       if (want('battery')) e.sim_set_battery(world.battery[this.id]);
       if (want('usb')) e.sim_set_usb(world.usb ? (this.central ? 2 : 1) : 0);

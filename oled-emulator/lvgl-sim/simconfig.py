@@ -295,8 +295,8 @@ def evaluate_kconfig(root, target, overrides=(), workdir=None, warnings=None):
                 values[sym.name] = 1
         elif sym.str_value != "" and sym.type in (kconfiglib.INT, kconfiglib.HEX):
             values[sym.name] = int(sym.str_value, 0)
-        elif sym.type == kconfiglib.STRING and sym.str_value != "":
-            values[sym.name] = sym.str_value
+        elif sym.type == kconfiglib.STRING and sym.config_string:
+            values[sym.name] = sym.str_value  # "" included, as Zephyr's autoconf.h has it
     if warnings is not None:
         prefix = os.path.join(root, "")
         warnings.extend(w.replace(prefix, "") for w in kconf.warnings

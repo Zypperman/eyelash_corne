@@ -70,6 +70,13 @@ char *strchr(const char *s, int c) {
         if (!*s) return NULL;
     }
 }
+char *strstr(const char *s, const char *needle) {
+    size_t n = strlen(needle);
+    for (;; s++) {
+        if (!strncmp(s, needle, n)) return (char *)s;
+        if (!*s) return NULL;
+    }
+}
 
 int abs(int v) { return v < 0 ? -v : v; }
 long labs(long v) { return v < 0 ? -v : v; }
