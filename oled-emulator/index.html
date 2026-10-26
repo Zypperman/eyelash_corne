@@ -1133,13 +1133,15 @@ async function setLeftRole(role) {
   await compileDisplays([d], role === 'central' ? 'central preview' : 'peripheral');
 }
 let ideLoaded = false;
+const PAGES_URL = 'https://zypperman.github.io/eyelash_corne/'; // .github/workflows/pages.yml
 async function openIde() {
   if (ideLoaded) return;
   ideLoaded = true;
   const host = $('#ideHost');
   if (engine !== 'wasm' || location.protocol === 'file:' || window.OLEDSIM_NO_IDE) {
     host.innerHTML = '<div class="card"><h3>IDE</h3><p class="note">The IDE recompiles the firmware\'s display code in your browser with a WebAssembly build of clang, about 30 MB on first use. It needs a normal web page served over http(s) with WebAssembly allowed, so it doesn\'t run ' +
-      (location.protocol === 'file:' ? 'from a file:// page: serve <code>oled-emulator/</code> (for example <code>python3 -m http.server</code>) or use the GitHub Pages site.' : 'in this viewer. Open the GitHub Pages site instead (see the repo README).') + '</p></div>';
+      (location.protocol === 'file:' ? 'from a file:// page: serve <code>oled-emulator/</code> (for example <code>python3 -m http.server</code>) or use the GitHub Pages site.' : 'in this viewer.') +
+      ' The repo publishes it at <a href="' + PAGES_URL + '" target="_blank" rel="noopener">' + PAGES_URL.replace(/^https:\/\//, '') + '</a> once GitHub Pages is on.</p></div>';
     return;
   }
   try {
