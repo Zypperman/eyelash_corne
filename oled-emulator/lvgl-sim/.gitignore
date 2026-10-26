@@ -1,1 +1,3 @@
 .cache/
+# the repo root ignores zmk/ (west workspaces); these are stub headers
+!/stubs/zmk/
