@@ -305,6 +305,10 @@ west build -b eyelash_nano -d build/right -- \
   -DSHIELD="eyelash_corne_right nice_oled"
 ```
 
+## Vial Layout (W-Corne)
+
+[`vial/eyelash_corne_wcorne.vil`](vial/eyelash_corne_wcorne.vil) is this keymap converted for a 46-key Corne v4.1-style board running Vial (e.g. a W-Corne). It maps the encoder and the d-pad to the board's two extra switches per half. Load it in [vial.rocks](https://vial.rocks) with **File → Load saved layout**. See [`vial/README.md`](vial/README.md) for the substitutions, and run `python3 vial/zmk_to_vil.py` to regenerate it after editing the keymap.
+
 ## Resources
 
 - **ZMK Firmware**: <https://zmk.dev/>
