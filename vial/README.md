@@ -1,18 +1,21 @@
-# Vial layout for a W-Corne (Corne v4.1, 46 keys)
+# Vial layout for the W-Corne
 
 `eyelash_corne_wcorne.vil` is this repo's ZMK keymap (`config/eyelash_corne.keymap`)
-converted to a Vial layout file for a 46-key Corne v4.1-style board, such as the
-W-Corne / WCORNE V4.1. That board has two plain switches on the inner column of
-each half instead of the Eyelash Corne's encoder (left) and 5-way d-pad (right).
+as a Vial layout for the W-Corne (46 keys). The W-Corne has two plain switches on
+the inner column of each half instead of the Eyelash Corne's encoder (left) and
+5-way d-pad (right).
+
+The file was built from a layout saved from the board itself. It uses that board's
+ID and its matrix: 4 rows × 12 columns, with the left extra keys and the right
+outer column in row 3. It fills 6 of the board's 8 layers; layers 6 and 7 are
+left transparent.
 
 ## Loading it
 
 1. Open [vial.rocks](https://vial.rocks) (Chrome or Edge) or the Vial app, and connect the keyboard.
 2. **File → Load saved layout…** and pick `eyelash_corne_wcorne.vil`.
-3. Vial says the layout *belongs to a different keyboard*. Click **Yes**. The file
-   has no board ID, because yours isn't known yet.
-4. Vial may then ask you to **unlock** the board, because the config layer has a
-   Bootloader key (`QK_BOOT`). Hold the keys it highlights until the dialog closes.
+3. Vial asks you to **unlock** the board, because the config layer has a Bootloader
+   key (`QK_BOOT`). Hold the keys it highlights until the dialog closes.
 
 The changes go straight to the keyboard. No flashing is needed.
 
@@ -65,8 +68,9 @@ layer toggles that were on the d-pad press and encoder press.
   `&key_repeat` → Repeat, `&sys_reset` → Reboot, `&bootloader` → Bootloader.
 - `&rgb_ug`: QMK has no separate RGB on/off, so both become RGB toggle. Brightness
   becomes `RGB_VAI`/`RGB_VAD`, and effects become `RGB_MOD`/`RGB_RMOD`.
-- QMK settings: tapping term 200 ms, combo term 50 ms, one-shot timeout 1000 ms
-  (ZMK's defaults).
+- QMK settings: the board's own settings are kept, except the one-shot timeout,
+  which goes from 5000 ms to 1000 ms to match ZMK's sticky keys. Tapping term
+  (200 ms) and combo term (50 ms) already matched ZMK.
 
 **Not converted** (these keys are blank, `KC_NO`): Studio unlock, BT clear,
 output toggle, ext-power toggle, media shuffle, the Menu key on the d-pad press, and
@@ -74,28 +78,5 @@ the Q+S+Z soft-off combo. QMK has no equivalent for any of these. ZMK's scroll
 and mouse speed tuning doesn't carry over either. Adjust it in Vial under
 **QMK Settings → Mouse keys** if needed.
 
-## If keys land in the wrong place
-
-The file uses the standard QMK/Vial Corne v4.1 matrix (`crkbd/rev4_1`: 8 rows ×
-7 columns, right half mirrored). If your W-Corne's firmware uses a different matrix,
-keys will look shuffled after loading. In that case, save your board's current layout
-from vial.rocks (**File → Save current layout**) and share that `.vil`. It records
-the board's matrix and ID, so the converter can be fixed to match.
-
-## Regenerating
-
-After editing the ZMK keymap:
-
-```bash
-python3 vial/zmk_to_vil.py
-```
-
-To skip the "different keyboard" prompt, pass your board's ID. It is the `uid`
-field of a `.vil` saved from your board:
-
-```bash
-python3 vial/zmk_to_vil.py --uid 1234567890
-```
-
-The converter's choices for the extra switches and pair combos are in
-`EXTRA_OVERRIDES` and `PAIR_COMBOS` at the top of `zmk_to_vil.py`.
+The **Repeat** key (config layer, on the C key) may do nothing: the board reports no
+alt-repeat slots, which suggests its firmware was built without repeat-key support.
